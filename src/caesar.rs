@@ -26,7 +26,7 @@ impl Caesar {
         Caesar::substitute(cipher_text, |i| i.saturating_sub(self.key) % 26)
     }
 
-    fn substitute<F>(text: &str, sub_operation: F) -> String
+    fn substitute<F>(text: &str, substitute_index: F) -> String
         where F: Fn(usize) -> usize
     {
         let mut substituted_text = String::new();
@@ -35,8 +35,8 @@ impl Caesar {
             let index = ALPHABET.iter().position(|&x| x == l.to_ascii_lowercase());
 
             match index {
-                Some(i) => substituted_text.push(ALPHABET[sub_operation(i)]),
-                None => substituted_text.push(l),
+                Some(i) => substituted_text.push(ALPHABET[substitute_index(i)]),
+                None => substituted_text.push(l),   //Just push non-alphabetic chars 'as is'
             }
         }
 
@@ -44,11 +44,11 @@ impl Caesar {
     }
 
     pub fn new(key: usize) -> Result<Caesar, &'static str> {
-        if !(key > 0 && key < 27) {
-            panic!("Expecting a number between 1 and 26"); //TODO: return result
+        if key >= 1 && key <= 26 {
+            return Ok(Caesar {key: key});
         }
 
-        Ok(Caesar { key: key })
+        Err("Invalid key. Key must be in range 1-26")
     }
 }
 
@@ -59,27 +59,23 @@ mod tests {
 
     #[test]
     fn encrypt_message() {
-        let c = Caesar::new(2);
+        let c = Caesar::new(2).unwrap();
         assert_eq!("cvvcem cv fcyp!", c.encrypt("Attack at dawn!"));
     }
 
     #[test]
     fn decrypt_message() {
-        let c = Caesar::new(2);
+        let c = Caesar::new(2).unwrap();
         assert_eq!("attack at dawn!", c.decrypt("cvvcem cv fcyp!"));
     }
 
     #[test]
-    #[should_panic]
-    #[allow(unused)]
     fn key_to_small() {
-        let c = Caesar::new(0);
+        assert!(Caesar::new(0).is_err());
     }
 
     #[test]
-    #[should_panic]
-    #[allow(unused)]
     fn key_to_big() {
-        let c = Caesar::new(27);
+        assert!(Caesar::new(27).is_err());
     }
 }

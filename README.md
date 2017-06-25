@@ -1,3 +1,3 @@
 # Cryptrs
 
-This repository serves as the burial tomb for a variety of ciphers forgotten by time.
+This repository serves as a burial tomb for ciphers forgotten by time.
