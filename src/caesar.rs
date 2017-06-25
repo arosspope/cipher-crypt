@@ -70,6 +70,16 @@ mod tests {
     }
 
     #[test]
+    fn with_emoji(){
+        let c = Caesar::new(3).unwrap();
+        let message = "peace, freedom and liberty! 🗡️";
+        let encrypted = c.encrypt(message);
+        let decrypted = c.decrypt(&encrypted);
+
+        assert_eq!(decrypted, message);
+    }
+
+    #[test]
     fn key_to_small() {
         assert!(Caesar::new(0).is_err());
     }
