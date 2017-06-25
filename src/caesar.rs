@@ -8,13 +8,13 @@ pub struct Caesar {
 }
 
 impl Caesar {
-    pub fn encrypt(&self, cipher_text: &str) -> String {
-        /*  Encryptiong of a letter:
+    pub fn encrypt(&self, message: &str) -> String {
+        /*  Encryption of a letter:
                     E(x) = (x + n) mod 26
             Where;  x = position of letter in alphabet
                     n = shift factor (or key)
         */
-        Caesar::cipher(cipher_text, |i| (i + self.key) % 26)
+        Caesar::substitute(message, |i| (i + self.key) % 26)
     }
 
     pub fn decrypt(&self, cipher_text: &str) -> String {
@@ -23,33 +23,32 @@ impl Caesar {
             Where;  x = position of letter in alphabet
                     n = shift factor (or key)
         */
-        Caesar::cipher(cipher_text, |i| i.saturating_sub(self.key) % 26)
+        Caesar::substitute(cipher_text, |i| i.saturating_sub(self.key) % 26)
     }
 
-    fn cipher<F>(message: &str, operation: F) -> String
+    fn substitute<F>(text: &str, sub_operation: F) -> String
         where F: Fn(usize) -> usize
     {
-        let mut ciphered_text = String::new();
+        let mut substituted_text = String::new();
 
-        for l in message.chars() {
-            //Find the index of the potential
+        for l in text.chars() {
             let index = ALPHABET.iter().position(|&x| x == l.to_ascii_lowercase());
 
             match index {
-                Some(i) => ciphered_text.push(ALPHABET[operation(i)]),
-                None => ciphered_text.push(l),
+                Some(i) => substituted_text.push(ALPHABET[sub_operation(i)]),
+                None => substituted_text.push(l),
             }
         }
 
-        ciphered_text
+        substituted_text
     }
 
-    pub fn new(key: usize) -> Caesar {
+    pub fn new(key: usize) -> Result<Caesar, &'static str> {
         if !(key > 0 && key < 27) {
             panic!("Expecting a number between 1 and 26"); //TODO: return result
         }
 
-        Caesar { key: key }
+        Ok(Caesar { key: key })
     }
 }
 
@@ -62,7 +61,6 @@ mod tests {
     fn encrypt_message() {
         let c = Caesar::new(2);
         assert_eq!("cvvcem cv fcyp!", c.encrypt("Attack at dawn!"));
-
     }
 
     #[test]
@@ -73,12 +71,14 @@ mod tests {
 
     #[test]
     #[should_panic]
+    #[allow(unused)]
     fn key_to_small() {
         let c = Caesar::new(0);
     }
 
     #[test]
     #[should_panic]
+    #[allow(unused)]
     fn key_to_big() {
         let c = Caesar::new(27);
     }
