@@ -1,3 +1,5 @@
+pub mod caesar;
+
 #[cfg(test)]
 mod tests {
     #[test]
