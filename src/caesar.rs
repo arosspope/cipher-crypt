@@ -98,6 +98,19 @@ mod tests {
     }
 
     #[test]
+    fn exhaustive_encrypt(){
+        //Test with every possible shift combination
+        let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        for i in 1..26 {
+            let c = Caesar::new(i).unwrap();
+            let encrypted = c.encrypt(message);
+            let decrypted = c.decrypt(&encrypted);
+            assert_eq!(decrypted, message);
+        }
+    }
+
+    #[test]
     fn key_to_small() {
         assert!(Caesar::new(0).is_err());
     }
