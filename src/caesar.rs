@@ -50,7 +50,6 @@ impl Caesar {
             match idx {
                 Some(i) => {
                     substituted_text.push(UPPER_ALPHABET[substitute_index(i)]);
-                    continue;
                 },
                 None => substituted_text.push(l),   //Just push non-alphabetic chars 'as is'
             }
