@@ -1,10 +1,11 @@
-use std::ascii::AsciiExt;
-
-const ALPHABET: [char; 26] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+const LOWER_ALPHABET: [char; 26] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
+const UPPER_ALPHABET: [char; 26] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+
 pub struct Caesar {
-    key: usize,
+    shift: usize,
 }
 
 impl Caesar {
@@ -14,7 +15,7 @@ impl Caesar {
             Where;  x = position of letter in alphabet
                     n = shift factor (or key)
         */
-        Caesar::substitute(message, |i| (i + self.key) % 26)
+        Caesar::substitute(message, |idx| (idx + self.shift) % 26)
     }
 
     pub fn decrypt(&self, cipher_text: &str) -> String {
@@ -23,7 +24,12 @@ impl Caesar {
             Where;  x = position of letter in alphabet
                     n = shift factor (or key)
         */
-        Caesar::substitute(cipher_text, |i| i.saturating_sub(self.key) % 26)
+        let calc_letter_pos = |idx| {
+            let a: isize = idx as isize - self.shift as isize;
+            (((a % 26) + 26) % 26) as usize
+            //Rust does not natievly support negative wrap around modulo operations
+        };
+        Caesar::substitute(cipher_text, calc_letter_pos)
     }
 
     fn substitute<F>(text: &str, substitute_index: F) -> String
@@ -32,10 +38,23 @@ impl Caesar {
         let mut substituted_text = String::new();
 
         for l in text.chars() {
-            let index = ALPHABET.iter().position(|&x| x == l.to_ascii_lowercase());
+            //Look for letter in the lowercase alphabet
+            let idx = LOWER_ALPHABET.iter().position(|&x| x == l);
+            match idx {
+                Some(i) => {
+                    substituted_text.push(LOWER_ALPHABET[substitute_index(i)]);
+                    continue;   //process the next letter
+                },
+                None => ()
+            }
 
-            match index {
-                Some(i) => substituted_text.push(ALPHABET[substitute_index(i)]),
+            //else look for letter in the uppercase alphabet
+            let idx = UPPER_ALPHABET.iter().position(|&x| x == l);
+            match idx {
+                Some(i) => {
+                    substituted_text.push(UPPER_ALPHABET[substitute_index(i)]);
+                    continue;
+                },
                 None => substituted_text.push(l),   //Just push non-alphabetic chars 'as is'
             }
         }
@@ -43,15 +62,14 @@ impl Caesar {
         substituted_text
     }
 
-    pub fn new(key: usize) -> Result<Caesar, &'static str> {
-        if key >= 1 && key <= 26 {
-            return Ok(Caesar {key: key});
+    pub fn new(shift: usize) -> Result<Caesar, &'static str> {
+        if shift >= 1 && shift <= 26 {
+            return Ok(Caesar {shift: shift});
         }
 
-        Err("Invalid key. Key must be in range 1-26")
+        Err("Invalid shift factor. Must be in the range 1-26")
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -60,19 +78,19 @@ mod tests {
     #[test]
     fn encrypt_message() {
         let c = Caesar::new(2).unwrap();
-        assert_eq!("cvvcem cv fcyp!", c.encrypt("Attack at dawn!"));
+        assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!"));
     }
 
     #[test]
     fn decrypt_message() {
         let c = Caesar::new(2).unwrap();
-        assert_eq!("attack at dawn!", c.decrypt("cvvcem cv fcyp!"));
+        assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!"));
     }
 
     #[test]
     fn with_emoji(){
         let c = Caesar::new(3).unwrap();
-        let message = "peace, freedom and liberty! 🗡️";
+        let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = c.encrypt(message);
         let decrypted = c.decrypt(&encrypted);
 
