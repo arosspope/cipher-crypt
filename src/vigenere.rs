@@ -47,11 +47,10 @@ impl Vigenere {
     /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!"));
     /// ```
     pub fn encrypt(&self, message: &str) -> String {
-        /*  Encryption of a letter in a message:
-                    Ci = Ek(Mi) = (Mi + Ki) mod 26
-            Where;  Mi = position within the alphabet of ith char in message
-                    Ki = position within the alphabet of ith char in key
-        */
+        // Encryption of a letter in a message:
+        //         Ci = Ek(Mi) = (Mi + Ki) mod 26
+        // Where;  Mi = position within the alphabet of ith char in message
+        //         Ki = position within the alphabet of ith char in key
         let e_key = self.fit_key(message.len());
 
         Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26)
@@ -69,11 +68,11 @@ impl Vigenere {
     /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!"));
     /// ```
     pub fn decrypt(&self, cipher_text: &str) -> String {
-        /*  Decryption of a letter in a message:
-                    Mi = Dk(Ci) = (Ci - Ki) mod 26
-            Where;  Ci = position within the alphabet of ith char in cipher text
-                    Ki = position within the alphabet of ith char in key
-        */
+        // Decryption of a letter in a message:
+        //         Mi = Dk(Ci) = (Ci - Ki) mod 26
+        // Where;  Ci = position within the alphabet of ith char in cipher text
+        //         Ki = position within the alphabet of ith char in key
+
         let d_key = self.fit_key(cipher_text.len());
 
         let decrypt = |ci, ki| {
