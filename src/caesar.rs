@@ -1,5 +1,4 @@
-use common::alphabet::LOWER_ALPHABET;
-use common::alphabet::UPPER_ALPHABET;
+use common::alphabet::ALPHABET;
 
 pub struct Caesar {
     shift: usize,
@@ -13,7 +12,7 @@ impl Caesar {
 
         Err("Invalid shift factor. Must be in the range 1-26")
     }
-    
+
     pub fn encrypt(&self, message: &str) -> String {
         /*  Encryption of a letter:
                     E(x) = (x + n) mod 26
@@ -37,33 +36,31 @@ impl Caesar {
         Caesar::substitute(cipher_text, decrypt)
     }
 
-    fn substitute<F>(text: &str, substitute_index: F) -> String
+    fn substitute<F>(text: &str, calc_index: F) -> String
         where F: Fn(usize) -> usize
     {
-        let mut substituted_text = String::new();
+        let mut s_text = String::new();
 
-        for l in text.chars() {
-            //Look for letter in the lowercase alphabet
-            let idx = LOWER_ALPHABET.iter().position(|&x| x == l);
+        for c in text.chars(){
+            //Find the index of the character in the alphabet
+            let idx = ALPHABET.iter().position(|&x| x == c);
             match idx {
                 Some(i) => {
-                    substituted_text.push(LOWER_ALPHABET[substitute_index(i)]);
-                    continue;   //process the next letter
-                },
-                None => ()
-            }
+                    let mut si = calc_index(i);
 
-            //else look for letter in the uppercase alphabet
-            let idx = UPPER_ALPHABET.iter().position(|&x| x == l);
-            match idx {
-                Some(i) => {
-                    substituted_text.push(UPPER_ALPHABET[substitute_index(i)]);
+                    //If the original character was uppercase we should offset our substitute index
+                    //by 26 to reference the upper-half (UPPERCASE) section of the alphabet array
+                    if c.is_uppercase() && si < 26 {
+                        si += 26;
+                    }
+
+                    s_text.push(ALPHABET[si]);
                 },
-                None => substituted_text.push(l),   //Just push non-alphabetic chars 'as is'
+                None => s_text.push(c), //Push non-alphabetic chars 'as-is'
             }
         }
 
-        substituted_text
+        s_text
     }
 }
 

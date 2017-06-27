@@ -1,6 +1,5 @@
 use std::iter;
-use common::alphabet::LOWER_ALPHABET;
-use common::alphabet::UPPER_ALPHABET;
+use common::alphabet::ALPHABET;
 
 pub struct Vigenere {
     key: String,
@@ -8,11 +7,9 @@ pub struct Vigenere {
 
 impl Vigenere {
     pub fn new(key: String) -> Result<Vigenere, &'static str> {
-        //Keys are automatically converted to lowercase (this makes processing later easier to reason about)
-        let key = key.to_lowercase();
         for c in key.chars() {
             //Keys can only contain characters in the known alphabet
-            if LOWER_ALPHABET.iter().find(|&&a| a == c).is_none() {
+            if ALPHABET.iter().find(|&&a| a == c).is_none() {
                 return Err("Invalid key. Vigenere keys cannot contain non-alphabetic symbols.");
             }
         }
@@ -63,41 +60,36 @@ impl Vigenere {
         repeated_key
     }
 
-    fn substitute<F>(text: &str, key: String, substitute_index: F) -> String
+    fn substitute<F>(text: &str, key: String, calc_index: F) -> String
         where F: Fn(usize, usize) -> usize
     {
-        let mut substituted_text = String::new();
+        let mut s_text = String::new();
 
         for (i, c) in text.chars().enumerate() {
-            //Attempt to find index of message character in lower alphabet
-            let letter_idx = LOWER_ALPHABET.iter().position(|&x| x == c);
-            match letter_idx {
+            //Find the index of the character in the alphabet
+            let idx = ALPHABET.iter().position(|&x| x == c);
+            match idx {
                 Some(ti) => {
                     //Find the index of the key in the alphabet at this position
-                    let ki = LOWER_ALPHABET.iter()
+                    let ki = ALPHABET.iter()
                         .position(|&x| x == key.chars().nth(i).unwrap()).unwrap();
 
-                    substituted_text.push(LOWER_ALPHABET[substitute_index(ti, ki)]);
-                    continue
-                },
-                None => ()
-            }
+                    //Calculate the index of the substitute char
+                    let mut si = calc_index(ti, ki);
 
-            //else look for letter in the uppercase alphabet
-            let letter_idx = UPPER_ALPHABET.iter().position(|&x| x == c);
-            match letter_idx {
-                Some(ti) => {
-                    //Find the index of the key in the alphabet at this position
-                    let ki = LOWER_ALPHABET.iter()
-                        .position(|&x| x == key.chars().nth(i).unwrap()).unwrap();
+                    //If the original character was uppercase we should offset our substitute index
+                    //by 26 to reference the upper-half (UPPERCASE) section of the alphabet array
+                    if c.is_uppercase() && si < 26 {
+                        si += 26;
+                    }
 
-                    substituted_text.push(UPPER_ALPHABET[substitute_index(ti, ki)]);
+                    s_text.push(ALPHABET[si]);
                 },
-                None => substituted_text.push(c),   //Just push non-alphabetic chars 'as is'
+                None => s_text.push(c), //Push non-alphabetic chars 'as-is'
             }
         }
 
-        substituted_text
+        s_text
     }
 }
 
@@ -159,9 +151,8 @@ mod tests {
     }
 
     #[test]
-    fn key_is_lowercase(){
-        let v = Vigenere::new(String::from("LEMON")).unwrap();
-        assert_eq!("lemon", v.key);
+    fn mixed_key_case(){
+        assert!(Vigenere::new(String::from("LeMoN")).is_ok());
     }
 
     #[test]
