@@ -21,12 +21,12 @@ impl Caesar {
             Where;  x = position of letter in alphabet
                     n = shift factor (or key)
         */
-        let calc_letter_pos = |idx| {
+        let decrypt = |idx| {
             let a: isize = idx as isize - self.shift as isize;
             (((a % 26) + 26) % 26) as usize
             //Rust does not natievly support negative wrap around modulo operations
         };
-        Caesar::substitute(cipher_text, calc_letter_pos)
+        Caesar::substitute(cipher_text, decrypt)
     }
 
     fn substitute<F>(text: &str, substitute_index: F) -> String
