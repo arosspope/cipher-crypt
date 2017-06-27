@@ -7,6 +7,19 @@ pub struct Vigenere {
 }
 
 impl Vigenere {
+    pub fn new(key: String) -> Result<Vigenere, &'static str> {
+        //Keys are automatically converted to lowercase (this makes processing later easier to reason about)
+        let key = key.to_lowercase();
+        for c in key.chars() {
+            //Keys can only contain characters in the known alphabet
+            if LOWER_ALPHABET.iter().find(|&&a| a == c).is_none() {
+                return Err("Invalid key. Vigenere keys cannot contain non-alphabetic symbols.");
+            }
+        }
+
+        Ok(Vigenere { key: key })
+    }
+
     pub fn encrypt(&self, message: &str) -> String {
         /*  Encryption of a letter in a message:
                     Ci = Ek(Mi) = (Mi + Ki) mod 26
@@ -35,6 +48,20 @@ impl Vigenere {
         Vigenere::substitute(cipher_text, d_key, decrypt)
     }
 
+    fn fit_key(&self, msg_length: usize) -> String {
+        let key_copy = self.key.clone();
+
+        if key_copy.len() >= msg_length {
+            return key_copy; //The key is large enough for the message already
+        }
+
+        //Repeat the key until it fits within the length of the message
+        let mut repeated_key = iter::repeat(key_copy).take((msg_length / self.key.len()) + 1)
+            .collect::<String>();
+
+        repeated_key.truncate(msg_length);
+        repeated_key
+    }
 
     fn substitute<F>(text: &str, key: String, substitute_index: F) -> String
         where F: Fn(usize, usize) -> usize
@@ -71,34 +98,6 @@ impl Vigenere {
         }
 
         substituted_text
-    }
-
-    fn fit_key(&self, msg_length: usize) -> String {
-        let key_copy = self.key.clone();
-
-        if key_copy.len() >= msg_length {
-            return key_copy; //The key is large enough for the message already
-        }
-
-        //Repeat the key until it fits within the length of the message
-        let mut repeated_key = iter::repeat(key_copy).take((msg_length / self.key.len()) + 1)
-            .collect::<String>();
-
-        repeated_key.truncate(msg_length);
-        repeated_key
-    }
-
-    pub fn new(key: String) -> Result<Vigenere, &'static str> {
-        //Keys are automatically converted to lowercase (this makes processing later easier to reason about)
-        let key = key.to_lowercase();
-        for c in key.chars() {
-            //Keys can only contain characters in the known alphabet
-            if LOWER_ALPHABET.iter().find(|&&a| a == c).is_none() {
-                return Err("Invalid key. Vigenere keys cannot contain non-alphabetic symbols.");
-            }
-        }
-
-        Ok(Vigenere { key: key })
     }
 }
 

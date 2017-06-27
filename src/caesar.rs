@@ -6,6 +6,14 @@ pub struct Caesar {
 }
 
 impl Caesar {
+    pub fn new(shift: usize) -> Result<Caesar, &'static str> {
+        if shift >= 1 && shift <= 26 {
+            return Ok(Caesar {shift: shift});
+        }
+
+        Err("Invalid shift factor. Must be in the range 1-26")
+    }
+    
     pub fn encrypt(&self, message: &str) -> String {
         /*  Encryption of a letter:
                     E(x) = (x + n) mod 26
@@ -56,14 +64,6 @@ impl Caesar {
         }
 
         substituted_text
-    }
-
-    pub fn new(shift: usize) -> Result<Caesar, &'static str> {
-        if shift >= 1 && shift <= 26 {
-            return Ok(Caesar {shift: shift});
-        }
-
-        Err("Invalid shift factor. Must be in the range 1-26")
     }
 }
 
