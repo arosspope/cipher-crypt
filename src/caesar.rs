@@ -6,7 +6,7 @@
 //!
 use common::alphabet;
 
-/// A caesar cipher.
+/// A Caesar cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct Caesar {
@@ -14,7 +14,7 @@ pub struct Caesar {
 }
 
 impl Caesar {
-    /// Initialise a caesar cipher given a specific shift value.
+    /// Initialise a Caesar cipher given a specific shift value.
     ///
     /// Will return `Err` if the shift value is outside the range `1-26`.
     pub fn new(shift: usize) -> Result<Caesar, &'static str> {
@@ -25,7 +25,7 @@ impl Caesar {
         Err("Invalid shift factor. Must be in the range 1-26")
     }
 
-    /// Encrypt a message using a caesar cipher.
+    /// Encrypt a message using a Caesar cipher.
     ///
     /// # Examples
     /// Basic usage:
@@ -44,7 +44,7 @@ impl Caesar {
         alphabet::mono_substitute(message, |idx| (idx + self.shift) % 26)
     }
 
-    /// Decrypt a message using a caesar cipher.
+    /// Decrypt a message using a Caesar cipher.
     ///
     /// # Examples
     /// Basic usage:

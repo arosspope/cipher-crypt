@@ -1,11 +1,29 @@
+//! The Vigenère cipher is named for Blaise de Vigenère.
+//!Although Giovan Battista Bellaso had invented the cipher earlier, Vigenère developed a stronger
+//!autokey cipher.
+//!
+//! Whilst the cipher was easy to understand and implement, for three centuries it resisted all
+//!attempts to break it; this earned it the description le chiffre indéchiffrable.
+//!
+//! Note that this implementation does not mutate the calculated encoding/decoding key if the
+//!message contains non-alphabetic symbols (including whitespace).
+//!
+//! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
+//!encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
 use std::iter;
 use common::alphabet::ALPHABET;
 
+/// A Vigenère cipher.
+///
+/// This struct is created by the `new()` method. See its documentation for more.
 pub struct Vigenere {
     key: String,
 }
 
 impl Vigenere {
+    /// Initialise a Vigenère cipher given a specific key.
+    ///
+    /// Will return `Err` if the key contains non-alphabetic symbols.
     pub fn new(key: String) -> Result<Vigenere, &'static str> {
         for c in key.chars() {
             //Keys can only contain characters in the known alphabet
@@ -17,6 +35,17 @@ impl Vigenere {
         Ok(Vigenere { key: key })
     }
 
+    /// Encrypt a message using a Vigenère cipher.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cryptrs::vigenere::Vigenere;
+    ///
+    /// let v = Vigenere::new(String::from("giovan")).unwrap();
+    /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!"));
+    /// ```
     pub fn encrypt(&self, message: &str) -> String {
         /*  Encryption of a letter in a message:
                     Ci = Ek(Mi) = (Mi + Ki) mod 26
@@ -28,6 +57,17 @@ impl Vigenere {
         Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26)
     }
 
+    /// Decrypt a message using a Vigenère cipher.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cryptrs::vigenere::Vigenere;
+    ///
+    /// let v = Vigenere::new(String::from("giovan")).unwrap();
+    /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!"));
+    /// ```
     pub fn decrypt(&self, cipher_text: &str) -> String {
         /*  Decryption of a letter in a message:
                     Mi = Dk(Ci) = (Ci - Ki) mod 26
@@ -45,6 +85,9 @@ impl Vigenere {
         Vigenere::poly_substitute(cipher_text, d_key, decrypt)
     }
 
+    /// Fits the key to a given `msg_length`.
+    ///
+    /// Will simply return a copy of the key if its length is already larger than the message.
     fn fit_key(&self, msg_length: usize) -> String {
         let key_copy = self.key.clone();
 
@@ -60,6 +103,8 @@ impl Vigenere {
         repeated_key
     }
 
+    /// Performs the poly-alphabetic substitution based on some text and a 'fitted' key.
+    ///
     fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> String
         where F: Fn(usize, usize) -> usize
     {
