@@ -1,6 +1,6 @@
 use common::alphabet;
 
-pub struct ROT13 { }
+pub struct ROT13;
 
 impl ROT13 {
     pub fn apply(message: &str) -> String {

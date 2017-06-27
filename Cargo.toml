@@ -3,4 +3,6 @@ name = "cryptrs"
 version = "0.1.0"
 authors = ["arosspope <andrew.pope456@gmail.com>"]
 
-[dependencies]
+[[bin]]
+name = "main"
+doc = false

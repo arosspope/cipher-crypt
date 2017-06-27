@@ -1,10 +1,22 @@
+//! The Caesar cipher is named after Julius Caesar, who, according to Suetonius,
+//!used it with a shift of three to protect messages of military significance.
+//!
+//! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
+//!and in modern practice offers essentially no communication security.
+//!
 use common::alphabet;
 
+/// A caesar cipher.
+///
+/// This struct is created by the `new()` method. See its documentation for more.
 pub struct Caesar {
     shift: usize,
 }
 
 impl Caesar {
+    /// Initialise a caesar cipher given a specific shift value.
+    ///
+    /// Will return `Err` if the shift value is outside the range `1-26`.
     pub fn new(shift: usize) -> Result<Caesar, &'static str> {
         if shift >= 1 && shift <= 26 {
             return Ok(Caesar {shift: shift});
@@ -13,22 +25,41 @@ impl Caesar {
         Err("Invalid shift factor. Must be in the range 1-26")
     }
 
+    /// Encrypt a message using a caesar cipher.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cryptrs::caesar::Caesar;
+    ///
+    /// let caesar = Caesar::new(3).unwrap();
+    /// assert_eq!("Dwwdfn dw gdzq!", caesar.encrypt("Attack at dawn!"));
+    /// ```
     pub fn encrypt(&self, message: &str) -> String {
-        /*  Encryption of a letter:
-                    E(x) = (x + n) mod 26
-            Where;  x = position of letter in alphabet
-                    n = shift factor (or key)
-        */
-
+        // Encryption of a letter:
+        //         E(x) = (x + n) mod 26
+        // Where;  x = position of letter in alphabet
+        //         n = shift factor (or key)
         alphabet::mono_substitute(message, |idx| (idx + self.shift) % 26)
     }
 
+    /// Decrypt a message using a caesar cipher.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cryptrs::caesar::Caesar;
+    ///
+    /// let caesar = Caesar::new(3).unwrap();
+    /// assert_eq!("Attack at dawn!", caesar.decrypt("Dwwdfn dw gdzq!"));
+    /// ```
     pub fn decrypt(&self, cipher_text: &str) -> String {
-        /*  Decryption of a letter:
-                    D(x) = (x - n) mod 26
-            Where;  x = position of letter in alphabet
-                    n = shift factor (or key)
-        */
+        // Decryption of a letter:
+        //         D(x) = (x - n) mod 26
+        // Where;  x = position of letter in alphabet
+        //         n = shift factor (or key)
         let decrypt = |idx| {
             let a: isize = idx as isize - self.shift as isize;
             (((a % 26) + 26) % 26) as usize
