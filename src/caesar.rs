@@ -1,4 +1,4 @@
-use common::alphabet::ALPHABET;
+use common::substitute::alphabet_substitute;
 
 pub struct Caesar {
     shift: usize,
@@ -19,7 +19,8 @@ impl Caesar {
             Where;  x = position of letter in alphabet
                     n = shift factor (or key)
         */
-        Caesar::substitute(message, |idx| (idx + self.shift) % 26)
+
+        alphabet_substitute(message, |idx| (idx + self.shift) % 26)
     }
 
     pub fn decrypt(&self, cipher_text: &str) -> String {
@@ -33,34 +34,8 @@ impl Caesar {
             (((a % 26) + 26) % 26) as usize
             //Rust does not natievly support negative wrap around modulo operations
         };
-        Caesar::substitute(cipher_text, decrypt)
-    }
 
-    fn substitute<F>(text: &str, calc_index: F) -> String
-        where F: Fn(usize) -> usize
-    {
-        let mut s_text = String::new();
-
-        for c in text.chars(){
-            //Find the index of the character in the alphabet
-            let idx = ALPHABET.iter().position(|&x| x == c);
-            match idx {
-                Some(i) => {
-                    let mut si = calc_index(i);
-
-                    //If the original character was uppercase we should offset our substitute index
-                    //by 26 to reference the upper-half (UPPERCASE) section of the alphabet array
-                    if c.is_uppercase() && si < 26 {
-                        si += 26;
-                    }
-
-                    s_text.push(ALPHABET[si]);
-                },
-                None => s_text.push(c), //Push non-alphabetic chars 'as-is'
-            }
-        }
-
-        s_text
+        alphabet_substitute(cipher_text, decrypt)
     }
 }
 
