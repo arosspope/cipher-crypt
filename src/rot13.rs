@@ -1,10 +1,10 @@
-use common::substitute::alphabet_substitute;
+use common::alphabet;
 
 pub struct ROT13 { }
 
 impl ROT13 {
     pub fn apply(message: &str) -> String {
-        alphabet_substitute(message, |i| (i + 13) % 26)
+        alphabet::mono_substitute(message, |i| (i + 13) % 26)
     }
 }
 

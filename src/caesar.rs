@@ -1,4 +1,4 @@
-use common::substitute::alphabet_substitute;
+use common::alphabet;
 
 pub struct Caesar {
     shift: usize,
@@ -20,7 +20,7 @@ impl Caesar {
                     n = shift factor (or key)
         */
 
-        alphabet_substitute(message, |idx| (idx + self.shift) % 26)
+        alphabet::mono_substitute(message, |idx| (idx + self.shift) % 26)
     }
 
     pub fn decrypt(&self, cipher_text: &str) -> String {
@@ -35,7 +35,7 @@ impl Caesar {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        alphabet_substitute(cipher_text, decrypt)
+        alphabet::mono_substitute(cipher_text, decrypt)
     }
 }
 

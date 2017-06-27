@@ -25,7 +25,7 @@ impl Vigenere {
         */
         let e_key = self.fit_key(message.len());
 
-        Vigenere::substitute(message, e_key, |mi, ki| (mi + ki) % 26)
+        Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26)
     }
 
     pub fn decrypt(&self, cipher_text: &str) -> String {
@@ -42,7 +42,7 @@ impl Vigenere {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        Vigenere::substitute(cipher_text, d_key, decrypt)
+        Vigenere::poly_substitute(cipher_text, d_key, decrypt)
     }
 
     fn fit_key(&self, msg_length: usize) -> String {
@@ -60,7 +60,7 @@ impl Vigenere {
         repeated_key
     }
 
-    fn substitute<F>(text: &str, key: String, calc_index: F) -> String
+    fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> String
         where F: Fn(usize, usize) -> usize
     {
         let mut s_text = String::new();
