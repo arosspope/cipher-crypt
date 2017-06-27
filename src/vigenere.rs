@@ -151,13 +151,8 @@ mod tests {
     }
 
     #[test]
-    fn mixed_key_case(){
-        assert!(Vigenere::new(String::from("LeMoN")).is_ok());
-    }
-
-    #[test]
     fn valid_key() {
-        assert!(Vigenere::new(String::from("Lemon")).is_ok());
+        assert!(Vigenere::new(String::from("LeMon")).is_ok());
     }
 
     #[test]
