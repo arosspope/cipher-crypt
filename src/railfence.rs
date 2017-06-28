@@ -46,7 +46,7 @@ impl Railfence {
         
         
         // A key of one causes a problem when calculating the cycle later on,
-        // so just the encrypted message now
+        // so just return the encrypted message now
         if self.key == 1 {
             return message.to_string()
         }
@@ -59,10 +59,10 @@ impl Railfence {
 
         for (i, c) in message.chars().enumerate() {
             let col = i;
-            // In the railfence cipher the letters are placed diagonally,
+            // In the railfence cipher the letters are placed diagonally in a zigzag,
             // so, with a key of 4 say, the row numbers will go
             //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
-            // This repeats with a cycle given by (2*key - 2)
+            // This repeats with a cycle (or period) given by (2*key - 2)
             //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
             // This cycle is always even.
             let cycle = 2 * self.key - 2;
@@ -126,24 +126,24 @@ impl Railfence {
         
 
         // A key of one causes a problem when calculating the cycle later on,
-        // so just the encrypted message now
+        // so just return the decrypted message now
         if self.key == 1 {
             return cipher_text.to_string()
         }
 
-        // Create the table that will be used for encryption
+        // Create the table that will be used for decryption
         // The form of an entry is (bool, char).
         // The bool determines whether the current entry is being used, and if so
         // the char is part of the plain/cipher text
         let mut table = vec![vec![(false, 'a'); cipher_text.len()]; self.key];
 
-        // Find elements in table that should be filled
+        // Find elements in the table that should be filled
         for i in 0..cipher_text.len() {
             let col = i;
-            // In the railfence cipher the letters are placed diagonally,
+            // In the railfence cipher the letters are placed diagonally in a zigzag,
             // so, with a key of 4 say, the row numbers will go
             //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
-            // This repeats with a cycle given by (2*key - 2)
+            // This repeats with a cycle (or period) given by (2*key - 2)
             //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
             // This cycle is always even.
             let cycle = 2 * self.key - 2;
@@ -157,10 +157,11 @@ impl Railfence {
                 cycle - i%cycle
             };
 
+            // Fill cell with an arbitrary letter
             table[row][col] = (true, 'a');
         }
 
-        // Fill the identified positions in the table with the ciphertext
+        // Fill the identified positions in the table with the ciphertext, line by line
         let mut ct_iter = cipher_text.chars();
         for row in table.iter_mut() {
             for entry in row.iter_mut() {
