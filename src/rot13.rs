@@ -1,9 +1,7 @@
-//! ROT13 ("rotate by 13 places"), is a simple substitution cipher that replaces a letter
-//!with the letter 13 places after it in the alphabet.
-//!ROT13 is a special case of the Caesar cipher, developed in ancient Rome.
+//! ROT13 ("rotate by 13 places"), is a simple implementation of the Caesar cipher. It substitutes
+//!a letter with the one 13 places after it in the alphabet.
 //!
-//! Because there are 26 letters (2×13) in the basic Latin alphabet, ROT13 is its own inverse;
-//!that is, `ROT13(ROT13(message)) = message`.
+//! ROT13 is its own inverse. That is, `ROT13(ROT13(message)) = message`.
 //!
 //! ROT13 is used in online forums as a means of hiding spoilers, punchlines, puzzle solutions,
 //!and offensive materials from the casual glance.
@@ -15,9 +13,9 @@ use common::alphabet;
 /// Basic usage:
 ///
 /// ```
-/// use cryptrs::rot13;
+/// use cipher_crypt::rot13;
 ///
-/// let m = "This is really insecure";
+/// let m = "I am my own inverse";
 /// assert_eq!(m, rot13::apply(&rot13::apply(m)));
 /// ```
 pub fn apply(message: &str) -> String {
@@ -40,7 +38,7 @@ mod tests {
     #[test]
     fn alphabet_encrypt(){
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
+        
         let encrypted = apply(message);
         let decrypted = apply(&encrypted);
 
