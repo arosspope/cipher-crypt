@@ -1,6 +1,5 @@
 # Cipher-crypt
-
-[![Documentation](https://docs.rs/cipher-crypt/badge.svg)](https://docs.rs/cipher-crypt)
+[![Build Status](https://travis-ci.org/arosspope/cipher-crypt.svg?branch=master)](https://travis-ci.org/arosspope/cipher-crypt) [![Documentation](https://docs.rs/cipher-crypt/badge.svg)](https://docs.rs/cipher-crypt)
 
 This repository contains a collection of historic cryptographic algorithms
 implemented in rust.
