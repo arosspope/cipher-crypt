@@ -1,7 +1,9 @@
 # Cipher-crypt
 
+[![Documentation](https://docs.rs/cipher-crypt/badge.svg)](https://docs.rs/cipher-crypt)
+
 This repository contains a collection of historic cryptographic algorithms
-implemented in rust. 
+implemented in rust.
 
 ## Usage
 
