@@ -1,3 +1,9 @@
+//! The Railfence Cipher is a transposition cipher. It has a very low keyspace and is therefore
+//!incredibly insecure.
+//!
+//! This implementation currently transposes all input characters including whitespace and
+//!punctuation.
+
 /// A Railfence cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
