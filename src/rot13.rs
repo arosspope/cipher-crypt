@@ -3,8 +3,6 @@
 //!
 //! ROT13 is its own inverse. That is, `ROT13(ROT13(message)) = message`.
 //!
-//! ROT13 is used in online forums as a means of hiding spoilers, punchlines, puzzle solutions,
-//!and offensive materials from the casual glance.
 use common::alphabet;
 
 /// Encrypt or decrypt a message using the ROT13 substitute cipher.
@@ -38,7 +36,7 @@ mod tests {
     #[test]
     fn alphabet_encrypt(){
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        
+
         let encrypted = apply(message);
         let decrypted = apply(&encrypted);
 

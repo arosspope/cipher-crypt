@@ -1,5 +1,5 @@
-//! The Caesar cipher is named after Julius Caesar, who, according to Suetonius,
-//!used it with a shift of three to protect messages of military significance.
+//! The Caesar cipher is named after Julius Caesar, who used it (allegedy) with a shift of three
+//!to protect messages of military significance.
 //!
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
 //!and in modern practice offers essentially no communication security.
@@ -31,7 +31,7 @@ impl Caesar {
     /// Basic usage:
     ///
     /// ```
-    /// use cryptrs::caesar::Caesar;
+    /// use cipher_crypt::caesar::Caesar;
     ///
     /// let caesar = Caesar::new(3).unwrap();
     /// assert_eq!("Dwwdfn dw gdzq!", caesar.encrypt("Attack at dawn!"));
@@ -50,7 +50,7 @@ impl Caesar {
     /// Basic usage:
     ///
     /// ```
-    /// use cryptrs::caesar::Caesar;
+    /// use cipher_crypt::caesar::Caesar;
     ///
     /// let caesar = Caesar::new(3).unwrap();
     /// assert_eq!("Attack at dawn!", caesar.decrypt("Dwwdfn dw gdzq!"));

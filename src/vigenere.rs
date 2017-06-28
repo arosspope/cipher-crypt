@@ -1,9 +1,5 @@
-//! The Vigenère cipher is named for Blaise de Vigenère.
-//!Although Giovan Battista Bellaso had invented the cipher earlier, Vigenère developed a stronger
-//!autokey cipher.
-//!
-//! Whilst the cipher was easy to understand and implement, for three centuries it resisted all
-//!attempts to break it; this earned it the description le chiffre indéchiffrable.
+//! The Vigenère Cipher is a polyalphabetic substitution cipher. It was considered 'le chiffre
+//!indéchiffrable' for 300 years until Friedrich Kasiski broke it in 1863.
 //!
 //! Note that this implementation does not mutate the calculated encoding/decoding key if the
 //!message contains non-alphabetic symbols (including whitespace).
@@ -41,7 +37,7 @@ impl Vigenere {
     /// Basic usage:
     ///
     /// ```
-    /// use cryptrs::vigenere::Vigenere;
+    /// use cipher_crypt::vigenere::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!"));
@@ -62,7 +58,7 @@ impl Vigenere {
     /// Basic usage:
     ///
     /// ```
-    /// use cryptrs::vigenere::Vigenere;
+    /// use cipher_crypt::vigenere::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!"));
