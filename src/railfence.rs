@@ -1,26 +1,31 @@
 //! The Railfence Cipher is a transposition cipher. It has a very low keyspace and is therefore
-//!incredibly insecure.
+//! incredibly insecure.
 //!
 //! This implementation currently transposes all input characters including whitespace and
-//!punctuation.
+//! punctuation.
 
 /// A Railfence cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
+use common::cipher::Cipher;
+
 pub struct Railfence {
-    key: usize,
+    rails: usize,
 }
 
-impl Railfence {
-    /// Initialise a Railfence cipher given a specific key.
+impl Cipher for Railfence {
+    type Key = usize;
+    type Algorithm = Railfence;
+
+    /// Initialise a Railfence cipher given a specific key (number of rails).
     ///
-    /// Will return `Err` if the key is zero.
-    pub fn new(key: usize) -> Result<Railfence, &'static str> {
+    /// Will return `Err` if the `key == 0`.
+    fn new(key: usize) -> Result<Railfence, &'static str> {
         if key == 0 {
             return Err("Invalid key. Railfence key cannot be zero.");
         }
 
-        Ok(Railfence { key: key })
+        Ok(Railfence { rails: key })
     }
 
     /// Encrypt a message using a Railfence cipher.
@@ -29,12 +34,13 @@ impl Railfence {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::railfence::Railfence;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Railfence;
     ///
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Src s!ue-ertmsaepseeg", r.encrypt("Super-secret message!"));
     /// ```
-    pub fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> String {
         // Encryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the message length.
@@ -50,23 +56,22 @@ impl Railfence {
         //   The encrypted message is then read line by line:
         //      Hoo!el,Wrdl l
 
-        // We simply return the message as the 'encrypted' message when there is a key of one.
-        // This is because one key = one rail in the 'fence'. The message is transposed
-        // along this single rail without being altered.
-        if self.key == 1 {
+        // We simply return the message as the 'encrypted' message when there is one rail.
+        // This is because the message is transposed along a single rail without being altered.
+        if self.rails == 1 {
             return message.to_string()
         }
 
         // Initialise the fence (a simple table)
         // The form of an entry is (bool, char) => (is_msg_element, msg_element)
-        let mut table = vec![vec![(false, '.'); message.len()]; self.key];
+        let mut table = vec![vec![(false, '.'); message.len()]; self.rails];
 
         //Transpose the message along the fence
         for (col, element) in message.chars().enumerate() {
             //Given the column (ith element of the message), determine which row to place the
             //character on
-            let row = Railfence::calculate_row(col, self.key);
-            table[row][col] = (true, element);
+            let rail = Railfence::calc_current_rail(col, self.rails);
+            table[rail][col] = (true, element);
         }
 
         // Read the ciphertext row by row
@@ -88,12 +93,13 @@ impl Railfence {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::railfence::Railfence;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Railfence;
     ///
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg"));
     /// ```
-    pub fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> String {
         // Decryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the ciphertext length.
@@ -113,18 +119,18 @@ impl Railfence {
         //   The decrypted message is then read in a zigzag:
         //      Hello, World!
 
-        // As mentioned previously, a key of one means that the original message has not been
+        // As mentioned previously, a single rail means that the original message has not been
         // altered
-        if self.key == 1 {
+        if self.rails == 1 {
             return cipher_text.to_string()
         }
 
-        let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.key];
+        let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.rails];
 
         // Traverse the table and mark the elements that will be filled by the cipher text
         for col in 0..cipher_text.len() {
-            let row = Railfence::calculate_row(col, self.key);
-            table[row][col].0 = true;
+            let rail = Railfence::calc_current_rail(col, self.rails);
+            table[rail][col].0 = true;
         }
 
         // Fill the identified positions in the table with the ciphertext, line by line
@@ -148,35 +154,37 @@ impl Railfence {
         for col in 0..cipher_text.len() {
             // For this column, determine which row we should read from to get the next char
             // of the message
-            let row = Railfence::calculate_row(col, self.key);
-            message.push(table[row][col].1);
+            let rail = Railfence::calc_current_rail(col, self.rails);
+            message.push(table[rail][col].1);
         }
 
         message
     }
+}
 
-    /// For a given column and the total number of rows, determine the current row that should be
-    /// referenced.
+impl Railfence {
+    /// For a given column and the total number of 'rails' (rows), determine the current rail
+    /// that should be referenced.
     ///
-    fn calculate_row(col: usize, total_rows: usize) -> usize {
+    fn calc_current_rail(col: usize, total_rails: usize) -> usize {
         // In the railfence cipher the letters are placed diagonally in a zigzag,
         // so, with a key of 4 say, the row numbers will go
         //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
         // This repeats with a cycle (or period) given by (2*key - 2)
         //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
         // This cycle is always even.
-        let cycle = 2 * total_rows - 2;
+        let cycle = 2 * total_rails - 2;
 
         // For the first half of a cycle, the row is given by the index,
         // but for the second half it decreases and is therefore given by the reverse index,
         // the distance from the end of the cycle.
-        let row = if col % cycle <= cycle / 2 {
+        let rail = if col % cycle <= cycle / 2 {
             col % cycle
         } else {
             cycle - col % cycle
         };
 
-        row
+        rail
     }
 }
 

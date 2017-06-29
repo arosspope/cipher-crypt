@@ -18,11 +18,11 @@ Using the crate as such:
 
 ```rust
 extern crate cipher_crypt;
-use cipher_crypt::rot13;
+use cipher_crypt::ROT13;
 
 fn main(){
   let m = "I am my own inverse";
-  assert_eq!(m, rot13::apply(&rot13::apply(m)));
+  assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
 }
 ```
 
