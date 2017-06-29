@@ -3,7 +3,7 @@
 //!
 //! ROT13 is its own inverse. That is, `ROT13(ROT13(message)) = message`.
 //!
-use common::alphabet;
+use common::substitute;
 
 /// Encrypt or decrypt a message using the ROT13 substitute cipher.
 ///
@@ -17,7 +17,7 @@ use common::alphabet;
 /// assert_eq!(m, rot13::apply(&rot13::apply(m)));
 /// ```
 pub fn apply(message: &str) -> String {
-    alphabet::mono_substitute(message, |i| (i + 13) % 26)
+    substitute::mono_substitution(message, |i| (i + 13) % 26)
 }
 
 #[cfg(test)]

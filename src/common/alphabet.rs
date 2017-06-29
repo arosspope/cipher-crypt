@@ -1,33 +1,28 @@
 //! Contains helpful constants and functions used in substitution ciphers.
 //!
-pub const ALPHABET: [char; 52] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
-'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D',
-'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-'X', 'Y', 'Z'];
+const ALPHABET_LOWER: [char; 26] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
-pub fn mono_substitute<F>(text: &str, calc_index: F) -> String
-    where F: Fn(usize) -> usize
-{
-    let mut s_text = String::new();
+const ALPHABET_UPPER: [char; 26] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 
-    for c in text.chars(){
-        //Find the index of the character in the alphabet
-        let idx = ALPHABET.iter().position(|&x| x == c);
-        match idx {
-            Some(i) => {
-                let mut si = calc_index(i);
+/// Attempts to find the position of the character in either the lower or upper alphabet.
+///
+pub fn find_position(c: char) -> Option<usize> {
+    ALPHABET_LOWER.iter().position(|&a| a == c)
+        .or(ALPHABET_UPPER.iter().position(|&a| a == c))
+}
 
-                //If the original character was uppercase we should offset our substitute index
-                //by 26 to reference the upper-half (UPPERCASE) section of the alphabet array
-                if c.is_uppercase() && si < 26 {
-                    si += 26;
-                }
-
-                s_text.push(ALPHABET[si]);
-            },
-            None => s_text.push(c), //Push non-alphabetic chars 'as-is'
-        }
+/// Returns a letter from within the alphabet at a specific index
+///
+/// Will return None if the index is out of bounds
+pub fn get_letter(index: usize, is_uppercase: bool) -> Option<char> {
+    if index > 25 {
+        return None;
     }
 
-    s_text
+    match is_uppercase {
+        true => Some(ALPHABET_UPPER[index]),
+        false => Some(ALPHABET_LOWER[index])
+    }
 }
