@@ -1,10 +1,11 @@
 //! The Caesar cipher is named after Julius Caesar, who used it (allegedy) with a shift of three
-//!to protect messages of military significance.
+//! to protect messages of military significance.
 //!
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
-//!and in modern practice offers essentially no communication security.
+//! and in modern practice offers essentially no communication security.
 //!
 use common::substitute;
+use common::cipher::Cipher;
 
 /// A Caesar cipher.
 ///
@@ -13,11 +14,14 @@ pub struct Caesar {
     shift: usize,
 }
 
-impl Caesar {
+impl Cipher for Caesar {
+    type Key = usize;
+    type Algorithm = Caesar;
+
     /// Initialise a Caesar cipher given a specific shift value.
     ///
     /// Will return `Err` if the shift value is outside the range `1-26`.
-    pub fn new(shift: usize) -> Result<Caesar, &'static str> {
+    fn new(shift: usize) -> Result<Caesar, &'static str> {
         if shift >= 1 && shift <= 26 {
             return Ok(Caesar {shift: shift});
         }
@@ -31,17 +35,18 @@ impl Caesar {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::caesar::Caesar;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Caesar;
     ///
-    /// let caesar = Caesar::new(3).unwrap();
-    /// assert_eq!("Dwwdfn dw gdzq!", caesar.encrypt("Attack at dawn!"));
+    /// let c = Caesar::new(3).unwrap();
+    /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!"));
     /// ```
-    pub fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> String {
         // Encryption of a letter:
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
-        substitute::mono_substitution(message, |idx| (idx + self.shift) % 26)
+        substitute::shift_substitution(message, |idx| (idx + self.shift) % 26)
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -50,12 +55,13 @@ impl Caesar {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::caesar::Caesar;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Caesar;
     ///
-    /// let caesar = Caesar::new(3).unwrap();
-    /// assert_eq!("Attack at dawn!", caesar.decrypt("Dwwdfn dw gdzq!"));
+    /// let c = Caesar::new(3).unwrap();
+    /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!"));
     /// ```
-    pub fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> String {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
         // Where;  x = position of letter in alphabet
@@ -66,7 +72,7 @@ impl Caesar {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        substitute::mono_substitution(cipher_text, decrypt)
+        substitute::shift_substitution(cipher_text, decrypt)
     }
 }
 

@@ -1,26 +1,31 @@
 //! The Railfence Cipher is a transposition cipher. It has a very low keyspace and is therefore
-//!incredibly insecure.
+//! incredibly insecure.
 //!
 //! This implementation currently transposes all input characters including whitespace and
-//!punctuation.
+//! punctuation.
 
 /// A Railfence cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
+use common::cipher::Cipher;
+
 pub struct Railfence {
-    key: usize,
+    rails: usize,
 }
 
-impl Railfence {
-    /// Initialise a Railfence cipher given a specific key.
+impl Cipher for Railfence {
+    type Key = usize;
+    type Algorithm = Railfence;
+
+    /// Initialise a Railfence cipher given a specific key (number of rails).
     ///
-    /// Will return `Err` if the key is zero.
-    pub fn new(key: usize) -> Result<Railfence, &'static str> {
+    /// Will return `Err` if the `key == 0`.
+    fn new(key: usize) -> Result<Railfence, &'static str> {
         if key == 0 {
             return Err("Invalid key. Railfence key cannot be zero.");
         }
 
-        Ok(Railfence { key: key })
+        Ok(Railfence { rails: key })
     }
 
     /// Encrypt a message using a Railfence cipher.
@@ -29,12 +34,13 @@ impl Railfence {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::railfence::Railfence;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Railfence;
     ///
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Src s!ue-ertmsaepseeg", r.encrypt("Super-secret message!"));
     /// ```
-    pub fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> String {
         // Encryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the message length.
@@ -48,40 +54,37 @@ impl Railfence {
         //      .e.l.,.W.r.d.
         //      ..l... ...l..
         //   The encrypted message is then read line by line:
-        //      Hoo!el,Wrdl l 
-        
-        
-        // A key of one does not transpose the message, therefore we can return a result here.
-        // This also prevents an error, since the expression for 'cycle' in get_table_position()
-        // would otherwise evaluate to zero, which then causes problems when used with the modulus
-        // operator.
-        if self.key == 1 {
+        //      Hoo!el,Wrdl l
+
+        // We simply return the message as the 'encrypted' message when there is one rail.
+        // This is because the message is transposed along a single rail without being altered.
+        if self.rails == 1 {
             return message.to_string()
         }
 
-        // Create the table that will be used for encryption
-        // The form of an entry is (bool, char).
-        // The bool determines whether the current entry is being used, and if so
-        // the char is part of the plain/cipher text
-        let mut table = vec![vec![(false, '.'); message.len()]; self.key];
+        // Initialise the fence (a simple table)
+        // The form of an entry is (bool, char) => (is_msg_element, msg_element)
+        let mut table = vec![vec![(false, '.'); message.len()]; self.rails];
 
-        for (i, c) in message.chars().enumerate() {
-            let (row, col) = self.get_table_position(i);
-            // Insert the plaintext letter into the table
-            table[row][col] = (true, c);
+        //Transpose the message along the fence
+        for (col, element) in message.chars().enumerate() {
+            //Given the column (ith element of the message), determine which row to place the
+            //character on
+            let rail = Railfence::calc_current_rail(col, self.rails);
+            table[rail][col] = (true, element);
         }
 
         // Read the ciphertext row by row
-        let mut result = String::new();
-        for row in &table {
-            for &(is_msg_element, table_element) in row {
+        let mut cipher_text = String::new();
+        for row in table {
+            for (is_msg_element, element) in row {
                 if is_msg_element {
-                    result.push(table_element);
+                    cipher_text.push(element);
                 }
             }
         }
 
-        result
+        cipher_text
     }
 
     /// Decrypt a message using a Railfence cipher.
@@ -90,12 +93,13 @@ impl Railfence {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::railfence::Railfence;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Railfence;
     ///
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg"));
     /// ```
-    pub fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> String {
         // Decryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the ciphertext length.
@@ -114,76 +118,75 @@ impl Railfence {
         //      ..l... ...l..
         //   The decrypted message is then read in a zigzag:
         //      Hello, World!
-        
 
-        // A key of one does not transpose the message, therefore we can return a result here.
-        // This also prevents an error, since the expression for 'cycle' in get_table_position()
-        // would otherwise evaluate to zero, which then causes problems when used with the modulus
-        // operator.
-        if self.key == 1 {
+        // As mentioned previously, a single rail means that the original message has not been
+        // altered
+        if self.rails == 1 {
             return cipher_text.to_string()
         }
 
-        // Create the table that will be used for decryption
-        // The form of an entry is (bool, char).
-        // The bool determines whether the current entry is being used, and if so
-        // the char is part of the plain/cipher text
-        let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.key];
+        let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.rails];
 
-        // Find elements in the table that should be filled
-        for i in 0..cipher_text.len() {
-            let (row, col) = self.get_table_position(i);
-            // Fill cell with an arbitrary letter
-            table[row][col] = (true, '.');
+        // Traverse the table and mark the elements that will be filled by the cipher text
+        for col in 0..cipher_text.len() {
+            let rail = Railfence::calc_current_rail(col, self.rails);
+            table[rail][col].0 = true;
         }
 
         // Fill the identified positions in the table with the ciphertext, line by line
-        let mut ct_iter = cipher_text.chars();
-        for row in table.iter_mut() {
-            for entry in row.iter_mut() {
-                if entry.0 {
-                    *entry = (true, ct_iter.next().unwrap());
+        let mut ct_chars = cipher_text.chars();
+        'outer: for row in table.iter_mut() {
+            // For each element in the row, determine if a char should be placed there
+            for element in row.iter_mut() {
+                if element.0 {
+                    if let Some(c) = ct_chars.next() {
+                        *element = (element.0, c);
+                    } else {
+                        // We have transposed all chars of the cipher text
+                        break 'outer;
+                    }
                 }
             }
         }
 
-        // Read the plaintext in a zigzag
+        // From the transposed cipher text construct the original message
         let mut message = String::new();
-        for i in 0..cipher_text.len() {
-            let (row, col) = self.get_table_position(i);
-            message.push(table[row][col].1);
+        for col in 0..cipher_text.len() {
+            // For this column, determine which row we should read from to get the next char
+            // of the message
+            let rail = Railfence::calc_current_rail(col, self.rails);
+            message.push(table[rail][col].1);
         }
 
         message
     }
+}
 
-    /// Returns the row and column that will be occupied in the table for a certain index.
+impl Railfence {
+    /// For a given column and the total number of 'rails' (rows), determine the current rail
+    /// that should be referenced.
     ///
-    /// A tuple of the form (row, column) is returned.
-    fn get_table_position(&self, index: usize) -> (usize, usize) {
-        let col = index;
+    fn calc_current_rail(col: usize, total_rails: usize) -> usize {
         // In the railfence cipher the letters are placed diagonally in a zigzag,
         // so, with a key of 4 say, the row numbers will go
         //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
         // This repeats with a cycle (or period) given by (2*key - 2)
         //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
         // This cycle is always even.
-        let cycle = 2 * self.key - 2;
+        let cycle = 2 * total_rails - 2;
+
         // For the first half of a cycle, the row is given by the index,
         // but for the second half it decreases and is therefore given by the reverse index,
         // the distance from the end of the cycle.
-        let row = if index % cycle <= cycle / 2 {
-            index % cycle
-        }
-        else {
-            cycle - index % cycle
+        let rail = if col % cycle <= cycle / 2 {
+            col % cycle
+        } else {
+            cycle - col % cycle
         };
 
-        (row, col)
+        rail
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {

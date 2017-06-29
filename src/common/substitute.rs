@@ -2,11 +2,11 @@
 //!
 use super::alphabet;
 
-/// Performs a mono substitution on a piece of text based on the index of its characters
+/// Performs a shift substitution of letters within a piece of text based on the index of them
 /// within the alphabet.
 ///
 /// This substitution is defined by the closure `calc_index`
-pub fn mono_substitution<F>(text: &str, calc_index: F) -> String
+pub fn shift_substitution<F>(text: &str, calc_index: F) -> String
     where F: Fn(usize) -> usize
 {
     let mut s_text = String::new();

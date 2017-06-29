@@ -1,13 +1,14 @@
 //! The Vigenère Cipher is a polyalphabetic substitution cipher. It was considered 'le chiffre
-//!indéchiffrable' for 300 years until Friedrich Kasiski broke it in 1863.
+//! indéchiffrable' for 300 years until Friedrich Kasiski broke it in 1863.
 //!
 //! Note that this implementation does not mutate the calculated encoding/decoding key if the
-//!message contains non-alphabetic symbols (including whitespace).
+//! message contains non-alphabetic symbols (including whitespace).
 //!
 //! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
-//!encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
+//! encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
 use std::iter;
 use common::alphabet;
+use common::cipher::Cipher;
 
 /// A Vigenère cipher.
 ///
@@ -16,11 +17,14 @@ pub struct Vigenere {
     key: String,
 }
 
-impl Vigenere {
+impl Cipher for Vigenere {
+    type Key = String;
+    type Algorithm = Vigenere;
+
     /// Initialise a Vigenère cipher given a specific key.
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols.
-    pub fn new(key: String) -> Result<Vigenere, &'static str> {
+    fn new(key: String) -> Result<Vigenere, &'static str> {
         for c in key.chars() {
             //Keys can only contain characters in the known alphabet
             if alphabet::find_position(c).is_none(){
@@ -37,12 +41,13 @@ impl Vigenere {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::vigenere::Vigenere;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!"));
     /// ```
-    pub fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> String {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
@@ -58,12 +63,13 @@ impl Vigenere {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::vigenere::Vigenere;
+    /// use cipher_crypt::Cipher;
+    /// use cipher_crypt::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!"));
     /// ```
-    pub fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> String {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
@@ -78,7 +84,9 @@ impl Vigenere {
 
         Vigenere::poly_substitute(cipher_text, d_key, decrypt)
     }
+}
 
+impl Vigenere {
     /// Fits the key to a given `msg_length`.
     ///
     /// Will simply return a copy of the key if its length is already larger than the message.
