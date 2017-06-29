@@ -12,7 +12,7 @@ To use this crypt of ciphers, add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "0.1.0"
+cipher-crypt = "0.2.0"
 ```
 Using the crate as such:
 
