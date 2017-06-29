@@ -51,8 +51,10 @@ impl Railfence {
         //      Hoo!el,Wrdl l 
         
         
-        // A key of one causes a problem when calculating the cycle later on,
-        // so just return the encrypted message now
+        // A key of one does not transpose the message, therefore we can return a result here.
+        // This also prevents an error, since the expression for 'cycle' in get_table_position()
+        // would otherwise evaluate to zero, which then causes problems when used with the modulus
+        // operator.
         if self.key == 1 {
             return message.to_string()
         }
@@ -61,27 +63,10 @@ impl Railfence {
         // The form of an entry is (bool, char).
         // The bool determines whether the current entry is being used, and if so
         // the char is part of the plain/cipher text
-        let mut table = vec![vec![(false, 'a'); message.len()]; self.key];
+        let mut table = vec![vec![(false, '.'); message.len()]; self.key];
 
         for (i, c) in message.chars().enumerate() {
-            let col = i;
-            // In the railfence cipher the letters are placed diagonally in a zigzag,
-            // so, with a key of 4 say, the row numbers will go
-            //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
-            // This repeats with a cycle (or period) given by (2*key - 2)
-            //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
-            // This cycle is always even.
-            let cycle = 2 * self.key - 2;
-            // For the first half of a cycle, the row is given by the index,
-            // but for the second half it decreases and is therefore given by the reverse index,
-            // the distance from the end of the cycle.
-            let row = if i % cycle <= cycle / 2 {
-                i % cycle
-            }
-            else {
-                cycle - i%cycle
-            };
-
+            let (row, col) = self.get_table_position(i);
             // Insert the plaintext letter into the table
             table[row][col] = (true, c);
         }
@@ -89,9 +74,9 @@ impl Railfence {
         // Read the ciphertext row by row
         let mut result = String::new();
         for row in &table {
-            for entry in row {
-                if entry.0 {
-                    result.push(entry.1);
+            for &(is_msg_element, table_element) in row {
+                if is_msg_element {
+                    result.push(table_element);
                 }
             }
         }
@@ -131,8 +116,10 @@ impl Railfence {
         //      Hello, World!
         
 
-        // A key of one causes a problem when calculating the cycle later on,
-        // so just return the decrypted message now
+        // A key of one does not transpose the message, therefore we can return a result here.
+        // This also prevents an error, since the expression for 'cycle' in get_table_position()
+        // would otherwise evaluate to zero, which then causes problems when used with the modulus
+        // operator.
         if self.key == 1 {
             return cipher_text.to_string()
         }
@@ -141,30 +128,13 @@ impl Railfence {
         // The form of an entry is (bool, char).
         // The bool determines whether the current entry is being used, and if so
         // the char is part of the plain/cipher text
-        let mut table = vec![vec![(false, 'a'); cipher_text.len()]; self.key];
+        let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.key];
 
         // Find elements in the table that should be filled
         for i in 0..cipher_text.len() {
-            let col = i;
-            // In the railfence cipher the letters are placed diagonally in a zigzag,
-            // so, with a key of 4 say, the row numbers will go
-            //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
-            // This repeats with a cycle (or period) given by (2*key - 2)
-            //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
-            // This cycle is always even.
-            let cycle = 2 * self.key - 2;
-            // For the first half of a cycle, the row is given by the index,
-            // but for the second half it decreases and is therefore given by the reverse index,
-            // the distance from the end of the cycle.
-            let row = if i % cycle <= cycle / 2 {
-                i % cycle
-            }
-            else {
-                cycle - i%cycle
-            };
-
+            let (row, col) = self.get_table_position(i);
             // Fill cell with an arbitrary letter
-            table[row][col] = (true, 'a');
+            table[row][col] = (true, '.');
         }
 
         // Fill the identified positions in the table with the ciphertext, line by line
@@ -180,19 +150,36 @@ impl Railfence {
         // Read the plaintext in a zigzag
         let mut message = String::new();
         for i in 0..cipher_text.len() {
-            let col = i;
-            let cycle = 2 * self.key - 2;
-            let row = if i % cycle <= cycle / 2 {
-                i % cycle
-            }
-            else {
-                cycle - i%cycle
-            };
-
+            let (row, col) = self.get_table_position(i);
             message.push(table[row][col].1);
         }
 
         message
+    }
+
+    /// Returns the row and column that will be occupied in the table for a certain index.
+    ///
+    /// A tuple of the form (row, column) is returned.
+    fn get_table_position(&self, index: usize) -> (usize, usize) {
+        let col = index;
+        // In the railfence cipher the letters are placed diagonally in a zigzag,
+        // so, with a key of 4 say, the row numbers will go
+        //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
+        // This repeats with a cycle (or period) given by (2*key - 2)
+        //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
+        // This cycle is always even.
+        let cycle = 2 * self.key - 2;
+        // For the first half of a cycle, the row is given by the index,
+        // but for the second half it decreases and is therefore given by the reverse index,
+        // the distance from the end of the cycle.
+        let row = if index % cycle <= cycle / 2 {
+            index % cycle
+        }
+        else {
+            cycle - index % cycle
+        };
+
+        (row, col)
     }
 
 }
@@ -204,80 +191,68 @@ mod tests {
 
     #[test]
     fn encrypt_test() {
-        let key = 6;
         let message = "attackatdawn";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(6).unwrap();
         assert_eq!("awtantdatcak", r.encrypt(message));
     }
 
     #[test]
     fn encrypt_mixed_case() {
-        let key = 3;
         let message = "Hello, World!";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(3).unwrap();
         assert_eq!("Hoo!el,Wrdl l", r.encrypt(message));
     }
 
     #[test]
     fn encrypt_short_key() {
-        let key = 1;
         let message = "attackatdawn";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(1).unwrap();
         assert_eq!("attackatdawn", r.encrypt(message));
     }
 
     #[test]
     fn encrypt_long_key() {
-        let key = 20;
         let message = "attackatdawn";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(20).unwrap();
         assert_eq!("attackatdawn", r.encrypt(message));
     }
 
     #[test]
     fn decrypt_test() {
-        let key = 6;
         let message = "awtantdatcak";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(6).unwrap();
         assert_eq!("attackatdawn", r.decrypt(message));
     }
 
     #[test]
     fn decrypt_short_key() {
-        let key = 1;
         let message = "attackatdawn";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(1).unwrap();
         assert_eq!("attackatdawn", r.decrypt(message));
     }
 
     #[test]
     fn decrypt_mixed_case() {
-        let key = 3;
         let message = "Hoo!el,Wrdl l";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(3).unwrap();
         assert_eq!("Hello, World!", r.decrypt(message));
     }
 
     #[test]
     fn decrypt_long_key() {
-        let key = 20;
         let message = "attackatdawn";
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(20).unwrap();
         assert_eq!("attackatdawn", r.decrypt(message));
     }
 
     #[test]
-    #[should_panic]
     fn incorrect_key_test() {
-        let key = 0;
-        let r = Railfence::new(key).unwrap();
-        r.encrypt("");
+        assert!(Railfence::new(0).is_err());
     }
 
     #[test]
     fn unicode_test() {
-        let key = 3;
-        let r = Railfence::new(key).unwrap();
+        let r = Railfence::new(3).unwrap();
         let message = "ÂƮƮäƈķ ɑƬ Ðawŋ ✓";
         assert_eq!("ÂƈƬwƮäķɑ aŋ✓Ʈ Ð ", r.encrypt(message));
     }

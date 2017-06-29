@@ -31,7 +31,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] ROT13
 - [x] Caesar
 - [ ] Affine
-- [ ] Rail-fence
+- [x] Rail-fence
 - [ ] Baconian
 - [ ] Polybius Square
 - [ ] Columnar Transposition
