@@ -41,7 +41,7 @@ impl Caesar {
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
-        substitute::mono_substitution(message, |idx| (idx + self.shift) % 26)
+        substitute::shift_substitution(message, |idx| (idx + self.shift) % 26)
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -66,7 +66,7 @@ impl Caesar {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        substitute::mono_substitution(cipher_text, decrypt)
+        substitute::shift_substitution(cipher_text, decrypt)
     }
 }
 

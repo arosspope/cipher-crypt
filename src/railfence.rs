@@ -48,40 +48,38 @@ impl Railfence {
         //      .e.l.,.W.r.d.
         //      ..l... ...l..
         //   The encrypted message is then read line by line:
-        //      Hoo!el,Wrdl l 
-        
-        
-        // A key of one does not transpose the message, therefore we can return a result here.
-        // This also prevents an error, since the expression for 'cycle' in get_table_position()
-        // would otherwise evaluate to zero, which then causes problems when used with the modulus
-        // operator.
+        //      Hoo!el,Wrdl l
+
+        // We simply return the message as the 'encrypted' message when there is a key of one.
+        // This is because one key = one rail in the 'fence'. The message is transposed
+        // along this single rail without being altered.
         if self.key == 1 {
             return message.to_string()
         }
 
-        // Create the table that will be used for encryption
-        // The form of an entry is (bool, char).
-        // The bool determines whether the current entry is being used, and if so
-        // the char is part of the plain/cipher text
+        // Initialise the fence (a simple table)
+        // The form of an entry is (bool, char) => (is_msg_element, msg_element)
         let mut table = vec![vec![(false, '.'); message.len()]; self.key];
 
-        for (i, c) in message.chars().enumerate() {
-            let (row, col) = self.get_table_position(i);
-            // Insert the plaintext letter into the table
-            table[row][col] = (true, c);
+        //Transpose the message along the fence
+        for (col, element) in message.chars().enumerate() {
+            //Given the column (ith element of the message), determine which row to place the
+            //character on
+            let row = Railfence::calculate_row(col, self.key);
+            table[row][col] = (true, element);
         }
 
         // Read the ciphertext row by row
-        let mut result = String::new();
-        for row in &table {
-            for &(is_msg_element, table_element) in row {
+        let mut cipher_text = String::new();
+        for row in table {
+            for (is_msg_element, element) in row {
                 if is_msg_element {
-                    result.push(table_element);
+                    cipher_text.push(element);
                 }
             }
         }
 
-        result
+        cipher_text
     }
 
     /// Decrypt a message using a Railfence cipher.
@@ -114,76 +112,73 @@ impl Railfence {
         //      ..l... ...l..
         //   The decrypted message is then read in a zigzag:
         //      Hello, World!
-        
 
-        // A key of one does not transpose the message, therefore we can return a result here.
-        // This also prevents an error, since the expression for 'cycle' in get_table_position()
-        // would otherwise evaluate to zero, which then causes problems when used with the modulus
-        // operator.
+        // As mentioned previously, a key of one means that the original message has not been
+        // altered
         if self.key == 1 {
             return cipher_text.to_string()
         }
 
-        // Create the table that will be used for decryption
-        // The form of an entry is (bool, char).
-        // The bool determines whether the current entry is being used, and if so
-        // the char is part of the plain/cipher text
         let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.key];
 
-        // Find elements in the table that should be filled
-        for i in 0..cipher_text.len() {
-            let (row, col) = self.get_table_position(i);
-            // Fill cell with an arbitrary letter
-            table[row][col] = (true, '.');
+        // Traverse the table and mark the elements that will be filled by the cipher text
+        for col in 0..cipher_text.len() {
+            let row = Railfence::calculate_row(col, self.key);
+            table[row][col].0 = true;
         }
 
         // Fill the identified positions in the table with the ciphertext, line by line
-        let mut ct_iter = cipher_text.chars();
-        for row in table.iter_mut() {
-            for entry in row.iter_mut() {
-                if entry.0 {
-                    *entry = (true, ct_iter.next().unwrap());
+        let mut ct_chars = cipher_text.chars();
+        'outer: for row in table.iter_mut() {
+            // For each element in the row, determine if a char should be placed there
+            for element in row.iter_mut() {
+                if element.0 {
+                    if let Some(c) = ct_chars.next() {
+                        *element = (element.0, c);
+                    } else {
+                        // We have transposed all chars of the cipher text
+                        break 'outer;
+                    }
                 }
             }
         }
 
-        // Read the plaintext in a zigzag
+        // From the transposed cipher text construct the original message
         let mut message = String::new();
-        for i in 0..cipher_text.len() {
-            let (row, col) = self.get_table_position(i);
+        for col in 0..cipher_text.len() {
+            // For this column, determine which row we should read from to get the next char
+            // of the message
+            let row = Railfence::calculate_row(col, self.key);
             message.push(table[row][col].1);
         }
 
         message
     }
 
-    /// Returns the row and column that will be occupied in the table for a certain index.
+    /// For a given column and the total number of rows, determine the current row that should be
+    /// referenced.
     ///
-    /// A tuple of the form (row, column) is returned.
-    fn get_table_position(&self, index: usize) -> (usize, usize) {
-        let col = index;
+    fn calculate_row(col: usize, total_rows: usize) -> usize {
         // In the railfence cipher the letters are placed diagonally in a zigzag,
         // so, with a key of 4 say, the row numbers will go
         //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
         // This repeats with a cycle (or period) given by (2*key - 2)
         //      [0, 1, 2, 3, 2, 1], [0, 1, 2, 3, 2, 1], 0, ...
         // This cycle is always even.
-        let cycle = 2 * self.key - 2;
+        let cycle = 2 * total_rows - 2;
+
         // For the first half of a cycle, the row is given by the index,
         // but for the second half it decreases and is therefore given by the reverse index,
         // the distance from the end of the cycle.
-        let row = if index % cycle <= cycle / 2 {
-            index % cycle
-        }
-        else {
-            cycle - index % cycle
+        let row = if col % cycle <= cycle / 2 {
+            col % cycle
+        } else {
+            cycle - col % cycle
         };
 
-        (row, col)
+        row
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -17,7 +17,7 @@ use common::substitute;
 /// assert_eq!(m, rot13::apply(&rot13::apply(m)));
 /// ```
 pub fn apply(message: &str) -> String {
-    substitute::mono_substitution(message, |i| (i + 13) % 26)
+    substitute::shift_substitution(message, |i| (i + 13) % 26)
 }
 
 #[cfg(test)]
