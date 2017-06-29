@@ -7,7 +7,7 @@
 //! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //!encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
 use std::iter;
-use common::alphabet::ALPHABET;
+use common::alphabet;
 
 /// A Vigenère cipher.
 ///
@@ -23,7 +23,7 @@ impl Vigenere {
     pub fn new(key: String) -> Result<Vigenere, &'static str> {
         for c in key.chars() {
             //Keys can only contain characters in the known alphabet
-            if ALPHABET.iter().find(|&&a| a == c).is_none() {
+            if alphabet::find_position(c).is_none(){
                 return Err("Invalid key. Vigenere keys cannot contain non-alphabetic symbols.");
             }
         }
@@ -68,7 +68,6 @@ impl Vigenere {
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
-
         let d_key = self.fit_key(cipher_text.len());
 
         let decrypt = |ci, ki| {
@@ -98,34 +97,41 @@ impl Vigenere {
         repeated_key
     }
 
-    /// Performs the poly-alphabetic substitution based on some text and a 'fitted' key.
+    /// Performs a poly substitution on a piece of text based on the index of its characters
+    /// within the alphabet.
     ///
+    /// This substitution is defined by the closure `calc_index`
     fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> String
         where F: Fn(usize, usize) -> usize
     {
         let mut s_text = String::new();
 
-        for (i, c) in text.chars().enumerate() {
-            //Find the index of the character in the alphabet
-            let idx = ALPHABET.iter().position(|&x| x == c);
-            match idx {
+        for (i, tc) in text.chars().enumerate() {
+            //Find the index of the character in the alphabet (if it exists in there)
+            let tpos = alphabet::find_position(tc);
+            match tpos {
                 Some(ti) => {
-                    //Find the index of the key in the alphabet at this position
-                    let ki = ALPHABET.iter()
-                        .position(|&x| x == key.chars().nth(i).unwrap()).unwrap();
-
-                    //Calculate the index of the substitute char
-                    let mut si = calc_index(ti, ki);
-
-                    //If the original character was uppercase we should offset our substitute index
-                    //by 26 to reference the upper-half (UPPERCASE) section of the alphabet array
-                    if c.is_uppercase() && si < 26 {
-                        si += 26;
+                    let mut sub_ok = false;
+                    //Get the key character at position i
+                    if let Some(kc) = key.chars().nth(i) {
+                        //Get position of character within the alphabet
+                        if let Some(ki) = alphabet::find_position(kc) {
+                            //Calculate the index and retrieve the letter to substitute
+                            let si = calc_index(ti, ki);
+                            if let Some(s) = alphabet::get_letter(si, tc.is_uppercase()){
+                                s_text.push(s);
+                                sub_ok = true;
+                            }
+                        }
                     }
 
-                    s_text.push(ALPHABET[si]);
+                    //Something has gone wrong - most likely a problem with the key or the
+                    //calc_index closure. Just push the char 'as-is'
+                    if !sub_ok {
+                        s_text.push(tc)
+                    }
                 },
-                None => s_text.push(c), //Push non-alphabetic chars 'as-is'
+                None => s_text.push(tc), //Push non-alphabetic chars 'as-is'
             }
         }
 
