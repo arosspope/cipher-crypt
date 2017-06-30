@@ -45,16 +45,16 @@ impl Cipher for Vigenere {
     /// use cipher_crypt::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
-    /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!"));
+    /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!").unwrap());
     /// ```
-    fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
         let e_key = self.fit_key(message.len());
 
-        Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26)
+        Ok(Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26))
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -155,7 +155,7 @@ mod tests {
     fn encrypt_test() {
         let message = "attackatdawn";
         let v = Vigenere::new(String::from("lemon")).unwrap();
-        assert_eq!("lxfopvefrnhr", v.encrypt(message));
+        assert_eq!("lxfopvefrnhr", v.encrypt(message).unwrap());
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
         let message = "Attack at Dawn!";
         let v = Vigenere::new(String::from("giovan")).unwrap();
 
-        let cipher_text = v.encrypt(message);
+        let cipher_text = v.encrypt(message).unwrap();
         let plain_text = v.decrypt(&cipher_text).unwrap();
 
         assert_eq!(plain_text, message);
@@ -180,7 +180,7 @@ mod tests {
     fn with_emoji(){
         let v = Vigenere::new(String::from("emojisarefun")).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = v.encrypt(message);
+        let encrypted = v.encrypt(message).unwrap();
         let decrypted = v.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);

@@ -39,14 +39,14 @@ impl Cipher for Caesar {
     /// use cipher_crypt::Caesar;
     ///
     /// let c = Caesar::new(3).unwrap();
-    /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!"));
+    /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
     /// ```
-    fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
-        substitute::shift_substitution(message, |idx| (idx + self.shift) % 26)
+        Ok(substitute::shift_substitution(message, |idx| (idx + self.shift) % 26))
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn encrypt_message() {
         let c = Caesar::new(2).unwrap();
-        assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!"));
+        assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!").unwrap());
     }
 
     #[test]
@@ -96,7 +96,7 @@ mod tests {
     fn with_emoji(){
         let c = Caesar::new(3).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = c.encrypt(message);
+        let encrypted = c.encrypt(message).unwrap();
         let decrypted = c.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
@@ -109,7 +109,7 @@ mod tests {
 
         for i in 1..26 {
             let c = Caesar::new(i).unwrap();
-            let encrypted = c.encrypt(message);
+            let encrypted = c.encrypt(message).unwrap();
             let decrypted = c.decrypt(&encrypted).unwrap();
             assert_eq!(decrypted, message);
         }

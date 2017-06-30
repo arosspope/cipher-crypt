@@ -10,7 +10,7 @@ pub trait Cipher {
 
     /// Encrypt a `message` using a cipher's algorithm.
     ///
-    fn encrypt(&self, message: &str) -> String;
+    fn encrypt(&self, message: &str) -> Result<String, &'static str>;
 
     /// Decrypt a `message` using a cipher's algorithm.
     ///

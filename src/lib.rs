@@ -15,7 +15,7 @@
 //!
 //!   let m2 = "Attack at dawn 🗡️";
 //!   let c = Caesar::new(3).unwrap();
-//!   assert_eq!(m2, c.decrypt(&c.encrypt(m2)).unwrap());
+//!   assert_eq!(m2, c.decrypt(&c.encrypt(m2).unwrap()).unwrap());
 //! }
 //! ```
 //!

@@ -38,9 +38,9 @@ impl Cipher for Railfence {
     /// use cipher_crypt::Railfence;
     ///
     /// let r = Railfence::new(3).unwrap();
-    /// assert_eq!("Src s!ue-ertmsaepseeg", r.encrypt("Super-secret message!"));
+    /// assert_eq!("Src s!ue-ertmsaepseeg", r.encrypt("Super-secret message!").unwrap());
     /// ```
-    fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the message length.
@@ -59,7 +59,7 @@ impl Cipher for Railfence {
         // We simply return the message as the 'encrypted' message when there is one rail.
         // This is because the message is transposed along a single rail without being altered.
         if self.rails == 1 {
-            return message.to_string()
+            return Ok(message.to_string())
         }
 
         // Initialise the fence (a simple table)
@@ -84,7 +84,7 @@ impl Cipher for Railfence {
             }
         }
 
-        cipher_text
+        Ok(cipher_text)
     }
 
     /// Decrypt a message using a Railfence cipher.
@@ -196,28 +196,28 @@ mod tests {
     fn encrypt_test() {
         let message = "attackatdawn";
         let r = Railfence::new(6).unwrap();
-        assert_eq!("awtantdatcak", r.encrypt(message));
+        assert_eq!("awtantdatcak", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_mixed_case() {
         let message = "Hello, World!";
         let r = Railfence::new(3).unwrap();
-        assert_eq!("Hoo!el,Wrdl l", r.encrypt(message));
+        assert_eq!("Hoo!el,Wrdl l", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_short_key() {
         let message = "attackatdawn";
         let r = Railfence::new(1).unwrap();
-        assert_eq!("attackatdawn", r.encrypt(message));
+        assert_eq!("attackatdawn", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_long_key() {
         let message = "attackatdawn";
         let r = Railfence::new(20).unwrap();
-        assert_eq!("attackatdawn", r.encrypt(message));
+        assert_eq!("attackatdawn", r.encrypt(message).unwrap());
     }
 
     #[test]
@@ -257,6 +257,6 @@ mod tests {
     fn unicode_test() {
         let r = Railfence::new(3).unwrap();
         let message = "ÂƮƮäƈķ ɑƬ Ðawŋ ✓";
-        assert_eq!("ÂƈƬwƮäķɑ aŋ✓Ʈ Ð ", r.encrypt(message));
+        assert_eq!("ÂƈƬwƮäķɑ aŋ✓Ʈ Ð ", r.encrypt(message).unwrap());
     }
 }
