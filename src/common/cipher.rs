@@ -14,5 +14,5 @@ pub trait Cipher {
 
     /// Decrypt a `message` using a cipher's algorithm.
     ///
-    fn decrypt(&self, message: &str) -> String;
+    fn decrypt(&self, message: &str) -> Result<String, &'static str>;
 }

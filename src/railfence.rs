@@ -97,9 +97,9 @@ impl Cipher for Railfence {
     /// use cipher_crypt::Railfence;
     ///
     /// let r = Railfence::new(3).unwrap();
-    /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg"));
+    /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the ciphertext length.
@@ -122,7 +122,7 @@ impl Cipher for Railfence {
         // As mentioned previously, a single rail means that the original message has not been
         // altered
         if self.rails == 1 {
-            return cipher_text.to_string()
+            return Ok(cipher_text.to_string())
         }
 
         let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.rails];
@@ -158,7 +158,7 @@ impl Cipher for Railfence {
             message.push(table[rail][col].1);
         }
 
-        message
+        Ok(message)
     }
 }
 
@@ -224,28 +224,28 @@ mod tests {
     fn decrypt_test() {
         let message = "awtantdatcak";
         let r = Railfence::new(6).unwrap();
-        assert_eq!("attackatdawn", r.decrypt(message));
+        assert_eq!("attackatdawn", r.decrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_short_key() {
         let message = "attackatdawn";
         let r = Railfence::new(1).unwrap();
-        assert_eq!("attackatdawn", r.decrypt(message));
+        assert_eq!("attackatdawn", r.decrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_mixed_case() {
         let message = "Hoo!el,Wrdl l";
         let r = Railfence::new(3).unwrap();
-        assert_eq!("Hello, World!", r.decrypt(message));
+        assert_eq!("Hello, World!", r.decrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_long_key() {
         let message = "attackatdawn";
         let r = Railfence::new(20).unwrap();
-        assert_eq!("attackatdawn", r.decrypt(message));
+        assert_eq!("attackatdawn", r.decrypt(message).unwrap());
     }
 
     #[test]

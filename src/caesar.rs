@@ -59,9 +59,9 @@ impl Cipher for Caesar {
     /// use cipher_crypt::Caesar;
     ///
     /// let c = Caesar::new(3).unwrap();
-    /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!"));
+    /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
         // Where;  x = position of letter in alphabet
@@ -72,7 +72,7 @@ impl Cipher for Caesar {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        substitute::shift_substitution(cipher_text, decrypt)
+        Ok(substitute::shift_substitution(cipher_text, decrypt))
     }
 }
 
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn decrypt_message() {
         let c = Caesar::new(2).unwrap();
-        assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!"));
+        assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!").unwrap());
     }
 
     #[test]
@@ -97,7 +97,7 @@ mod tests {
         let c = Caesar::new(3).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = c.encrypt(message);
-        let decrypted = c.decrypt(&encrypted);
+        let decrypted = c.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
     }
@@ -110,7 +110,7 @@ mod tests {
         for i in 1..26 {
             let c = Caesar::new(i).unwrap();
             let encrypted = c.encrypt(message);
-            let decrypted = c.decrypt(&encrypted);
+            let decrypted = c.decrypt(&encrypted).unwrap();
             assert_eq!(decrypted, message);
         }
     }

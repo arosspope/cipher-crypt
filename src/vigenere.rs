@@ -67,9 +67,9 @@ impl Cipher for Vigenere {
     /// use cipher_crypt::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
-    /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!"));
+    /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
@@ -82,7 +82,7 @@ impl Cipher for Vigenere {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        Vigenere::poly_substitute(cipher_text, d_key, decrypt)
+        Ok(Vigenere::poly_substitute(cipher_text, d_key, decrypt))
     }
 }
 
@@ -162,7 +162,7 @@ mod tests {
     fn decrypt_test() {
         let cipher_text = "lxfopvefrnhr";
         let v = Vigenere::new(String::from("lemon")).unwrap();
-        assert_eq!("attackatdawn", v.decrypt(cipher_text));
+        assert_eq!("attackatdawn", v.decrypt(cipher_text).unwrap());
     }
 
     #[test]
@@ -171,7 +171,7 @@ mod tests {
         let v = Vigenere::new(String::from("giovan")).unwrap();
 
         let cipher_text = v.encrypt(message);
-        let plain_text = v.decrypt(&cipher_text);
+        let plain_text = v.decrypt(&cipher_text).unwrap();
 
         assert_eq!(plain_text, message);
     }
@@ -181,7 +181,7 @@ mod tests {
         let v = Vigenere::new(String::from("emojisarefun")).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = v.encrypt(message);
-        let decrypted = v.decrypt(&encrypted);
+        let decrypted = v.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
     }
