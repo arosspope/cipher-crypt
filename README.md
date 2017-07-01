@@ -22,7 +22,7 @@ use cipher_crypt::ROT13;
 
 fn main(){
   let m = "I am my own inverse";
-  assert_eq!(m, ROT13::apply(&ROT13::apply(m).unwrap()).unwrap());
+  assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
 }
 ```
 

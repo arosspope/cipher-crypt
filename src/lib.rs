@@ -11,7 +11,7 @@
 //!
 //! fn main(){
 //!   let m1 = "I am my own inverse";
-//!   assert_eq!(m1, ROT13::apply(&ROT13::apply(m1).unwrap()).unwrap());
+//!   assert_eq!(m1, ROT13::apply(&ROT13::apply(m1)));
 //!
 //!   let m2 = "Attack at dawn 🗡️";
 //!   let c = Caesar::new(3).unwrap();
