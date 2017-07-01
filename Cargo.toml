@@ -12,3 +12,6 @@ documentation = "https://docs.rs/cipher-crypt/"
 
 [lib]
 name = "cipher_crypt"
+
+[dependencies]
+rulinalg = "^0.4"

@@ -24,14 +24,19 @@
 //! There's a reason these archaic methods are no longer used - its because they are extremely
 //! easy to crack! Intended for learning purposes only, these ciphers should not be used to
 //! encrypt data of any real value.
+#[macro_use]
+extern crate rulinalg;
+
 mod common;
 pub mod caesar;
 pub mod vigenere;
 pub mod rot13;
 pub mod railfence;
+pub mod hill;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
 pub use vigenere::Vigenere;
 pub use railfence::Railfence;
 pub use rot13 as ROT13;
+pub use hill::Hill;
