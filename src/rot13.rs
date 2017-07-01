@@ -15,9 +15,9 @@ use common::substitute;
 /// use cipher_crypt::ROT13;
 ///
 /// let m = "I am my own inverse";
-/// assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
+/// assert_eq!(m, ROT13::apply(&ROT13::apply(m).unwrap()).unwrap());
 /// ```
-pub fn apply(message: &str) -> String {
+pub fn apply(message: &str) -> Result<String, &'static str> {
     substitute::shift_substitution(message, |i| (i + 13) % 26)
 }
 
@@ -28,8 +28,8 @@ mod tests {
     #[test]
     fn with_emoji(){
         let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = apply(message);
-        let decrypted = apply(&encrypted);
+        let encrypted = apply(message).unwrap();
+        let decrypted = apply(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
     }
@@ -38,8 +38,8 @@ mod tests {
     fn alphabet_encrypt(){
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-        let encrypted = apply(message);
-        let decrypted = apply(&encrypted);
+        let encrypted = apply(message).unwrap();
+        let decrypted = apply(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
     }

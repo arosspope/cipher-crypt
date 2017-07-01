@@ -46,7 +46,7 @@ impl Cipher for Caesar {
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
-        Ok(substitute::shift_substitution(message, |idx| (idx + self.shift) % 26))
+        substitute::shift_substitution(message, |idx| (idx + self.shift) % 26)
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -72,7 +72,7 @@ impl Cipher for Caesar {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        Ok(substitute::shift_substitution(cipher_text, decrypt))
+        substitute::shift_substitution(cipher_text, decrypt)
     }
 }
 
@@ -107,7 +107,7 @@ mod tests {
         //Test with every possible shift combination
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-        for i in 1..26 {
+        for i in 1..27 {
             let c = Caesar::new(i).unwrap();
             let encrypted = c.encrypt(message).unwrap();
             let decrypted = c.decrypt(&encrypted).unwrap();

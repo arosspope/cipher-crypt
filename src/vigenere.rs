@@ -54,7 +54,7 @@ impl Cipher for Vigenere {
         //         Ki = position within the alphabet of ith char in key
         let e_key = self.fit_key(message.len());
 
-        Ok(Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26))
+        Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26)
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -82,7 +82,7 @@ impl Cipher for Vigenere {
             //Rust does not natievly support negative wrap around modulo operations
         };
 
-        Ok(Vigenere::poly_substitute(cipher_text, d_key, decrypt))
+        Vigenere::poly_substitute(cipher_text, d_key, decrypt)
     }
 }
 
@@ -109,7 +109,7 @@ impl Vigenere {
     /// within the alphabet.
     ///
     /// This substitution is defined by the closure `calc_index`
-    fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> String
+    fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> Result<String, &'static str>
         where F: Fn(usize, usize) -> usize
     {
         let mut s_text = String::new();
@@ -119,7 +119,6 @@ impl Vigenere {
             let tpos = alphabet::find_position(tc);
             match tpos {
                 Some(ti) => {
-                    let mut sub_ok = false;
                     //Get the key character at position i
                     if let Some(kc) = key.chars().nth(i) {
                         //Get position of character within the alphabet
@@ -128,22 +127,22 @@ impl Vigenere {
                             let si = calc_index(ti, ki);
                             if let Some(s) = alphabet::get_letter(si, tc.is_uppercase()){
                                 s_text.push(s);
-                                sub_ok = true;
+                            } else {
+                                return Err("Calculated an index outside of the known alphabet.")
                             }
+                        } else {
+                            return Err("Vigenere key contains non-alphabetic symbol.")
                         }
+                    } else {
+                        return Err("Fitted key is too small for message length.")
                     }
 
-                    //Something has gone wrong - most likely a problem with the key or the
-                    //calc_index closure. Just push the char 'as-is'
-                    if !sub_ok {
-                        s_text.push(tc)
-                    }
                 },
                 None => s_text.push(tc), //Push non-alphabetic chars 'as-is'
             }
         }
 
-        s_text
+        Ok(s_text)
     }
 }
 
