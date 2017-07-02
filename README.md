@@ -3,8 +3,7 @@
 [![Documentation](https://docs.rs/cipher-crypt/badge.svg)](https://docs.rs/cipher-crypt)
 [![Build Status](https://travis-ci.org/arosspope/cipher-crypt.svg?branch=master)](https://travis-ci.org/arosspope/cipher-crypt)
 
-This repository contains a collection of historic cryptographic algorithms
-implemented in rust.
+A library of historic cryptographic algorithms implemented in rust.
 
 ## Usage
 
@@ -12,7 +11,7 @@ To use this crypt of ciphers, add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.2"
+cipher-crypt = "^0.3"
 ```
 Using the crate as such:
 

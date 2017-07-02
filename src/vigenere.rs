@@ -45,9 +45,9 @@ impl Cipher for Vigenere {
     /// use cipher_crypt::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
-    /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!"));
+    /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!").unwrap());
     /// ```
-    fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
@@ -67,9 +67,9 @@ impl Cipher for Vigenere {
     /// use cipher_crypt::Vigenere;
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
-    /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!"));
+    /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
@@ -109,7 +109,7 @@ impl Vigenere {
     /// within the alphabet.
     ///
     /// This substitution is defined by the closure `calc_index`
-    fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> String
+    fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> Result<String, &'static str>
         where F: Fn(usize, usize) -> usize
     {
         let mut s_text = String::new();
@@ -119,7 +119,6 @@ impl Vigenere {
             let tpos = alphabet::find_position(tc);
             match tpos {
                 Some(ti) => {
-                    let mut sub_ok = false;
                     //Get the key character at position i
                     if let Some(kc) = key.chars().nth(i) {
                         //Get position of character within the alphabet
@@ -128,22 +127,22 @@ impl Vigenere {
                             let si = calc_index(ti, ki);
                             if let Some(s) = alphabet::get_letter(si, tc.is_uppercase()){
                                 s_text.push(s);
-                                sub_ok = true;
+                            } else {
+                                return Err("Calculated a substitution index outside of the known alphabet.")
                             }
+                        } else {
+                            return Err("Vigenere key contains a non-alphabetic symbol.")
                         }
+                    } else {
+                        return Err("Fitted key is too small for message length.")
                     }
 
-                    //Something has gone wrong - most likely a problem with the key or the
-                    //calc_index closure. Just push the char 'as-is'
-                    if !sub_ok {
-                        s_text.push(tc)
-                    }
                 },
                 None => s_text.push(tc), //Push non-alphabetic chars 'as-is'
             }
         }
 
-        s_text
+        Ok(s_text)
     }
 }
 
@@ -155,14 +154,14 @@ mod tests {
     fn encrypt_test() {
         let message = "attackatdawn";
         let v = Vigenere::new(String::from("lemon")).unwrap();
-        assert_eq!("lxfopvefrnhr", v.encrypt(message));
+        assert_eq!("lxfopvefrnhr", v.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_test() {
         let cipher_text = "lxfopvefrnhr";
         let v = Vigenere::new(String::from("lemon")).unwrap();
-        assert_eq!("attackatdawn", v.decrypt(cipher_text));
+        assert_eq!("attackatdawn", v.decrypt(cipher_text).unwrap());
     }
 
     #[test]
@@ -170,8 +169,8 @@ mod tests {
         let message = "Attack at Dawn!";
         let v = Vigenere::new(String::from("giovan")).unwrap();
 
-        let cipher_text = v.encrypt(message);
-        let plain_text = v.decrypt(&cipher_text);
+        let cipher_text = v.encrypt(message).unwrap();
+        let plain_text = v.decrypt(&cipher_text).unwrap();
 
         assert_eq!(plain_text, message);
     }
@@ -180,8 +179,8 @@ mod tests {
     fn with_emoji(){
         let v = Vigenere::new(String::from("emojisarefun")).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = v.encrypt(message);
-        let decrypted = v.decrypt(&encrypted);
+        let encrypted = v.encrypt(message).unwrap();
+        let decrypted = v.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
     }

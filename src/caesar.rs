@@ -39,9 +39,9 @@ impl Cipher for Caesar {
     /// use cipher_crypt::Caesar;
     ///
     /// let c = Caesar::new(3).unwrap();
-    /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!"));
+    /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
     /// ```
-    fn encrypt(&self, message: &str) -> String {
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
@@ -59,9 +59,9 @@ impl Cipher for Caesar {
     /// use cipher_crypt::Caesar;
     ///
     /// let c = Caesar::new(3).unwrap();
-    /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!"));
+    /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> String {
+    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
         // Where;  x = position of letter in alphabet
@@ -83,21 +83,21 @@ mod tests {
     #[test]
     fn encrypt_message() {
         let c = Caesar::new(2).unwrap();
-        assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!"));
+        assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!").unwrap());
     }
 
     #[test]
     fn decrypt_message() {
         let c = Caesar::new(2).unwrap();
-        assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!"));
+        assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!").unwrap());
     }
 
     #[test]
     fn with_emoji(){
         let c = Caesar::new(3).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = c.encrypt(message);
-        let decrypted = c.decrypt(&encrypted);
+        let encrypted = c.encrypt(message).unwrap();
+        let decrypted = c.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
     }
@@ -107,10 +107,10 @@ mod tests {
         //Test with every possible shift combination
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-        for i in 1..26 {
+        for i in 1..27 {
             let c = Caesar::new(i).unwrap();
-            let encrypted = c.encrypt(message);
-            let decrypted = c.decrypt(&encrypted);
+            let encrypted = c.encrypt(message).unwrap();
+            let decrypted = c.decrypt(&encrypted).unwrap();
             assert_eq!(decrypted, message);
         }
     }

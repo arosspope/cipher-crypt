@@ -6,7 +6,7 @@ use super::alphabet;
 /// within the alphabet.
 ///
 /// This substitution is defined by the closure `calc_index`
-pub fn shift_substitution<F>(text: &str, calc_index: F) -> String
+pub fn shift_substitution<F>(text: &str, calc_index: F) -> Result<String, &'static str>
     where F: Fn(usize) -> usize
 {
     let mut s_text = String::new();
@@ -20,13 +20,12 @@ pub fn shift_substitution<F>(text: &str, calc_index: F) -> String
                 if let Some(s) = alphabet::get_letter(si, c.is_uppercase()) {
                     s_text.push(s);
                 } else {
-                    //Something has gone wrong with indexing, just push char 'as-is'
-                    s_text.push(c);
+                    return Err("Calculated an index outside of the known alphabet.")
                 }
             },
             None => s_text.push(c), //Push non-alphabetic chars 'as-is'
         }
     }
 
-    s_text
+    Ok(s_text)
 }
