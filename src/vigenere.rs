@@ -128,10 +128,10 @@ impl Vigenere {
                             if let Some(s) = alphabet::get_letter(si, tc.is_uppercase()){
                                 s_text.push(s);
                             } else {
-                                return Err("Calculated an index outside of the known alphabet.")
+                                return Err("Calculated a substitution index outside of the known alphabet.")
                             }
                         } else {
-                            return Err("Vigenere key contains non-alphabetic symbol.")
+                            return Err("Vigenere key contains a non-alphabetic symbol.")
                         }
                     } else {
                         return Err("Fitted key is too small for message length.")
