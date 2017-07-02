@@ -18,7 +18,9 @@ use common::substitute;
 /// assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
 /// ```
 pub fn apply(message: &str) -> String {
-    substitute::shift_substitution(message, |i| (i + 13) % 26)
+    // The closure below is guarenteed to produce a number less than 26, therefore the
+    // substitution will not return an error and we can unwrap safely.
+    substitute::shift_substitution(message, |i| (i + 13) % 26).unwrap()
 }
 
 #[cfg(test)]
