@@ -31,8 +31,8 @@ impl Cipher for Hill {
     /// # Examples
     /// Basic usage:
     ///
-    fn encrypt(&self, message: &str) -> String {
-        String::from("TODO")
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
+        Ok(String::from("TODO"))
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -40,8 +40,8 @@ impl Cipher for Hill {
     /// # Examples
     /// Basic usage:
     ///
-    fn decrypt(&self, cipher_text: &str) -> String {
-        String::from("TODO")
+    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+        Ok(String::from("TODO"))
     }
 }
 
