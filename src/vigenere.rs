@@ -77,7 +77,7 @@ impl Cipher for Vigenere {
         let decrypt = |ci, ki| {
             let a: isize = ci as isize - ki as isize;
             (((a % 26) + 26) % 26) as usize
-            //Rust does not natievly support negative wrap around modulo operations
+            //Rust does not natively support negative wrap around modulo operations
         };
 
         Vigenere::poly_substitute(cipher_text, d_key, decrypt)
