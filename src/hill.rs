@@ -8,26 +8,31 @@ use rulinalg::matrix::{Matrix, BaseMatrix, BaseMatrixMut};
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct Hill {
-    key: Matrix<f64>, //TODO: determine if its possible to use isize instead
+    key: Matrix<isize>,
 }
 
 impl Cipher for Hill {
-    type Key = Matrix<f64>;
+    type Key = Matrix<isize>;
     type Algorithm = Hill;
 
     /// Initialise a Hill cipher given a key matrix.
     ///
     /// Will return `Err` if the matrix is not square or does not have an inverse.
-    fn new(key: Matrix<f64>) -> Result<Hill, &'static str> {
+    fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
         if key.cols() != key.rows() {
             return Err("Key must be a square matrix.")
         }
 
-        if key.clone().inverse().is_err() {
+        //We want to restrict the caller to supplying Matricies of type isize
+        //However, the majority of the matrix operations will be done with the type f64
+        let m: Matrix<f64> = key.clone().try_into()
+                .expect("The inverse of this matrix cannot be calculated for decryption.");
+
+        if m.clone().inverse().is_err() {
             return Err("The inverse of this matrix cannot be calculated for decryption.")
         }
 
-        if gcd(key.clone().det() as isize, 26) != 1 {
+        if gcd(m.clone().det() as isize, 26) != 1 {
             return Err("The inverse determinant of the key cannot be calculated.");
         }
 
@@ -43,7 +48,7 @@ impl Cipher for Hill {
     /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        Hill::transform_message(&self.key, message)
+        Hill::transform_message(&self.key.clone().try_into().unwrap(), message)
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -52,7 +57,7 @@ impl Cipher for Hill {
     /// Basic usage:
     ///
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
-        let inverse_key = Hill::calc_inverse_key(self.key.clone())?;
+        let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
 
         Hill::transform_message(&inverse_key, cipher_text)
     }
@@ -149,9 +154,9 @@ mod tests {
 
     #[test]
     fn transformation(){
-        let m = matrix![2.0, 4.0, 5.0;
-                        9.0, 2.0, 1.0;
-                        3.0, 17.0, 7.0];
+        let m = matrix![2, 4, 5;
+                        9, 2, 1;
+                        3, 17, 7];
 
         //assert_eq!("PFO", Hill::transform_chunk(m.clone(), "ATT").unwrap());
         //assert_eq!("ATT", Hill::transform_chunk(Hill::calc_inverse_key(m), "PFO").unwrap());
@@ -159,9 +164,9 @@ mod tests {
 
     #[test]
     fn encrypt_no_padding_req() {
-        let h = Hill::new(matrix![  2.0, 4.0, 5.0;
-                                    9.0, 2.0, 1.0;
-                                    3.0, 17.0, 7.0]).unwrap();
+        let h = Hill::new(matrix![  2, 4, 5;
+                                    9, 2, 1;
+                                    3, 17, 7]).unwrap();
 
         let m = "ATTACKATDAWN";
         assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
@@ -169,9 +174,9 @@ mod tests {
 
     #[test]
     fn encrypt_padding_req() {
-        let h = Hill::new(matrix![  2.0, 4.0, 5.0;
-                                    9.0, 2.0, 1.0;
-                                    3.0, 17.0, 7.0]).unwrap();
+        let h = Hill::new(matrix![  2, 4, 5;
+                                    9, 2, 1;
+                                    3, 17, 7]).unwrap();
         let m = "ATTACKATDAWNz";
 
         let e = h.encrypt(m).unwrap();
@@ -183,22 +188,22 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Hill::new(matrix![  2.0, 4.0, 5.0;
-                                    9.0, 2.0, 1.0;
-                                    3.0, 17.0, 7.0]).is_ok());
+        assert!(Hill::new(matrix![  2, 4, 5;
+                                    9, 2, 1;
+                                    3, 17, 7]).is_ok());
     }
 
     #[test]
     fn non_square_matrix(){
-        assert!(Hill::new(matrix![  2.0, 4.0;
-                                    9.0, 2.0;
-                                    3.0, 17.0]).is_err());
+        assert!(Hill::new(matrix![  2, 4;
+                                    9, 2;
+                                    3, 17]).is_err());
     }
 
     #[test]
     fn non_invertable_matrix(){
-        assert!(Hill::new(matrix![  2.0, 2.0, 3.0;
-                                    6.0, 6.0, 9.0;
-                                    1.0, 4.0, 8.0]).is_err());
+        assert!(Hill::new(matrix![  2, 2, 3;
+                                    6, 6, 9;
+                                    1, 4, 8]).is_err());
     }
 }
