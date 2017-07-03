@@ -93,8 +93,13 @@ impl FractionatedMorse {
     }
 
     /// TODO
-    fn decrypt_morse(message: String) -> Result<String, &'static str> {
+    fn decrypt_morse(mut message: String) -> Result<String, &'static str> {
         let mut plaintext = String::new();
+
+        // Remove seperators from the beginning of the message
+        while message.starts_with('|') {
+            message.remove(0);
+        }
 
         for morse_chr in message.split('|') {
             // Message ends with two sperators, which will produce an empty string
@@ -116,7 +121,7 @@ impl FractionatedMorse {
     fn encrypt_frac_morse(keyed_alphabet: &String, message: String) -> Result<String, &'static str> {
         let mut frac_morse = String::new();
 
-        for c in message.chars() {
+        for c in message.to_lowercase().chars() {
             match keyed_alphabet.chars().position(|a| a == c) {
                 Some(pos) => {
                     frac_morse.extend(FRAC_MORSE_ALPHABET[pos].chars());
@@ -177,6 +182,13 @@ mod tests {
     }
 
     #[test]
+    fn decrypt_mixed_case() {
+        let message = "EPtvihtXFttPD";
+        let f = FractionatedMorse::new(String::from("OranGE")).unwrap();
+        assert_eq!("attackatdawn", f.decrypt(message).unwrap());
+    }
+
+    #[test]
     fn encrypt_no_key() {
         let message = "defendtheeastwall";
         let f = FractionatedMorse::new(String::from("")).unwrap();
@@ -197,5 +209,17 @@ mod tests {
                          hhulsailijuicothksekjblurhujxjejesehbhfhghgdgjn";
         let f = FractionatedMorse::new(String::from("exhaustive")).unwrap();
         assert_eq!(encrypted, f.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn bad_key() {
+        assert!(FractionatedMorse::new(String::from("bad key")).is_err());
+    }
+
+    #[test]
+    fn decrypt_bad_message() {
+        let message = "badmessagefordecryption";
+        let f = FractionatedMorse::new(String::from("")).unwrap();
+        assert!(f.decrypt(message).is_err());
     }
 }
