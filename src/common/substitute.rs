@@ -1,4 +1,4 @@
-//! Contains subsitution methods that are used by a variety of ciphers
+//! Contains substitution methods that are used by a variety of ciphers
 //!
 use super::alphabet;
 
