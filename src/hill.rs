@@ -1,4 +1,11 @@
+//! In classical cryptography, the Hill cipher is a polygraphic substitution cipher based on
+//! linear algebra.
 //!
+//! Invented by Lester S. Hill in 1929, it was the first polygraphic cipher in which it was
+//! practical (though barely) to operate on more than three symbols at once.
+//!
+//! The matrix used for encryption is the cipher key, and it should be chosen randomly from the
+//! set of invertible n × n matrices (modulo 26).
 use common::alphabet;
 use common::cipher::Cipher;
 use num::integer::gcd;
