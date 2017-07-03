@@ -1,9 +1,11 @@
 //!
 use common::alphabet;
 use common::cipher::Cipher;
+use num::integer::gcd;
 use rulinalg::matrix::Matrix;
 use rulinalg::matrix::BaseMatrixMut;
 use rulinalg::matrix::BaseMatrix;
+use rulinalg::matrix::decomposition::{PartialPivLu, LUP, Decomposition};
 
 /// A Hill cipher.
 ///
@@ -28,6 +30,10 @@ impl Cipher for Hill {
             return Err("The inverse of this matrix cannot be calculated for decryption.")
         }
 
+        if gcd(key.clone().det() as isize, 26) != 1 {
+            return Err("The inverse determinant of the key cannot be calculated.");
+        }
+
         Ok(Hill {key: key})
     }
 
@@ -37,62 +43,10 @@ impl Cipher for Hill {
     /// Basic usage:
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let mut cipher_text = String::new();
-
-        //Only allow chars in the alphabet (no whitespace or symbols)
-        for c in message.chars(){
-            if alphabet::find_position(c).is_none(){
-                return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.");
-            }
-        }
-
-        let chunk_size = self.key.rows();
-        let mut chunks = message.chars().peekable();
-
-        let mut padding = 0;
-
-        //While
-        'outer: while chunks.peek().is_some() {
-            let mut buffer: Vec<f64> = Vec::new();
-
-            for n in 0..chunk_size {
-                if let Some(c) = chunks.next() {
-                    //Push the position of the char in the alphabet to the buffer
-                    if let Some(pos) = alphabet::find_position(c) {
-                        buffer.push(pos as f64);
-                    } else {
-                        return Err("Attempted to encrypt a non-alphabetic symbol.");
-                    }
-                } else {
-                    //We need to pad the message
-                    padding = chunk_size - buffer.len();
-                    for i in 0..padding {
-                        buffer.push(0.0);
-                    }
-                }
-            }
-            println!("{:?}", buffer);
-
-            //Do some maths and push the result to the cipher text
-            let chunks_matrix = Matrix::new(chunk_size, 1, buffer);
-            let encrypt_chunks = &self.key * &chunks_matrix;
-
-            for e in encrypt_chunks.iter() {
-                if let Some(c) = alphabet::get_letter((e % 26.0).round() as usize, false) {
-                    cipher_text.push(c);
-                } else {
-                    //TODO: something
-                }
-            }
-
-            if padding > 0 {
-                //TODO: Trim off the padding.
-                break 'outer;
-            }
-        }
-
-        Ok(cipher_text)
+        Hill::transform_message(&self.key, message)
     }
+
+
 
     /// Decrypt a message using a Caesar cipher.
     ///
@@ -100,9 +54,96 @@ impl Cipher for Hill {
     /// Basic usage:
     ///
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
-        let mut message = String::new();
+        let inverse_key = Hill::calc_inverse_key(self.key.clone())?;
 
-        Ok(message)
+        Hill::transform_message(&inverse_key, cipher_text)
+    }
+}
+
+impl Hill {
+    fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
+        //Only allow chars in the alphabet (no whitespace or symbols)
+        for c in message.chars(){
+            if alphabet::find_position(c).is_none(){
+                return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.");
+            }
+        }
+
+        let mut transformed_message = String::new();
+        let mut buffer = message.to_string();
+        let chunk_size = key.rows();
+
+        let padding = chunk_size - (buffer.len() % chunk_size);
+        if padding > 0 {
+            for i in 0..padding {
+                buffer.push('a'); //Ensure that the buffer is a multiple of the chunk size
+            }
+        }
+
+        let mut i = 0;
+        while i < buffer.len() {
+            match Hill::transform_chunk(&key, &buffer[i..(i+chunk_size)]) {
+                Ok(s) => transformed_message.push_str(&s),
+                Err(e) => return Err(e),
+            }
+
+            i += chunk_size;
+        }
+
+        //Return the transformed message ensuring to trim any padding
+        Ok (transformed_message[0..(transformed_message.len() - padding)].to_string())
+    }
+
+    fn transform_chunk(key: &Matrix<f64>, chunk: &str)
+        -> Result<String, &'static str>
+    {
+        let mut transformed = String::new();
+
+        if key.rows() != chunk.len() {
+            return Err("Cannot perform transformation on unequal vector lengths");
+        }
+
+        let mut index_representation: Vec<f64> = Vec::new();
+        for c in chunk.chars() {
+            index_representation.push(
+                alphabet::find_position(c)
+                .expect("Attempted transformation of non-alphabetic symbol") as f64
+            );
+        }
+
+        let mut product = key * Matrix::new(index_representation.len(), 1, index_representation);
+        product = product.apply(&|x| (x % 26.0).round());
+
+        for (i, pos) in product.iter().enumerate() {
+            let orig = chunk.chars().nth(i).expect("Expected to find char at index.");
+
+            transformed.push(
+                alphabet::get_letter(*pos as usize, orig.is_uppercase())
+                .expect("Calculate index is invalid.")
+            );
+        }
+
+        Ok (transformed)
+    }
+
+    fn calc_inverse_key(key: Matrix<f64>) -> Result<Matrix<f64>, &'static str> {
+        let det = key.clone().det();
+
+        //Find the inverse determinant such that: d*d^-1 = 1 mod 26
+        let mut det_inverse: Option<isize> = None;
+        for i in 1..26 {
+            if (det as isize * i ) % 26 == 1 {
+                det_inverse = Some(i);
+                break;
+            }
+        }
+
+        //Calucalte the inverse key matrix
+        Ok ( key.inverse().unwrap().apply(&|x| {
+            let z = (x * det as f64).round();
+            let w = ((z % 26.0) + 26.0) % 26.0;
+            (w * det_inverse.expect("Inverse for determinant could not be found.") as f64) % 26.0
+        }))
     }
 }
 
@@ -111,13 +152,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encrypt() {
+    fn transformation(){
+        let m = matrix![2.0, 4.0, 5.0;
+                        9.0, 2.0, 1.0;
+                        3.0, 17.0, 7.0];
+
+        //assert_eq!("PFO", Hill::transform_chunk(m.clone(), "ATT").unwrap());
+        //assert_eq!("ATT", Hill::transform_chunk(Hill::calc_inverse_key(m), "PFO").unwrap());
+    }
+
+    #[test]
+    fn encrypt_no_padding_req() {
         let h = Hill::new(matrix![  2.0, 4.0, 5.0;
                                     9.0, 2.0, 1.0;
                                     3.0, 17.0, 7.0]).unwrap();
-        let s = h.encrypt("ATTACKATDAWNz").unwrap();
-        println!("{}", h.encrypt("ATTACKATDAWNz").unwrap());
-        //panic!();
+
+        let m = "ATTACKATDAWN";
+        assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
+    }
+
+    #[test]
+    fn encrypt_padding_req() {
+        let h = Hill::new(matrix![  2.0, 4.0, 5.0;
+                                    9.0, 2.0, 1.0;
+                                    3.0, 17.0, 7.0]).unwrap();
+        let m = "ATTACKATDAWNz";
+        assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]

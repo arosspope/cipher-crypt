@@ -26,6 +26,7 @@
 //! encrypt data of any real value.
 #[macro_use]
 extern crate rulinalg;
+extern crate num;
 
 mod common;
 pub mod caesar;
