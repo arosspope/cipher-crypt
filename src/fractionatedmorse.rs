@@ -5,7 +5,7 @@ use common::keygen::generate_keyed_alphabet;
 
 const MORSE_ALPHABET: [&str; 36] = [".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....",
 "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-", "...-",
-".--", "-..-", "-.--", "--..", ".----", "..---", "...--", "....-", ".....", "_....", "--...",
+".--", "-..-", "-.--", "--..", ".----", "..---", "...--", "....-", ".....", "-....", "--...",
 "---..", "----.", "-----"];
 
 const FRAC_MORSE_ALPHABET: [&str; 26] = ["...", "..-", "..|", ".-.", ".--", ".-|", ".|.", ".|-",
@@ -50,7 +50,6 @@ impl Cipher for FractionatedMorse {
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption method: TODO
         let morse = FractionatedMorse::encrypt_morse(message.to_string())?;
-        println!("{:?}", morse);
         let ciphertext = FractionatedMorse::decrypt_frac_morse(&self.keyed_alphabet, morse)?;
         Ok(ciphertext)
     }
@@ -64,7 +63,6 @@ impl Cipher for FractionatedMorse {
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         let frac_morse = FractionatedMorse::encrypt_frac_morse(&self.keyed_alphabet, cipher_text.to_string())?;
-        println!("{:?}", frac_morse);
         let plaintext = FractionatedMorse::decrypt_morse(frac_morse)?;
         Ok(plaintext)
     }
@@ -83,7 +81,7 @@ impl FractionatedMorse {
                     morse.push('|');
                 },
                 None => {
-                    return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.")
+                    return Err("Invalid message. Please strip any whitespace or non-alphanumeric symbols.")
                 }
             }
         }
@@ -152,6 +150,7 @@ impl FractionatedMorse {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -168,5 +167,35 @@ mod tests {
         let message = "cpsujiswhsspg";
         let f = FractionatedMorse::new(String::from("key")).unwrap();
         assert_eq!("attackatdawn", f.decrypt(message).unwrap());
+    }
+
+    #[test]
+    fn encrypt_mixed_case() {
+        let message = "AttackAtDawn";
+        let f = FractionatedMorse::new(String::from("OranGE")).unwrap();
+        assert_eq!("eptvihtxfttpd", f.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn encrypt_no_key() {
+        let message = "defendtheeastwall";
+        let f = FractionatedMorse::new(String::from("")).unwrap();
+        assert_eq!("jubgvvhscgtshtppjtcs", f.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn encrypt_long_key() {
+        let message = "defendtheeastwall";
+        let f = FractionatedMorse::new(String::from("nnhhyqzabguuxwdrvvctspefmjoklii")).unwrap();
+        assert_eq!("xmhbjjgeybfegfttxfye", f.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn exhaustive_encrypt() {
+        let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+        let encrypted = "sbiaqtndfnhhulsailijuicothksekjblurhsbiaqtndfn\
+                         hhulsailijuicothksekjblurhujxjejesehbhfhghgdgjn";
+        let f = FractionatedMorse::new(String::from("exhaustive")).unwrap();
+        assert_eq!(encrypted, f.encrypt(message).unwrap());
     }
 }
