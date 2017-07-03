@@ -2,10 +2,7 @@
 use common::alphabet;
 use common::cipher::Cipher;
 use num::integer::gcd;
-use rulinalg::matrix::Matrix;
-use rulinalg::matrix::BaseMatrixMut;
-use rulinalg::matrix::BaseMatrix;
-use rulinalg::matrix::decomposition::{PartialPivLu, LUP, Decomposition};
+use rulinalg::matrix::{Matrix, BaseMatrix, BaseMatrixMut};
 
 /// A Hill cipher.
 ///
@@ -73,8 +70,9 @@ impl Hill {
         let mut buffer = message.to_string();
         let chunk_size = key.rows();
 
-        let padding = chunk_size - (buffer.len() % chunk_size);
-        if padding > 0 {
+        let mut padding = 0;
+        if buffer.len() % chunk_size > 0 {
+            padding = chunk_size - (buffer.len() % chunk_size);
             for i in 0..padding {
                 buffer.push('a'); //Ensure that the buffer is a multiple of the chunk size
             }
@@ -92,6 +90,7 @@ impl Hill {
 
         //Return the transformed message ensuring to trim any padding
         Ok (transformed_message[0..(transformed_message.len() - padding)].to_string())
+        //Ok(transformed_message)
     }
 
     fn transform_chunk(key: &Matrix<f64>, chunk: &str)
