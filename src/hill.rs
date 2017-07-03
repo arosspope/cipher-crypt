@@ -9,7 +9,8 @@
 use common::alphabet;
 use common::cipher::Cipher;
 use num::integer::gcd;
-use rulinalg::matrix::{Matrix, BaseMatrix, BaseMatrixMut};
+use rulinalg::matrix::{BaseMatrix, BaseMatrixMut};
+pub use rulinalg::matrix::Matrix;
 
 /// A Hill cipher.
 ///
@@ -34,7 +35,8 @@ impl Cipher for Hill {
     /// # Examples
     ///
     /// ```
-    /// use cipher_crypt::{Cipher, Hill, Matrix};
+    /// use cipher_crypt::{Cipher, Hill};
+    /// use cipher_crypt::hill::Matrix;
     ///
     /// //Initialise a Hill cipher from a 3 x 3 matrix
     /// let m = Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]);
@@ -79,7 +81,8 @@ impl Cipher for Hill {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::{Cipher, Hill, Matrix};
+    /// use cipher_crypt::{Cipher, Hill};
+    /// use cipher_crypt::hill::Matrix;
     ///
     /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
     ///
@@ -124,7 +127,8 @@ impl Cipher for Hill {
     /// Example with stripping out padding:
     ///
     /// ```
-    /// use cipher_crypt::{Cipher, Hill, Matrix};
+    /// use cipher_crypt::{Cipher, Hill};
+    /// use cipher_crypt::hill::Matrix;
     ///
     /// let m = "ATTACKEAST";
     /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();

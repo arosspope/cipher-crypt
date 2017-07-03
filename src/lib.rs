@@ -33,7 +33,6 @@ pub mod rot13;
 pub mod railfence;
 pub mod hill;
 
-pub use rulinalg::matrix::Matrix;
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
 pub use vigenere::Vigenere;
