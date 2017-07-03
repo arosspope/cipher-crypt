@@ -38,12 +38,12 @@ impl Cipher for Hill {
             return Err("Key must be a square matrix.")
         }
 
-        //We want to restrict the caller to supplying Matricies of type isize
+        //We want to restrict the caller to supplying matricies of type isize
         //However, the majority of the matrix operations will be done with type f64
         let m: Matrix<f64> = key.clone().try_into()
             .expect("Could not convert Matrix of type `isize` to `f64`.");
 
-        if m.clone().inverse().is_err() {
+        if m.clone().inverse().is_err() || Hill::calc_inverse_key(m.clone()).is_err() {
             return Err("The inverse of this matrix cannot be calculated for decryption.")
         }
 
@@ -80,6 +80,25 @@ impl Cipher for Hill {
     /// assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
+        //A small insight into the theoy behind encrypting with the hill cipher will be explained
+        //thusly.
+        /*
+            The basic process is to break a message up into chunks (a set of character vectors),
+            whose individual length is equal to the length of the square matrix key.
+
+            Once we have obtained these chunks, we transform them so that the character is replaced
+            with its index within the alphabet. For example:
+            ['A', 'T', 'T'] = [0, 19, 19]
+
+            Once we have this list of indecies, we perform a matrix multiplication of this
+            vector/matrix with the key matrix. For example say we had a key `k` ...
+
+                k * [0, 19, 19] mod 26 = [15, 5, 14] -> ['P', 'F', 'O'] encrypted characters
+
+                where k = [2, 4, 5; 9, 2, 1; 3, 17, 7]
+
+            This is repeated until all the 'chunks' of the message have been consumed/transformed.
+        */
         Hill::transform_message(&self.key.clone().try_into().unwrap(), message)
     }
 
@@ -110,6 +129,17 @@ impl Cipher for Hill {
     /// assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+        /*
+            The decryption process is very similar to the encryption process as explained
+            in its function. However, the key is inverted in such way that performing a matrix multiplication on the character vector will result in the original unencrypted chars.
+
+            For example, given the chunk [15, 5, 14] = ['P', 'F', 'O], and the inverse of the key
+            `k`, `k^-1`. Decryption occurs like so:
+
+                k^-1 * [15, 5, 14] mod 26 = [0, 19, 19] -> ['A', 'T', 'T'] decrypted characters
+
+            This is repeated until all the 'chunks' of the message have been consumed/transformed.
+        */
         let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
 
         Hill::transform_message(&inverse_key, cipher_text)
@@ -120,7 +150,7 @@ impl Hill {
     /// Initialise a Hill cipher given a phrase.
     ///
     /// The position of each character within the alphabet is used to construct the
-    /// Matrix key of the cipher. The variable `chunk_size` defines how many chars (or chunks)
+    /// matrix key of the cipher. The variable `chunk_size` defines how many chars (or chunks)
     /// of a message will be transposed during encryption/decryption.
     ///
     /// Will return `Err` if one of the following conditions is detected:
@@ -135,7 +165,7 @@ impl Hill {
     /// ```
     /// use cipher_crypt::{Cipher, Hill};
     ///
-    /// let h = Hill::from_phrase("hill", 2).unwrap();
+    /// let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
     /// h.encrypt("thing");
     /// ```
     pub fn from_phrase(phrase: &str, chunk_size: usize) -> Result<Hill, &'static str> {
@@ -173,13 +203,17 @@ impl Hill {
         let mut buffer = message.to_string();
         let chunk_size = key.rows();
 
+        //The message is processed/transposed in multiples of the matrix size, therefore
+        //the message length must be a multiple of this value. If not, add extra padding to make
+        //it so.
         if buffer.len() % chunk_size > 0 {
             let padding = chunk_size - (buffer.len() % chunk_size);
             for _ in 0..padding {
-                buffer.push('a'); //Ensure that the buffer is a multiple of the chunk size
+                buffer.push('a');
             }
         }
 
+        //For each set of chunks in the message, transform based on the key.
         let mut i = 0;
         while i < buffer.len() {
             match Hill::transform_chunk(&key, &buffer[i..(i+chunk_size)]) {
@@ -203,6 +237,8 @@ impl Hill {
             return Err("Cannot perform transformation on unequal vector lengths");
         }
 
+        //Find the integer representation of the characters
+        //e.g. ['A', 'T', 'T'] -> [0, 19, 19]
         let mut index_representation: Vec<f64> = Vec::new();
         for c in chunk.chars() {
             index_representation.push(
@@ -211,9 +247,11 @@ impl Hill {
             );
         }
 
+        //Perform the transformation `k * [0, 19, 19] mod 26`
         let mut product = key * Matrix::new(index_representation.len(), 1, index_representation);
         product = product.apply(&|x| (x % 26.0).round());
 
+        //Convert the transformed indicies back into characters of the alphabet
         for (i, pos) in product.iter().enumerate() {
             let orig = chunk.chars().nth(i).expect("Expected to find char at index.");
 
@@ -257,7 +295,7 @@ mod tests {
 
     #[test]
     fn keygen_from_phrase(){
-        assert!(Hill::from_phrase("hill", 2).is_ok());
+        assert!(Hill::from_phrase("CEFJCBDRH", 3).is_ok());
     }
 
     #[test]
@@ -271,8 +309,20 @@ mod tests {
                                     9, 2, 1;
                                     3, 17, 7]).unwrap();
 
-        let m = "ATTACKATDAWN";
+        let m = "ATTACKatDAWN";
         assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
+    }
+
+    #[test]
+    fn encrypt_with_symbols(){
+        let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+        assert!(h.encrypt("This won!t w@rk").is_err());
+    }
+
+    #[test]
+    fn decrypt_with_symbols(){
+        let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+        assert!(h.decrypt("This won!t w@rk").is_err());
     }
 
     #[test]
