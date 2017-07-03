@@ -29,6 +29,7 @@ pub mod caesar;
 pub mod vigenere;
 pub mod rot13;
 pub mod railfence;
+pub mod fracmorse;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
