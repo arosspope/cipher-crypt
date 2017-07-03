@@ -39,11 +39,12 @@ impl Cipher for Hill {
     /// # Examples
     /// Basic usage:
     ///
+    /// ```
+    /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         Hill::transform_message(&self.key, message)
     }
-
-
 
     /// Decrypt a message using a Caesar cipher.
     ///
@@ -70,9 +71,8 @@ impl Hill {
         let mut buffer = message.to_string();
         let chunk_size = key.rows();
 
-        let mut padding = 0;
         if buffer.len() % chunk_size > 0 {
-            padding = chunk_size - (buffer.len() % chunk_size);
+            let padding = chunk_size - (buffer.len() % chunk_size);
             for i in 0..padding {
                 buffer.push('a'); //Ensure that the buffer is a multiple of the chunk size
             }
@@ -88,14 +88,11 @@ impl Hill {
             i += chunk_size;
         }
 
-        //Return the transformed message ensuring to trim any padding
-        Ok (transformed_message[0..(transformed_message.len() - padding)].to_string())
-        //Ok(transformed_message)
+        //Return the transformed message - this may have extra padding appended
+        Ok(transformed_message)
     }
 
-    fn transform_chunk(key: &Matrix<f64>, chunk: &str)
-        -> Result<String, &'static str>
-    {
+    fn transform_chunk(key: &Matrix<f64>, chunk: &str) -> Result<String, &'static str> {
         let mut transformed = String::new();
 
         if key.rows() != chunk.len() {
@@ -176,7 +173,12 @@ mod tests {
                                     9.0, 2.0, 1.0;
                                     3.0, 17.0, 7.0]).unwrap();
         let m = "ATTACKATDAWNz";
-        assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
+
+        let e = h.encrypt(m).unwrap();
+        assert_eq!("PFOGOANPGXFXyrx", e);
+
+        let d = h.decrypt(&e).unwrap();
+        assert_eq!("ATTACKATDAWNzaa", d);
     }
 
     #[test]
