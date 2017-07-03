@@ -11,7 +11,7 @@ To use this crypt of ciphers, add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.3"
+cipher-crypt = "^0.4"
 ```
 Using the crate as such:
 
@@ -41,7 +41,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Vigenère
 - [ ] Homophonic
 - [ ] Four-Square
-- [ ] Hill
+- [x] Hill
 - [ ] Playfair
 - [ ] ADFGVX
 - [ ] Bifid

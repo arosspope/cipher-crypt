@@ -34,8 +34,7 @@ impl Cipher for Railfence {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::Cipher;
-    /// use cipher_crypt::Railfence;
+    /// use cipher_crypt::{Cipher, Railfence};
     ///
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Src s!ue-ertmsaepseeg", r.encrypt("Super-secret message!").unwrap());
@@ -93,8 +92,7 @@ impl Cipher for Railfence {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::Cipher;
-    /// use cipher_crypt::Railfence;
+    /// use cipher_crypt::{Cipher, Railfence};
     ///
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg").unwrap());

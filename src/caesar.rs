@@ -35,8 +35,7 @@ impl Cipher for Caesar {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::Cipher;
-    /// use cipher_crypt::Caesar;
+    /// use cipher_crypt::{Cipher, Caesar};
     ///
     /// let c = Caesar::new(3).unwrap();
     /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
@@ -55,8 +54,7 @@ impl Cipher for Caesar {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::Cipher;
-    /// use cipher_crypt::Caesar;
+    /// use cipher_crypt::{Cipher, Caesar};
     ///
     /// let c = Caesar::new(3).unwrap();
     /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
