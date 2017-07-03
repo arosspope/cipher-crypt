@@ -29,9 +29,10 @@ impl Cipher for FractionatedMorse {
     /// Will return `Err` if the key contains non-alphabetic symbols.
     fn new(key: String) -> Result<FractionatedMorse, &'static str> {
         for c in key.chars() {
-            //Keys can only contain characters in the known alphabet
+            // Keys can only contain characters in the known alphabet
+            // NOT alphanumeric
             if alphabet::find_position(c).is_none() {
-                return Err("Invalid key. Fractionated Morse keys cannot contain non-alphabetic symbols.");
+                return Err("Invalid key. Fractionated Morse keys cannot contain non-alphanumeric symbols.");
             }
         }
 
@@ -49,7 +50,7 @@ impl Cipher for FractionatedMorse {
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption method: TODO
         let morse = FractionatedMorse::encrypt_morse(message.to_string())?;
-        println!("{}", morse);
+        println!("{:?}", morse);
         let ciphertext = FractionatedMorse::decrypt_frac_morse(&self.keyed_alphabet, morse)?;
         Ok(ciphertext)
     }
@@ -62,18 +63,21 @@ impl Cipher for FractionatedMorse {
     /// ```
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
-        Ok("TODO".to_string())
+        let frac_morse = FractionatedMorse::encrypt_frac_morse(&self.keyed_alphabet, cipher_text.to_string())?;
+        println!("{:?}", frac_morse);
+        let plaintext = FractionatedMorse::decrypt_morse(frac_morse)?;
+        Ok(plaintext)
     }
 }
+
 
 impl FractionatedMorse {
     /// TODO
     fn encrypt_morse(message: String) -> Result<String, &'static str> {
-        
         let mut morse = String::new();
 
         for c in message.chars() {
-            match alphabet::find_position(c) {
+            match alphabet::find_alphanumeric_position(c) {
                 Some(pos) => {
                     morse.extend(MORSE_ALPHABET[pos].chars());
                     morse.push('|');
@@ -91,8 +95,46 @@ impl FractionatedMorse {
     }
 
     /// TODO
-    fn decrypt_frac_morse(keyed_alphabet: &str, mut message: String) -> Result<String, &'static str> {
-        let mut result = String::new();
+    fn decrypt_morse(message: String) -> Result<String, &'static str> {
+        let mut plaintext = String::new();
+
+        for morse_chr in message.split('|') {
+            // Message ends with two sperators, which will produce an empty string
+            if morse_chr == "" {
+                break;
+            }
+
+            if let Some(pos) = MORSE_ALPHABET.iter().position(|&t| t == morse_chr) {
+                plaintext.push(alphabet::get_alphanumeric_symbol(pos, false).unwrap());
+            } else {
+                return Err("Unknown morse character found.")
+            }
+        }
+
+        Ok(plaintext)
+    }
+
+    /// TODO
+    fn encrypt_frac_morse(keyed_alphabet: &String, message: String) -> Result<String, &'static str> {
+        let mut frac_morse = String::new();
+
+        for c in message.chars() {
+            match keyed_alphabet.chars().position(|a| a == c) {
+                Some(pos) => {
+                    frac_morse.extend(FRAC_MORSE_ALPHABET[pos].chars());
+                },
+                None => {
+                    return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.")
+                }
+            }
+        }
+
+        Ok(frac_morse)
+    }
+
+    /// TODO
+    fn decrypt_frac_morse(keyed_alphabet: &String, mut message: String) -> Result<String, &'static str> {
+        let mut ciphertext = String::new();
 
         while message.len() % 3 != 0 {
             message.push('.');
@@ -100,13 +142,13 @@ impl FractionatedMorse {
 
         for trigraph in message.as_bytes().chunks(3) {
             if let Some(pos) = FRAC_MORSE_ALPHABET.iter().position(|&t| t.as_bytes() == trigraph) {
-                result.push(keyed_alphabet.chars().nth(pos).unwrap());
+                ciphertext.push(keyed_alphabet.chars().nth(pos).unwrap());
             } else {
-                return Err("Fractionated morse trigraph not present in alphabet")
+                return Err("Unknown fractionated morse trigraph found.")
             }
         }
 
-        Ok(result)
+        Ok(ciphertext)
     }
 }
 
@@ -119,5 +161,12 @@ mod tests {
         let message = "attackatdawn";
         let f = FractionatedMorse::new(String::from("key")).unwrap();
         assert_eq!("cpsujiswhsspg", f.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn decrypt_test() {
+        let message = "cpsujiswhsspg";
+        let f = FractionatedMorse::new(String::from("key")).unwrap();
+        assert_eq!("attackatdawn", f.decrypt(message).unwrap());
     }
 }
