@@ -110,7 +110,7 @@ impl Cipher for Railfence {
         //      x...x...x...x
         //      .x.x.x.x.x.x.
         //      ..x...x...x..
-        //   The ciphertext is then written onto the indentified positions, line by line
+        //   The ciphertext is then written onto the identified positions, line by line
         //      H...o...o...!
         //      .e.l.,.W.r.d.
         //      ..l... ...l..
@@ -165,7 +165,7 @@ impl Railfence {
     /// that should be referenced.
     ///
     fn calc_current_rail(col: usize, total_rails: usize) -> usize {
-        // In the railfence cipher the letters are placed diagonally in a zigzag,
+        // In the Railfence cipher the letters are placed diagonally in a zigzag,
         // so, with a key of 4 say, the row numbers will go
         //      0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 0, ...
         // This repeats with a cycle (or period) given by (2*key - 2)

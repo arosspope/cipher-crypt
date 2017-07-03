@@ -1,4 +1,4 @@
-//! The Caesar cipher is named after Julius Caesar, who used it (allegedy) with a shift of three
+//! The Caesar cipher is named after Julius Caesar, who used it (allegedly) with a shift of three
 //! to protect messages of military significance.
 //!
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
@@ -67,7 +67,7 @@ impl Cipher for Caesar {
         let decrypt = |idx| {
             let a: isize = idx as isize - self.shift as isize;
             (((a % 26) + 26) % 26) as usize
-            //Rust does not natievly support negative wrap around modulo operations
+            //Rust does not natively support negative wrap around modulo operations
         };
 
         substitute::shift_substitution(cipher_text, decrypt)

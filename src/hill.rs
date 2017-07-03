@@ -28,7 +28,7 @@ impl Cipher for Hill {
     /// Will return `Err` if one of the following conditions is detected:
     ///
     /// * The `key` matrix is not a square
-    /// * The `key` matrix is non-invertable
+    /// * The `key` matrix is non-invertible
     /// * The inverse determinant of the `key` matrix cannot be calculated such that
     /// `d*d^-1 == 1 mod 26`
     ///
@@ -47,7 +47,7 @@ impl Cipher for Hill {
             return Err("Key must be a square matrix.")
         }
 
-        //We want to restrict the caller to supplying matricies of type isize
+        //We want to restrict the caller to supplying matrices of type isize
         //However, the majority of the matrix operations will be done with type f64
         let m: Matrix<f64> = key.clone().try_into()
             .expect("Could not convert Matrix of type `isize` to `f64`.");
@@ -72,9 +72,9 @@ impl Cipher for Hill {
     ///
     /// You may also notice that your encrypted message is longer than the original. This will
     /// occur when the length of the message is not a multiple of the key matrix size. To
-    /// accomodate for this potential difference, the algorithm will add `n` amount of padding
+    /// accommodate for this potential difference, the algorithm will add `n` amount of padding
     /// characters so that encryption can occur. It is important that these extra padding
-    /// characters are not removed till *after* the decyption process, otherwise the message will
+    /// characters are not removed till *after* the decryption process, otherwise the message will
     /// not be transposed properly.
     ///
     /// # Example
@@ -90,7 +90,7 @@ impl Cipher for Hill {
     /// assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        //A small insight into the theoy behind encrypting with the hill cipher will be explained
+        //A small insight into the theory behind encrypting with the hill cipher will be explained
         //thusly.
         /*
             The basic process is to break a message up into chunks (a set of character vectors),
@@ -100,7 +100,7 @@ impl Cipher for Hill {
             with its index within the alphabet. For example:
             ['A', 'T', 'T'] = [0, 19, 19]
 
-            Once we have this list of indecies, we perform a matrix multiplication of this
+            Once we have this list of indices, we perform a matrix multiplication of this
             vector/matrix with the key matrix. For example say we had a key `k` ...
 
                 k * [0, 19, 19] mod 26 = [15, 5, 14] -> ['P', 'F', 'O'] encrypted characters
@@ -200,7 +200,7 @@ impl Hill {
         Hill::new(key)
     }
 
-    /// Core logic of the hill cipher. Transposing messages with matricies
+    /// Core logic of the hill cipher. Transposing messages with matrices
     ///
     fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
         //Only allow chars in the alphabet (no whitespace or symbols)
@@ -239,7 +239,7 @@ impl Hill {
         Ok(transformed_message)
     }
 
-    /// Transforming a chunk of the message, whose length is deterimend by the size of the matrix
+    /// Transforming a chunk of the message, whose length is determined by the size of the matrix
     ///
     fn transform_chunk(key: &Matrix<f64>, chunk: &str) -> Result<String, &'static str> {
         let mut transformed = String::new();
@@ -262,7 +262,7 @@ impl Hill {
         let mut product = key * Matrix::new(index_representation.len(), 1, index_representation);
         product = product.apply(&|x| (x % 26.0).round());
 
-        //Convert the transformed indicies back into characters of the alphabet
+        //Convert the transformed indices back into characters of the alphabet
         for (i, pos) in product.iter().enumerate() {
             let orig = chunk.chars().nth(i).expect("Expected to find char at index.");
 
@@ -289,7 +289,7 @@ impl Hill {
             }
         }
 
-        //Calucalte the inverse key matrix
+        //Calculate the inverse key matrix
         Ok ( key.inverse().unwrap().apply(&|x| {
             let z = (x * det as f64).round();
             let w = ((z % 26.0) + 26.0) % 26.0;
