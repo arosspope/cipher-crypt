@@ -17,16 +17,30 @@ impl Cipher for Hill {
 
     /// Initialise a Hill cipher given a key matrix.
     ///
-    /// Will return `Err` if the matrix is not square or does not have an inverse.
+    /// Will return `Err` if one of the following conditions is detected:
+    ///     - The `key` matrix is not a square
+    ///     - The `key` matrix is non-invertable
+    ///     - The inverse determinant of the `key` matrix cannot be calculated such that
+    /// `d*d^-1 == 1 mod 26`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Hill, Matrix};
+    ///
+    /// //Initialise a Hill cipher from a 3 x 3 matrix
+    /// let m = Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]);
+    /// let h = Hill::new(m).unwrap();
+    /// ```
     fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
         if key.cols() != key.rows() {
             return Err("Key must be a square matrix.")
         }
 
         //We want to restrict the caller to supplying Matricies of type isize
-        //However, the majority of the matrix operations will be done with the type f64
+        //However, the majority of the matrix operations will be done with type f64
         let m: Matrix<f64> = key.clone().try_into()
-                .expect("The inverse of this matrix cannot be calculated for decryption.");
+            .expect("Could not convert Matrix of type `isize` to `f64`.");
 
         if m.clone().inverse().is_err() {
             return Err("The inverse of this matrix cannot be calculated for decryption.")
@@ -41,21 +55,56 @@ impl Cipher for Hill {
 
     /// Encrypt a message using a Hill cipher.
     ///
+    /// It is expected that this message contains alphabetic characters only. Due to the nature of
+    /// the hill cipher it is very difficult to transpose whitespace or symbols during the
+    /// encryption process. It will reject with `Err` if the message contains any non-alphabetic
+    /// symbols.
+    ///
+    /// You may also notice that your encrypted message is longer than the original. This will
+    /// occur when the length of the message is not a multiple of the key matrix size. To
+    /// accomodate for this potential difference, the algorithm will add `n` amount of padding
+    /// characters so that encryption can occur. It is important that these extra padding
+    /// characters are not removed till *after* the decyption process, otherwise the message will
+    /// not be transposed properly.
+    ///
     /// # Examples
     /// Basic usage:
     ///
     /// ```
-    /// ```
+    /// use cipher_crypt::{Cipher, Hill, Matrix};
     ///
+    /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///
+    /// //Padding characters are added during the encryption process
+    /// assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
+    /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         Hill::transform_message(&self.key.clone().try_into().unwrap(), message)
     }
 
-    /// Decrypt a message using a Caesar cipher.
+    /// Decrypt a message using a Hill cipher.
+    ///
+    /// It is expected that this message contains alphabetic characters only. Due to the nature of
+    /// the hill cipher it is very difficult to transpose whitespace or symbols during the
+    /// encryption process. It will reject with `Err` if the message contains any non-alphabetic
+    /// symbols.
+    ///
+    /// You may also notice that your encrypted message is longer than the original. This will
+    /// occur when the length of the message is not a multiple of the key matrix size. See encrypt
+    /// function for more information.
     ///
     /// # Examples
     /// Basic usage:
     ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Hill, Matrix};
+    ///
+    /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///
+    /// //Strip out padded characters
+    /// let m = h.decrypt("PFOGOAUCIMpf").unwrap();
+    /// assert_eq!("ATTACKEAST", m[0..(m.len() - 2)].to_string());
+    /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
 
@@ -64,6 +113,49 @@ impl Cipher for Hill {
 }
 
 impl Hill {
+    /// Initialise a Hill cipher given a phrase.
+    ///
+    /// The position of each character within the alphabet is used to construct the
+    /// Matrix key of the cipher. The variable `chunk_size` defines how many chars (or chunks)
+    /// of a message will be transposed during encryption/decryption.
+    ///
+    /// Will return `Err` if one of the following conditions is detected:
+    ///     - The `chunk_size` is less than 2
+    ///     - The square of `chunk_size` is not equal to the phrase length
+    ///     - The phrase contains non-alphabetic symbols
+    ///     - Any of the Err conditions as stipulated by the `new()` fn
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Hill};
+    ///
+    /// let h = Hill::from_phrase("hill", 2).unwrap();
+    /// h.encrypt("thing");
+    /// ```
+    pub fn from_phrase(phrase: &str, chunk_size: usize) -> Result<Hill, &'static str> {
+        if chunk_size < 2 {
+            return Err("The chunk size must be greater than 1.");
+        }
+
+        if chunk_size * chunk_size != phrase.len() {
+            return Err("The square of the chunk size must equal the length of the phrase.");
+        }
+
+        let mut matrix: Vec<isize> = Vec::new();
+        for c in phrase.chars(){
+            match alphabet::find_position(c) {
+                Some(pos) => matrix.push(pos as isize),
+                None => return Err("Phrase cannot contain non-alphabetic symbols."),
+            }
+        }
+
+        let key = Matrix::new(chunk_size, chunk_size, matrix);
+        Hill::new(key)
+    }
+
+    /// Core logic of the hill cipher. Transposing messages with matricies
+    ///
     fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
         //Only allow chars in the alphabet (no whitespace or symbols)
         for c in message.chars(){
@@ -97,6 +189,8 @@ impl Hill {
         Ok(transformed_message)
     }
 
+    /// Transforming a chunk of the message, whose length is deterimend by the size of the matrix
+    ///
     fn transform_chunk(key: &Matrix<f64>, chunk: &str) -> Result<String, &'static str> {
         let mut transformed = String::new();
 
@@ -127,6 +221,8 @@ impl Hill {
         Ok (transformed)
     }
 
+    /// Calculates the inverse key for decryption
+    ///
     fn calc_inverse_key(key: Matrix<f64>) -> Result<Matrix<f64>, &'static str> {
         let det = key.clone().det();
 
@@ -146,6 +242,8 @@ impl Hill {
             (w * det_inverse.expect("Inverse for determinant could not be found.") as f64) % 26.0
         }))
     }
+
+
 }
 
 #[cfg(test)]
@@ -153,13 +251,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn transformation(){
-        let m = matrix![2, 4, 5;
-                        9, 2, 1;
-                        3, 17, 7];
+    fn keygen_from_phrase(){
+        assert!(Hill::from_phrase("hill", 2).is_ok());
+    }
 
-        //assert_eq!("PFO", Hill::transform_chunk(m.clone(), "ATT").unwrap());
-        //assert_eq!("ATT", Hill::transform_chunk(Hill::calc_inverse_key(m), "PFO").unwrap());
+    #[test]
+    fn invalid_phrase(){
+        assert!(Hill::from_phrase("killer", 2).is_err());
     }
 
     #[test]
