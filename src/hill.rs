@@ -18,9 +18,10 @@ impl Cipher for Hill {
     /// Initialise a Hill cipher given a key matrix.
     ///
     /// Will return `Err` if one of the following conditions is detected:
-    ///     - The `key` matrix is not a square
-    ///     - The `key` matrix is non-invertable
-    ///     - The inverse determinant of the `key` matrix cannot be calculated such that
+    ///
+    /// * The `key` matrix is not a square
+    /// * The `key` matrix is non-invertable
+    /// * The inverse determinant of the `key` matrix cannot be calculated such that
     /// `d*d^-1 == 1 mod 26`
     ///
     /// # Examples
@@ -67,7 +68,7 @@ impl Cipher for Hill {
     /// characters are not removed till *after* the decyption process, otherwise the message will
     /// not be transposed properly.
     ///
-    /// # Examples
+    /// # Example
     /// Basic usage:
     ///
     /// ```
@@ -94,16 +95,19 @@ impl Cipher for Hill {
     /// function for more information.
     ///
     /// # Examples
-    /// Basic usage:
+    /// Example with stripping out padding:
     ///
     /// ```
     /// use cipher_crypt::{Cipher, Hill, Matrix};
     ///
+    /// let m = "ATTACKEAST";
     /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
     ///
-    /// //Strip out padded characters
-    /// let m = h.decrypt("PFOGOAUCIMpf").unwrap();
-    /// assert_eq!("ATTACKEAST", m[0..(m.len() - 2)].to_string());
+    /// let c = h.encrypt(m).unwrap();
+    /// let padding = c.len() - m.len();
+    ///
+    /// let p = h.decrypt(&c).unwrap();
+    /// assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
@@ -120,12 +124,13 @@ impl Hill {
     /// of a message will be transposed during encryption/decryption.
     ///
     /// Will return `Err` if one of the following conditions is detected:
-    ///     - The `chunk_size` is less than 2
-    ///     - The square of `chunk_size` is not equal to the phrase length
-    ///     - The phrase contains non-alphabetic symbols
-    ///     - Any of the Err conditions as stipulated by the `new()` fn
     ///
-    /// # Examples
+    /// * The `chunk_size` is less than 2
+    /// * The square of `chunk_size` is not equal to the phrase length
+    /// * The phrase contains non-alphabetic symbols
+    /// * Any of the Err conditions as stipulated by the `new()` fn
+    ///
+    /// # Example
     ///
     /// ```
     /// use cipher_crypt::{Cipher, Hill};
