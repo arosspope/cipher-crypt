@@ -41,8 +41,7 @@ impl Cipher for Vigenere {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::Cipher;
-    /// use cipher_crypt::Vigenere;
+    /// use cipher_crypt::{Cipher, Vigenere};
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!").unwrap());
@@ -63,8 +62,7 @@ impl Cipher for Vigenere {
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::Cipher;
-    /// use cipher_crypt::Vigenere;
+    /// use cipher_crypt::{Cipher, Vigenere};
     ///
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!").unwrap());

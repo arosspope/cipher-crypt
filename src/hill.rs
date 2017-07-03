@@ -170,7 +170,7 @@ impl Hill {
 
         if buffer.len() % chunk_size > 0 {
             let padding = chunk_size - (buffer.len() % chunk_size);
-            for i in 0..padding {
+            for _ in 0..padding {
                 buffer.push('a'); //Ensure that the buffer is a multiple of the chunk size
             }
         }

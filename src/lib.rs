@@ -5,9 +5,7 @@
 //! ```rust
 //! extern crate cipher_crypt;
 //!
-//! use cipher_crypt::Cipher;
-//! use cipher_crypt::Caesar;
-//! use cipher_crypt::ROT13;
+//! use cipher_crypt::{Cipher, Caesar, ROT13};
 //!
 //! fn main(){
 //!   let m1 = "I am my own inverse";
