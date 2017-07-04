@@ -2,15 +2,21 @@
 //! linear algebra.
 //!
 //! Invented by Lester S. Hill in 1929, it was the first polygraphic cipher in which it was
-//! practical (though barely) to operate on more than three symbols at once.
+//! practical (though barely) to operate on more than three symbols at once. The matrix used for
+//! encryption is the cipher key, and it should be chosen randomly from the set of invertible n ×
+//! n matrices (modulo 26).
 //!
-//! The matrix used for encryption is the cipher key, and it should be chosen randomly from the
-//! set of invertible n × n matrices (modulo 26).
+//! Please note that this cipher uses the external library
+//! [rulinalg](https://crates.io/crates/rulinalg) to perform the linear algebra calculations. If
+//! you want to create an instance of the `Hill` struct using the `new` function, then you will
+//! need to add a dependency on the `rulinalg` crate in `Cargo.toml`. Alternatively, you could
+//! avoid dealing with matrices altogether by creating an instance of `Hill` via the function
+//! `Hill::from_phrase(...)`.
+//!
 use common::alphabet;
 use common::cipher::Cipher;
 use num::integer::gcd;
-use rulinalg::matrix::{BaseMatrix, BaseMatrixMut};
-pub use rulinalg::matrix::Matrix;
+use rulinalg::matrix::{Matrix, BaseMatrix, BaseMatrixMut};
 
 /// A Hill cipher.
 ///
@@ -35,12 +41,17 @@ impl Cipher for Hill {
     /// # Examples
     ///
     /// ```
-    /// use cipher_crypt::{Cipher, Hill};
-    /// use cipher_crypt::hill::Matrix;
+    /// extern crate rulinalg;
+    /// extern crate cipher_crypt;
     ///
-    /// //Initialise a Hill cipher from a 3 x 3 matrix
-    /// let m = Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]);
-    /// let h = Hill::new(m).unwrap();
+    /// use rulinalg::matrix::Matrix;
+    /// use cipher_crypt::{Cipher, Hill};
+    ///
+    /// fn main() {
+    ///     //Initialise a Hill cipher from a 3 x 3 matrix
+    ///     let m = Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]);
+    ///     let h = Hill::new(m).unwrap();
+    /// }
     /// ```
     fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
         if key.cols() != key.rows() {
@@ -81,13 +92,17 @@ impl Cipher for Hill {
     /// Basic usage:
     ///
     /// ```
+    /// extern crate rulinalg;
+    /// extern crate cipher_crypt;
+    ///
+    /// use rulinalg::matrix::Matrix;
     /// use cipher_crypt::{Cipher, Hill};
-    /// use cipher_crypt::hill::Matrix;
     ///
-    /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
-    ///
-    /// //Padding characters are added during the encryption process
-    /// assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
+    /// fn main() {
+    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///     //Padding characters are added during the encryption process
+    ///     assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
+    /// }
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         //A small insight into the theory behind encrypting with the hill cipher will be explained
@@ -127,17 +142,22 @@ impl Cipher for Hill {
     /// Example with stripping out padding:
     ///
     /// ```
+    /// extern crate rulinalg;
+    /// extern crate cipher_crypt;
+    ///
+    /// use rulinalg::matrix::Matrix;
     /// use cipher_crypt::{Cipher, Hill};
-    /// use cipher_crypt::hill::Matrix;
     ///
-    /// let m = "ATTACKEAST";
-    /// let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    /// fn main() {
+    ///     let m = "ATTACKEAST";
+    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
     ///
-    /// let c = h.encrypt(m).unwrap();
-    /// let padding = c.len() - m.len();
+    ///     let c = h.encrypt(m).unwrap();
+    ///     let padding = c.len() - m.len();
     ///
-    /// let p = h.decrypt(&c).unwrap();
-    /// assert_eq!(m, p[0..(p.len() - padding)].to_string());
+    ///     let p = h.decrypt(&c).unwrap();
+    ///     assert_eq!(m, p[0..(p.len() - padding)].to_string());
+    /// }
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         /*
@@ -316,9 +336,7 @@ mod tests {
 
     #[test]
     fn encrypt_no_padding_req() {
-        let h = Hill::new(matrix![  2, 4, 5;
-                                    9, 2, 1;
-                                    3, 17, 7]).unwrap();
+        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
 
         let m = "ATTACKatDAWN";
         assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
@@ -338,9 +356,7 @@ mod tests {
 
     #[test]
     fn encrypt_padding_req() {
-        let h = Hill::new(matrix![  2, 4, 5;
-                                    9, 2, 1;
-                                    3, 17, 7]).unwrap();
+        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
         let m = "ATTACKATDAWNz";
 
         let e = h.encrypt(m).unwrap();
@@ -352,22 +368,17 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Hill::new(matrix![  2, 4, 5;
-                                    9, 2, 1;
-                                    3, 17, 7]).is_ok());
+        assert!(Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).is_ok());
     }
 
     #[test]
     fn non_square_matrix(){
-        assert!(Hill::new(matrix![  2, 4;
-                                    9, 2;
-                                    3, 17]).is_err());
+        //A 3 x 2 matrix
+        assert!(Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17])).is_err());
     }
 
     #[test]
     fn non_invertable_matrix(){
-        assert!(Hill::new(matrix![  2, 2, 3;
-                                    6, 6, 9;
-                                    1, 4, 8]).is_err());
+        assert!(Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8])).is_err());
     }
 }

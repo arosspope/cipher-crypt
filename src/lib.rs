@@ -22,7 +22,6 @@
 //! There's a reason these archaic methods are no longer used - it's because they are extremely
 //! easy to crack! Intended for learning purposes only, these ciphers should not be used to
 //! encrypt data of any real value.
-#[macro_use]
 extern crate rulinalg;
 extern crate num;
 
