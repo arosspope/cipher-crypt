@@ -61,13 +61,13 @@ impl Cipher for Caesar {
     /// let c = Caesar::new(3).unwrap();
     /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(cipher_text,
+        substitute::shift_substitution(ciphertext,
             |idx| alphabet::modulo(idx as isize - self.shift as isize))
     }
 }

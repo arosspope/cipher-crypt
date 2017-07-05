@@ -6,6 +6,7 @@
 //!
 //! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //! encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
+use std::iter;
 use common::cipher::Cipher;
 use common::{substitute, alphabet};
 
@@ -24,7 +25,7 @@ impl Cipher for Autokey {
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols.
     fn new(key: String) -> Result<Autokey, &'static str> {
-        if !alphabet::is_alphabetic_only(&key) {
+        if key.len() > 0 && !alphabet::is_alphabetic_only(&key) {
             return Err("Invalid key. Autokey keys cannot contain non-alphabetic symbols.");
         }
 
@@ -33,9 +34,6 @@ impl Cipher for Autokey {
 
     /// Encrypt a message using an Autokey cipher.
     ///
-    /// As the message is potentially used as part of the key to encrypt, it can only contain
-    /// alphabetic characters. Messages with whitespace and symbols will be rejected.
-    ///
     /// # Examples
     /// Basic usage:
     ///
@@ -43,16 +41,14 @@ impl Cipher for Autokey {
     /// use cipher_crypt::{Cipher, Autokey};
     ///
     /// let a = Autokey::new(String::from("giovan")).unwrap();
-    /// assert_eq!("O bzvrx uzt gvm ceklwo!", v.encrypt("I never get any credit!").unwrap());
+    /// assert_eq!("O bzvrz kzx grr ppgumw!", a.encrypt("I never get any credit!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        let e_key = self.fit_key(message);
-
-        substitute::key_substitution(message, &e_key,
+        substitute::key_substitution(message, &self.encrypt_keystream(message),
             |mi, ki| alphabet::modulo((mi + ki) as isize))
     }
 
@@ -65,61 +61,81 @@ impl Cipher for Autokey {
     /// use cipher_crypt::{Cipher, Autokey};
     ///
     /// let a = Autokey::new(String::from("giovan")).unwrap();
-    /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!").unwrap());
+    /// assert_eq!("I never get any credit!", a.decrypt("O bzvrz kzx grr ppgumw!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
-        let d_key = self.fit_key(cipher_text);
-
-        substitute::key_substitution(cipher_text, &d_key,
-            |ci, ki| alphabet::modulo(ci as isize - ki as isize))
+        //
+        // Please note that the decrypt keystream is generated 'on the fly' as the ciphertext
+        // is decrypted.
+        self.autokey_decrypt(ciphertext)
     }
 }
 
 impl Autokey {
-    /// Fits the key to the length of the message by concatonating the key and the message itself.
-    ///
-    /// Will simply return a copy of the key if its length is already larger than the message.
-    fn fit_key(&self, message: &str) -> String {
-        let mut fitted_key = self.key.clone();
-        let trimmed_msg = Autokey::strip_symbols(message);
+    fn autokey_decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
+        let mut plaintext = String::new();
 
-        if fitted_key.len() >= trimmed_msg.len() {
-            fitted_key = Autokey::expand_on_symbol(&fitted_key, message);
+        //We start the stream with the base key
+        let mut keystream = String::from(self.key.clone());
 
-            return fitted_key.to_string();
-        }
+        for (i, cc) in ciphertext.chars().enumerate() {
+            //Find the index of the ciphertext character in the alphabet (if it exists in there)
+            let tpos = alphabet::find_position(cc);
+            match tpos {
+                Some(ci) => {
+                    //Get the key character at position i
+                    if let Some(kc) = keystream.chars().nth(i) {
+                        //Get position of character within the alphabet
+                        if let Some(ki) = alphabet::find_position(kc) {
+                            //Calculate the index and retrieve the letter to substitute
+                            let si = alphabet::modulo(ci as isize - ki as isize);
 
-        fitted_key.push_str(&trimmed_msg);
+                            //We can safely unwrap as we know the index will be within the alphabet
+                            let s = alphabet::get_letter(si, cc.is_uppercase()).unwrap();
 
-        fitted_key = Autokey::expand_on_symbol(&fitted_key, message);
-        fitted_key
-    }
+                            //Push to the decrypted text AND the keystream
+                            plaintext.push(s);
+                            keystream.push(s);
+                        } else {
+                            return Err("Keystream contains a non-alphabetic symbol.")
+                        }
+                    } else {
+                        return Err("Keystream is too small for ciphertext length.")
+                    }
 
-    /// Will strip any non-alphabetic symbols from the text.
-    ///
-    fn strip_symbols(text: &str) -> String {
-        text.chars().into_iter()
-            .filter(|&c| alphabet::find_position(c).is_some()).collect()
-    }
-
-    /// Will expand key at the position of a non-alphabetic symbol in the text
-    fn expand_on_symbol(key: &str, text: &str) -> String {
-        let mut expanded_key = String::from(key);
-        for (i, c) in text.chars().enumerate() {
-            if alphabet::find_position(c).is_none() {
-                expanded_key.insert(i, ' ');
+                },
+                None => plaintext.push(cc), //Push non-alphabetic chars 'as-is'
             }
         }
 
-        expanded_key = expanded_key.trim().to_string();
-
-        expanded_key
+        Ok(plaintext)
     }
 
+
+    /// Generate an encrypt keystream by concatonating the key and the message itself.
+    ///
+    /// Will simply return a copy of the key if its length is already larger than the message.
+    fn encrypt_keystream(&self, message: &str) -> String {
+        //The key is large enough for the message already
+        if self.key.len() >= message.len() {
+            return self.key.clone();
+        }
+
+        //Repeat the scrubed message until it (+ the original key), fits the length of the
+        //original message
+        let scrubbed_msg = alphabet::scrub_text(&message);
+        let mut keystream = String::from(self.key.clone());
+
+        keystream.push_str(&iter::repeat(scrubbed_msg.clone())
+            .take((message.len() / (self.key.len() + scrubbed_msg.len())) + 1)
+            .collect::<String>());
+
+        keystream[0..message.len()].to_string()
+    }
 }
 
 #[cfg(test)]
@@ -127,29 +143,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn crypto_corner_test() {
+        let message = "MEETMEATTHECORNER";
+        let v = Autokey::new(String::from("king")).unwrap();
+        assert_eq!("WMRZYIEMFLEVHYRGF", v.encrypt(message).unwrap());
+    }
+
+
+    #[test]
     fn encrypt_test() {
         let message = "defend the east wall of the castle";
         let v = Autokey::new(String::from("fortification")).unwrap();
-        assert_eq!("iswxvi bje xigg zeqp bi moi gakmhe", v.encrypt(message).unwrap());
-    }
-
-    #[test]
-    fn simple_encrypt_decrypt(){
-        let message = "I never get any credit";
-        let v = Autokey::new(String::from("givon")).unwrap();
-
+        println!();
+        println!("m    : {}", message);
         let c_text = v.encrypt(message).unwrap();
-        println!("{}", v.fit_key(message));
+        println!("c    : {}", c_text);
+
         let p_text = v.decrypt(&c_text).unwrap();
+        println!("p    : {}", p_text);
+        println!();
 
         assert_eq!(message, p_text);
     }
 
+    // #[test]
+    // fn simple_encrypt_decrypt(){
+    //     let message = "I never get any credit";
+    //     let v = Autokey::new(String::from("givon")).unwrap();
+    //
+    //     let c_text = v.encrypt(message).unwrap();
+    //     println!("{}", v.fit_key(message));
+    //     let p_text = v.decrypt(&c_text).unwrap();
+    //
+    //     assert_eq!(message, p_text);
+    // }
+
     #[test]
     fn decrypt_test() {
-        let cipher_text = "lxfopktmdcgn";
+        let ciphertext = "lxfopktmdcgn";
         let v = Autokey::new(String::from("lemon")).unwrap();
-        assert_eq!("attackatdawn", v.decrypt(cipher_text).unwrap());
+        assert_eq!("attackatdawn", v.decrypt(ciphertext).unwrap());
     }
 
     #[test]
@@ -157,8 +190,8 @@ mod tests {
         let message = "Attack at Dawn!";
         let v = Autokey::new(String::from("giovan")).unwrap();
 
-        let cipher_text = v.encrypt(message).unwrap();
-        let plain_text = v.decrypt(&cipher_text).unwrap();
+        let ciphertext = v.encrypt(message).unwrap();
+        let plain_text = v.decrypt(&ciphertext).unwrap();
 
         assert_eq!(plain_text, message);
     }
@@ -173,50 +206,44 @@ mod tests {
         assert_eq!(decrypted, message);
     }
 
-    //Testing the ability to fit a key
-    #[test]
-    fn fit_smaller_key() {
-        let message = "We are under seige";
-        let v = Autokey::new(String::from("lemon")).unwrap();
-
-        assert_eq!("le mon Weare underseige", v.fit_key(message));
-    }
-
-    #[test]
-    fn fit_larger_key() {
-        let message = "hi";
-        let v = Autokey::new(String::from("lemon")).unwrap();
-
-        assert_eq!("lemon", v.fit_key(message));
-    }
-
-    #[test]
-    fn fit_with_symbols_in_message() {
-        let message = "HELP ME NOW! PLS@";
-        let v = Autokey::new(String::from("FORT")).unwrap();
-        assert_eq!("FORT HE LPM  ENO WPLS", v.fit_key(message));
-    }
-
-    #[test]
-    fn fit_larger_key_with_symbols_in_message(){
-        let message = "EAST!@NOW";
-        let v = Autokey::new(String::from("FORTIFICATION")).unwrap();
-        assert_eq!("FORT  IFICATION", v.fit_key(message));
-    }
-
-    #[test]
-    fn fit_key_with_emoji_in_message(){
-        let message = "Attack🗡 now";
-        println!("len: {}", message.len());
-        let v = Autokey::new(String::from("knife")).unwrap();
-        assert_eq!("knifeA  ttacknow", v.fit_key(message));
-    }
-
-    //Testing ability to strip symbols
-    #[test]
-    fn strip(){
-        assert_eq!(Autokey::strip_symbols(" he@1y! 2"), "hey");
-    }
+    // //Testing the ability to fit a key
+    // #[test]
+    // fn fit_smaller_key() {
+    //     let message = "We are under seige";
+    //     let v = Autokey::new(String::from("lemon")).unwrap();
+    //
+    //     assert_eq!("lemonWeareundersei", v.fit_key(message));
+    // }
+    //
+    // #[test]
+    // fn fit_larger_key() {
+    //     let message = "hi";
+    //     let v = Autokey::new(String::from("lemon")).unwrap();
+    //
+    //     assert_eq!("lemon", v.fit_key(message));
+    // }
+    //
+    // #[test]
+    // fn fit_with_symbols_in_message() {
+    //     let message = "HELP ME NOW! PLS@";
+    //     let v = Autokey::new(String::from("FORT")).unwrap();
+    //     assert_eq!("FORTHELPMENOWPLSH", v.fit_key(message));
+    // }
+    //
+    // #[test]
+    // fn fit_larger_key_with_symbols_in_message(){
+    //     let message = "EAST!@NOW";
+    //     let v = Autokey::new(String::from("FORTIFICATION")).unwrap();
+    //     assert_eq!("FORTIFICATION", v.fit_key(message));
+    // }
+    //
+    // #[test]
+    // fn fit_key_with_emoji_in_message(){
+    //     let message = "Attack🗡 now";
+    //     println!("len: {}", message.len());
+    //     let v = Autokey::new(String::from("knife")).unwrap();
+    //     assert_eq!("knifeAttacknow", v.fit_key(message));
+    // }
 
     //Testing validity of key
     #[test]

@@ -74,16 +74,16 @@ impl Cipher for Railfence {
         }
 
         // Read the ciphertext row by row
-        let mut cipher_text = String::new();
+        let mut ciphertext = String::new();
         for row in table {
             for (is_msg_element, element) in row {
                 if is_msg_element {
-                    cipher_text.push(element);
+                    ciphertext.push(element);
                 }
             }
         }
 
-        Ok(cipher_text)
+        Ok(ciphertext)
     }
 
     /// Decrypt a message using a Railfence cipher.
@@ -97,7 +97,7 @@ impl Cipher for Railfence {
     /// let r = Railfence::new(3).unwrap();
     /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption process:
         //   First a table is created with a height given by the key and a length
         //   given by the ciphertext length.
@@ -120,19 +120,19 @@ impl Cipher for Railfence {
         // As mentioned previously, a single rail means that the original message has not been
         // altered
         if self.rails == 1 {
-            return Ok(cipher_text.to_string())
+            return Ok(ciphertext.to_string())
         }
 
-        let mut table = vec![vec![(false, '.'); cipher_text.len()]; self.rails];
+        let mut table = vec![vec![(false, '.'); ciphertext.len()]; self.rails];
 
         // Traverse the table and mark the elements that will be filled by the cipher text
-        for col in 0..cipher_text.len() {
+        for col in 0..ciphertext.len() {
             let rail = Railfence::calc_current_rail(col, self.rails);
             table[rail][col].0 = true;
         }
 
         // Fill the identified positions in the table with the ciphertext, line by line
-        let mut ct_chars = cipher_text.chars();
+        let mut ct_chars = ciphertext.chars();
         'outer: for row in table.iter_mut() {
             // For each element in the row, determine if a char should be placed there
             for element in row.iter_mut() {
@@ -149,7 +149,7 @@ impl Cipher for Railfence {
 
         // From the transposed cipher text construct the original message
         let mut message = String::new();
-        for col in 0..cipher_text.len() {
+        for col in 0..ciphertext.len() {
             // For this column, determine which row we should read from to get the next char
             // of the message
             let rail = Railfence::calc_current_rail(col, self.rails);

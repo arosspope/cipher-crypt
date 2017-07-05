@@ -52,7 +52,7 @@ impl Cipher for Vigenere {
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        let e_key = self.fit_key(message.len());
+        let e_key = self.generate_keystream(message.len());
 
         substitute::key_substitution(message, &e_key,
             |mi, ki| alphabet::modulo((mi + ki) as isize))
@@ -69,35 +69,33 @@ impl Cipher for Vigenere {
     /// let v = Vigenere::new(String::from("giovan")).unwrap();
     /// assert_eq!("I never get any credit!", v.decrypt("O bzvrx uzt gvm ceklwo!").unwrap());
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
-        let d_key = self.fit_key(cipher_text.len());
+        let d_key = self.generate_keystream(ciphertext.len());
 
-        substitute::key_substitution(cipher_text, &d_key,
+        substitute::key_substitution(ciphertext, &d_key,
             |ci, ki| alphabet::modulo(ci as isize - ki as isize))
     }
 }
 
 impl Vigenere {
-    /// Fits the key to a given `msg_length`.
+    /// Generates a keystream for a given `msg_length`.
     ///
     /// Will simply return a copy of the key if its length is already larger than the message.
-    fn fit_key(&self, msg_length: usize) -> String {
-        let key_copy = self.key.clone();
-
-        if key_copy.len() >= msg_length {
-            return key_copy; //The key is large enough for the message already
+    fn generate_keystream(&self, msg_length: usize) -> String {
+        //The key is large enough for the message already
+        if self.key.len() >= msg_length {
+            return self.key.clone();
         }
 
         //Repeat the key until it fits within the length of the message
-        let mut repeated_key = iter::repeat(key_copy).take((msg_length / self.key.len()) + 1)
+        let keystream = iter::repeat(self.key.clone()).take((msg_length / self.key.len()) + 1)
             .collect::<String>();
 
-        repeated_key.truncate(msg_length);
-        repeated_key
+        keystream[0..msg_length].to_string()
     }
 }
 
@@ -114,9 +112,9 @@ mod tests {
 
     #[test]
     fn decrypt_test() {
-        let cipher_text = "lxfopvefrnhr";
+        let ciphertext = "lxfopvefrnhr";
         let v = Vigenere::new(String::from("lemon")).unwrap();
-        assert_eq!("attackatdawn", v.decrypt(cipher_text).unwrap());
+        assert_eq!("attackatdawn", v.decrypt(ciphertext).unwrap());
     }
 
     #[test]
@@ -124,8 +122,8 @@ mod tests {
         let message = "Attack at Dawn!";
         let v = Vigenere::new(String::from("giovan")).unwrap();
 
-        let cipher_text = v.encrypt(message).unwrap();
-        let plain_text = v.decrypt(&cipher_text).unwrap();
+        let ciphertext = v.encrypt(message).unwrap();
+        let plain_text = v.decrypt(&ciphertext).unwrap();
 
         assert_eq!(plain_text, message);
     }
@@ -145,8 +143,8 @@ mod tests {
         let message = "We are under seige!"; //19 character message
         let v = Vigenere::new(String::from("lemon")).unwrap(); //key length of 5
 
-        assert_eq!("lemonlemonlemonlemo", v.fit_key(message.len()));
-        assert!(v.fit_key(message.len()).len() >= message.len());
+        assert_eq!("lemonlemonlemonlemo", v.generate_keystream(message.len()));
+        assert!(v.generate_keystream(message.len()).len() >= message.len());
     }
 
     #[test]
@@ -154,8 +152,8 @@ mod tests {
         let message = "hi";
         let v = Vigenere::new(String::from("lemon")).unwrap();
 
-        assert_eq!("lemon", v.fit_key(message.len()));
-        assert!(v.fit_key(message.len()).len() >= message.len());
+        assert_eq!("lemon", v.generate_keystream(message.len()));
+        assert!(v.generate_keystream(message.len()).len() >= message.len());
     }
 
     #[test]

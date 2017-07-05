@@ -45,3 +45,10 @@ pub fn is_alphabetic_only(text: &str) -> bool {
 
     true
 }
+
+/// Will scrub non-alphabetic characters from the text and return the scrubed version
+///
+pub fn scrub_text(text: &str) -> String {
+    text.chars().into_iter()
+        .filter(|&c| find_position(c).is_some()).collect()
+}

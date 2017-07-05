@@ -61,10 +61,10 @@ pub fn key_substitution<F>(text: &str, key: &str, calc_index: F) -> Result<Strin
                             return Err("Calculated a substitution index outside of the known alphabet.")
                         }
                     } else {
-                        return Err("Vigenere key contains a non-alphabetic symbol.")
+                        return Err("Keystream contains a non-alphabetic symbol.")
                     }
                 } else {
-                    return Err("Fitted key is too small for message length.")
+                    return Err("Keystream is too small for message length.")
                 }
 
             },

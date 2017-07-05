@@ -159,7 +159,7 @@ impl Cipher for Hill {
     ///     assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// }
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         /*
             The decryption process is very similar to the encryption process as explained
             in its function. However, the key is inverted in such way that performing a matrix multiplication on the character vector will result in the original unencrypted chars.
@@ -173,7 +173,7 @@ impl Cipher for Hill {
         */
         let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
 
-        Hill::transform_message(&inverse_key, cipher_text)
+        Hill::transform_message(&inverse_key, ciphertext)
     }
 }
 
