@@ -39,3 +39,4 @@ pub use vigenere::Vigenere;
 pub use railfence::Railfence;
 pub use rot13 as ROT13;
 pub use hill::Hill;
+pub use fractionatedmorse::FractionatedMorse;
