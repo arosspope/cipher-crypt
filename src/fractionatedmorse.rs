@@ -1,8 +1,9 @@
 //! The Fractionated Morse cipher builds upon Morse code, a well-known method for encoding text which
-//! can then be sent across simple visual or audio channels. The Fractionated Morse cipher does not produce
-//! a one-to-one mapping of plaintext characters to ciphertext characters and is therefore slightly
-//! more secure than a simple substituion cipher. In addition to this, it allows many non-alphabetic
-//! symbols to be encoded.
+//! can then be sent across simple visual or audio channels.
+//! 
+//! The Fractionated Morse cipher does not produce a one-to-one mapping of plaintext characters to
+//! ciphertext characters and is therefore slightly more secure than a simple substitution cipher.
+//! In addition to this, it allows many non-alphabetic symbols to be encoded.
 use common::cipher::Cipher;
 use common::alphabet;
 use common::keygen::generate_keyed_alphabet;
@@ -43,8 +44,7 @@ impl Cipher for FractionatedMorse {
     /// Will return `Err` if the key contains non-alphabetic symbols.
     fn new(key: String) -> Result<FractionatedMorse, &'static str> {
         for c in key.chars() {
-            // Keys can only contain characters in the known alphabet.
-            // Its used to key the fractionated Morse alphabet and therefore cannot contain numbers.
+            // The key can only contain alphabetic characters.
             if alphabet::find_position(c).is_none() {
                 return Err("Invalid key. Fractionated Morse keys cannot contain non-alphabetic symbols.");
             }
@@ -57,8 +57,8 @@ impl Cipher for FractionatedMorse {
     /// Encrypt a message using a Fractionated Morse cipher.
     ///
     /// Morse code supports the characters `a-z`, `A-Z`, `0-9`, spaces and the special characters
-    /// `@ ( ) . , : ' " ! ? - ; =`. This function will reject with `Err` if the message
-    /// contains any symbol not in this list. 
+    /// `@ ( ) . , : ' " ! ? - ; =`. This function will return `Err` if the message contains any
+    /// symbol not in this list. 
     ///
     /// # Examples
     /// Basic usage:
@@ -99,7 +99,7 @@ impl Cipher for FractionatedMorse {
     /// Decrypt a message using a Fractionated Morse cipher.
     ///
     /// The Fractionated Morse alphabet only contains the normal alphabetic characters `a-z`,
-    /// therefore this function will reject with `Err` if the message contains any non-alphabetic
+    /// therefore this function will return `Err` if the message contains any non-alphabetic
     /// characters. Furthermore, it is possible that a purely alphabetic message will not produce
     /// valid Morse code, in which case an `Err` will again be returned.
     ///

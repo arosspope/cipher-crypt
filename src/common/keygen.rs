@@ -34,7 +34,7 @@ pub fn generate_keyed_alphabet(key: &str, make_uppercase: bool) -> Result<String
     for index in 0..26 {
         let chr = get_letter(index, false).unwrap();
         if keyed_alphabet.chars().position(|a| a.eq_ignore_ascii_case(&chr)).is_none() {
-            // index is obtained from enumerating ALPHABET_LOWER therefore this unwrap is safe.
+            // index is less than 26 therefore this unwrap is safe.
             keyed_alphabet.push(get_letter(index, make_uppercase).unwrap());
         }
     }
