@@ -77,7 +77,7 @@ impl Cipher for Vigenere {
         let d_key = self.fit_key(cipher_text.len());
 
         substitute::key_substitution(cipher_text, &d_key,
-            |mi, ki| alphabet::modulo(mi as isize - ki as isize))
+            |ci, ki| alphabet::modulo(ci as isize - ki as isize))
     }
 }
 

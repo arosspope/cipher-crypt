@@ -75,7 +75,7 @@ impl Cipher for Autokey {
         let d_key = self.fit_key(cipher_text);
 
         substitute::key_substitution(cipher_text, &d_key,
-            |mi, ki| alphabet::modulo(mi as isize - ki as isize))
+            |ci, ki| alphabet::modulo(ci as isize - ki as isize))
     }
 }
 
@@ -84,18 +84,19 @@ impl Autokey {
     ///
     /// Will simply return a copy of the key if its length is already larger than the message.
     fn fit_key(&self, message: &str) -> String {
-        let mut key_copy = self.key.clone();
+        let mut fitted_key = self.key.clone();
         let trimmed_msg = Autokey::strip_symbols(message);
 
-        if key_copy.len() >= trimmed_msg.len() {
-            return Autokey::expand_on_symbol(&key_copy, message)[0..trimmed_msg.len()].to_string();
+        if fitted_key.len() >= trimmed_msg.len() {
+            fitted_key = Autokey::expand_on_symbol(&fitted_key, message);
+
+            return fitted_key.to_string();
         }
 
-        key_copy.push_str(&trimmed_msg);
+        fitted_key.push_str(&trimmed_msg);
 
-        key_copy = Autokey::expand_on_symbol(&key_copy, message);
-
-        key_copy[0..message.len()].to_string()
+        fitted_key = Autokey::expand_on_symbol(&fitted_key, message);
+        fitted_key
     }
 
     /// Will strip any non-alphabetic symbols from the text.
@@ -133,6 +134,18 @@ mod tests {
     }
 
     #[test]
+    fn simple_encrypt_decrypt(){
+        let message = "I never get any credit";
+        let v = Autokey::new(String::from("givon")).unwrap();
+
+        let c_text = v.encrypt(message).unwrap();
+        println!("{}", v.fit_key(message));
+        let p_text = v.decrypt(&c_text).unwrap();
+
+        assert_eq!(message, p_text);
+    }
+
+    #[test]
     fn decrypt_test() {
         let cipher_text = "lxfopktmdcgn";
         let v = Autokey::new(String::from("lemon")).unwrap();
@@ -163,18 +176,40 @@ mod tests {
     //Testing the ability to fit a key
     #[test]
     fn fit_smaller_key() {
-        let message = "We are under seige!"; //19 character message
-        let v = Autokey::new(String::from("lemon")).unwrap(); //key length of 5
+        let message = "We are under seige";
+        let v = Autokey::new(String::from("lemon")).unwrap();
 
-        assert_eq!("le mon Weare under", v.fit_key(message));
+        assert_eq!("le mon Weare underseige", v.fit_key(message));
     }
 
     #[test]
     fn fit_larger_key() {
-        let message = "hi !@$%";
+        let message = "hi";
         let v = Autokey::new(String::from("lemon")).unwrap();
 
         assert_eq!("lemon", v.fit_key(message));
+    }
+
+    #[test]
+    fn fit_with_symbols_in_message() {
+        let message = "HELP ME NOW! PLS@";
+        let v = Autokey::new(String::from("FORT")).unwrap();
+        assert_eq!("FORT HE LPM  ENO WPLS", v.fit_key(message));
+    }
+
+    #[test]
+    fn fit_larger_key_with_symbols_in_message(){
+        let message = "EAST!@NOW";
+        let v = Autokey::new(String::from("FORTIFICATION")).unwrap();
+        assert_eq!("FORT  IFICATION", v.fit_key(message));
+    }
+
+    #[test]
+    fn fit_key_with_emoji_in_message(){
+        let message = "Attack🗡 now";
+        println!("len: {}", message.len());
+        let v = Autokey::new(String::from("knife")).unwrap();
+        assert_eq!("knifeA  ttacknow", v.fit_key(message));
     }
 
     //Testing ability to strip symbols
