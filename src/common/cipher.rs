@@ -1,5 +1,3 @@
-//! Thing
-//!
 pub trait Cipher {
     type Key;
     type Algorithm;

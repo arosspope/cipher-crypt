@@ -7,6 +7,7 @@
 //! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //! encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
 use std::iter;
+use common::substitute;
 use common::alphabet;
 use common::cipher::Cipher;
 
@@ -53,7 +54,8 @@ impl Cipher for Vigenere {
         //         Ki = position within the alphabet of ith char in key
         let e_key = self.fit_key(message.len());
 
-        Vigenere::poly_substitute(message, e_key, |mi, ki| (mi + ki) % 26)
+        substitute::key_substitution(message, &e_key,
+            |mi, ki| alphabet::modulo((mi + ki) as isize))
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -74,13 +76,8 @@ impl Cipher for Vigenere {
         //         Ki = position within the alphabet of ith char in key
         let d_key = self.fit_key(cipher_text.len());
 
-        let decrypt = |ci, ki| {
-            let a: isize = ci as isize - ki as isize;
-            (((a % 26) + 26) % 26) as usize
-            //Rust does not natively support negative wrap around modulo operations
-        };
-
-        Vigenere::poly_substitute(cipher_text, d_key, decrypt)
+        substitute::key_substitution(cipher_text, &d_key,
+            |mi, ki| alphabet::modulo(mi as isize - ki as isize))
     }
 }
 
@@ -101,46 +98,6 @@ impl Vigenere {
 
         repeated_key.truncate(msg_length);
         repeated_key
-    }
-
-    /// Performs a poly substitution on a piece of text based on the index of its characters
-    /// within the alphabet.
-    ///
-    /// This substitution is defined by the closure `calc_index`
-    fn poly_substitute<F>(text: &str, key: String, calc_index: F) -> Result<String, &'static str>
-        where F: Fn(usize, usize) -> usize
-    {
-        let mut s_text = String::new();
-
-        for (i, tc) in text.chars().enumerate() {
-            //Find the index of the character in the alphabet (if it exists in there)
-            let tpos = alphabet::find_position(tc);
-            match tpos {
-                Some(ti) => {
-                    //Get the key character at position i
-                    if let Some(kc) = key.chars().nth(i) {
-                        //Get position of character within the alphabet
-                        if let Some(ki) = alphabet::find_position(kc) {
-                            //Calculate the index and retrieve the letter to substitute
-                            let si = calc_index(ti, ki);
-                            if let Some(s) = alphabet::get_letter(si, tc.is_uppercase()){
-                                s_text.push(s);
-                            } else {
-                                return Err("Calculated a substitution index outside of the known alphabet.")
-                            }
-                        } else {
-                            return Err("Vigenere key contains a non-alphabetic symbol.")
-                        }
-                    } else {
-                        return Err("Fitted key is too small for message length.")
-                    }
-
-                },
-                None => s_text.push(tc), //Push non-alphabetic chars 'as-is'
-            }
-        }
-
-        Ok(s_text)
     }
 }
 

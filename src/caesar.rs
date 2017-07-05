@@ -4,7 +4,7 @@
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
 //! and in modern practice offers essentially no communication security.
 //!
-use common::substitute;
+use common::{substitute, alphabet};
 use common::cipher::Cipher;
 
 /// A Caesar cipher.
@@ -45,7 +45,9 @@ impl Cipher for Caesar {
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
-        substitute::shift_substitution(message, |idx| (idx + self.shift) % 26)
+
+        substitute::shift_substitution(message,
+            |idx| alphabet::modulo((idx + self.shift) as isize))
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -64,13 +66,9 @@ impl Cipher for Caesar {
         //         D(x) = (x - n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
-        let decrypt = |idx| {
-            let a: isize = idx as isize - self.shift as isize;
-            (((a % 26) + 26) % 26) as usize
-            //Rust does not natively support negative wrap around modulo operations
-        };
 
-        substitute::shift_substitution(cipher_text, decrypt)
+        substitute::shift_substitution(cipher_text,
+            |idx| alphabet::modulo(idx as isize - self.shift as isize))
     }
 }
 
