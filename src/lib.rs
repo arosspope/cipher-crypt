@@ -30,6 +30,7 @@ pub mod caesar;
 pub mod vigenere;
 pub mod rot13;
 pub mod railfence;
+pub mod fractionatedmorse;
 pub mod hill;
 pub mod autokey;
 
@@ -39,4 +40,5 @@ pub use vigenere::Vigenere;
 pub use railfence::Railfence;
 pub use rot13 as ROT13;
 pub use hill::Hill;
+pub use fractionatedmorse::FractionatedMorse;
 pub use autokey::Autokey;
