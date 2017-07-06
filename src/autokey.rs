@@ -76,6 +76,9 @@ impl Cipher for Autokey {
 
 impl Autokey {
     fn autokey_decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
+        //As each character of the ciphertext is decrypted, the un-encrypted char is appended
+        //to the base key 'keystream', so that it may be used to decrypt the latter part
+        //of the ciphertext
         let mut plaintext = String::new();
 
         //We start the stream with the base key
