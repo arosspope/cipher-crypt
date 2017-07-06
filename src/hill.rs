@@ -159,7 +159,7 @@ impl Cipher for Hill {
     ///     assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// }
     /// ```
-    fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         /*
             The decryption process is very similar to the encryption process as explained
             in its function. However, the key is inverted in such way that performing a matrix multiplication on the character vector will result in the original unencrypted chars.
@@ -173,7 +173,7 @@ impl Cipher for Hill {
         */
         let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
 
-        Hill::transform_message(&inverse_key, cipher_text)
+        Hill::transform_message(&inverse_key, ciphertext)
     }
 }
 
@@ -303,7 +303,7 @@ impl Hill {
         //Find the inverse determinant such that: d*d^-1 = 1 mod 26
         let mut det_inverse: Option<isize> = None;
         for i in 1..26 {
-            if (det as isize * i ) % 26 == 1 {
+            if alphabet::modulo(det as isize * i) == 1 {
                 det_inverse = Some(i);
                 break;
             }
@@ -311,13 +311,10 @@ impl Hill {
 
         //Calculate the inverse key matrix
         Ok ( key.inverse().unwrap().apply(&|x| {
-            let z = (x * det as f64).round();
-            let w = ((z % 26.0) + 26.0) % 26.0;
-            (w * det_inverse.expect("Inverse for determinant could not be found.") as f64) % 26.0
+            let y = (x * det as f64).round() as isize;
+            (alphabet::modulo(y) as f64 * det_inverse.expect("Inverse for determinant could not be found.") as f64) % 26.0
         }))
     }
-
-
 }
 
 #[cfg(test)]

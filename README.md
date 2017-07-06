@@ -11,7 +11,7 @@ To use this crypt of ciphers, add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.4"
+cipher-crypt = "^0.5"
 ```
 Using the crate as such:
 
@@ -36,7 +36,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [ ] Baconian
 - [ ] Polybius Square
 - [ ] Columnar Transposition
-- [ ] Autokey
+- [x] Autokey
 - [ ] Porta
 - [x] Vigenère
 - [ ] Homophonic

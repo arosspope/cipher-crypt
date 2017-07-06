@@ -4,7 +4,7 @@
 //! ROT13 is its own inverse. That is, `ROT13(ROT13(message)) = message`. Due to its simplicity,
 //! this module does not implement the `Cipher` trait.
 //!
-use common::substitute;
+use common::{alphabet, substitute};
 
 /// Encrypt or decrypt a message using the ROT13 substitute cipher.
 ///
@@ -20,7 +20,7 @@ use common::substitute;
 pub fn apply(message: &str) -> String {
     // The closure below is guaranteed to produce a number less than 26, therefore the
     // substitution will not return an error and we can unwrap safely.
-    substitute::shift_substitution(message, |i| (i + 13) % 26).unwrap()
+    substitute::shift_substitution(message, |i| alphabet::modulo((i + 13) as isize)).unwrap()
 }
 
 #[cfg(test)]
@@ -28,7 +28,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn with_emoji(){
+    fn with_utf8(){
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = apply(message);
         let decrypted = apply(&encrypted);
