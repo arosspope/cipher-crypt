@@ -28,7 +28,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn with_emoji(){
+    fn with_utf8(){
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = apply(message);
         let decrypted = apply(&encrypted);

@@ -89,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn with_emoji(){
+    fn with_utf8(){
         let c = Caesar::new(3).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = c.encrypt(message).unwrap();

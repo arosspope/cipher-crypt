@@ -1,12 +1,9 @@
-//! The Autokey Cipher is a polyalphabetic substitution cipher. It was considered 'le chiffre
-//! indéchiffrable' for 300 years until Friedrich Kasiski broke it in 1863.
-//!
-//! Note that this implementation does not mutate the calculated encoding/decoding key if the
-//! message contains non-alphabetic symbols (including whitespace).
+//! An autokey cipher (also known as the autoclave cipher) is a cipher which incorporates the
+//! message (the plaintext) into the key.
 //!
 //! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
-//! encoding key would be `CRYPTCRYPTCRYP` not `CRYPTC RY PTCR`.
-use std::iter;
+//! keystream would be `CRYPTA TT ACKA`. It was invented by Blaise de Vigenère in 1586, and is
+//! generally more secure than the Vigenere cipher.
 use common::cipher::Cipher;
 use common::{substitute, alphabet};
 
@@ -25,7 +22,9 @@ impl Cipher for Autokey {
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols.
     fn new(key: String) -> Result<Autokey, &'static str> {
-        if key.len() > 0 && !alphabet::is_alphabetic_only(&key) {
+        if key.len() < 1 {
+            return Err("Invalid key. It must have at least one character.");
+        } else if !alphabet::is_alphabetic_only(&key) {
             return Err("Invalid key. Autokey keys cannot contain non-alphabetic symbols.");
         }
 
@@ -40,15 +39,15 @@ impl Cipher for Autokey {
     /// ```
     /// use cipher_crypt::{Cipher, Autokey};
     ///
-    /// let a = Autokey::new(String::from("giovan")).unwrap();
-    /// assert_eq!("O bzvrz kzx grr ppgumw!", a.encrypt("I never get any credit!").unwrap());
+    /// let a = Autokey::new(String::from("fort")).unwrap();
+    /// assert_eq!("Fhktcd 🗡 mhg otzx aade", a.encrypt("Attack 🗡 the east wall").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(message, &self.encrypt_keystream(message),
+        substitute::key_substitution(message, &mut self.encrypt_keystream(message),
             |mi, ki| alphabet::modulo((mi + ki) as isize))
     }
 
@@ -60,8 +59,8 @@ impl Cipher for Autokey {
     /// ```
     /// use cipher_crypt::{Cipher, Autokey};
     ///
-    /// let a = Autokey::new(String::from("giovan")).unwrap();
-    /// assert_eq!("I never get any credit!", a.decrypt("O bzvrz kzx grr ppgumw!").unwrap());
+    /// let a = Autokey::new(String::from("fort")).unwrap();
+    /// assert_eq!("Attack 🗡 the east wall", a.decrypt("Fhktcd 🗡 mhg otzx aade").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
@@ -69,8 +68,8 @@ impl Cipher for Autokey {
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
         //
-        // Please note that the decrypt keystream is generated 'on the fly' as the ciphertext
-        // is decrypted.
+        // Please note that the decrypt keystream is generated 'on the fly' whilst the ciphertext
+        // is being decrypted.
         self.autokey_decrypt(ciphertext)
     }
 }
@@ -80,31 +79,32 @@ impl Autokey {
         let mut plaintext = String::new();
 
         //We start the stream with the base key
-        let mut keystream = String::from(self.key.clone());
+        let mut keystream: Vec<char> = String::from(self.key.clone()).chars().collect();
 
-        for (i, cc) in ciphertext.chars().enumerate() {
+        for cc in ciphertext.chars() {
             //Find the index of the ciphertext character in the alphabet (if it exists in there)
-            let tpos = alphabet::find_position(cc);
-            match tpos {
+            let pos = alphabet::find_position(cc);
+            match pos {
                 Some(ci) => {
-                    //Get the key character at position i
-                    if let Some(kc) = keystream.chars().nth(i) {
-                        //Get position of character within the alphabet
-                        if let Some(ki) = alphabet::find_position(kc) {
-                            //Calculate the index and retrieve the letter to substitute
-                            let si = alphabet::modulo(ci as isize - ki as isize);
+                    //Get the next key character in the stream (we always read from position 0)
+                    if keystream.len() < 1 {
+                        return Err("Keystream is not large enough for full substitution of message");
+                    }
 
-                            //We can safely unwrap as we know the index will be within the alphabet
-                            let s = alphabet::get_letter(si, cc.is_uppercase()).unwrap();
+                    let kc = keystream[0];
+                    if let Some(ki) = alphabet::find_position(kc) {
+                        //Calculate the index and retrieve the letter to substitute
+                        let si = alphabet::modulo(ci as isize - ki as isize);
 
-                            //Push to the decrypted text AND the keystream
-                            plaintext.push(s);
-                            keystream.push(s);
-                        } else {
-                            return Err("Keystream contains a non-alphabetic symbol.")
-                        }
+                        //We can safely unwrap as we know the index will be within the alphabet
+                        let s = alphabet::get_letter(si, cc.is_uppercase()).unwrap();
+
+                        //Push to the decrypted text AND the keystream
+                        plaintext.push(s);
+                        keystream.push(s);
+                        keystream.remove(0); //We have consumed the keystream chartacter
                     } else {
-                        return Err("Keystream is too small for ciphertext length.")
+                        return Err("Keystream contains a non-alphabetic symbol.")
                     }
 
                 },
@@ -115,26 +115,23 @@ impl Autokey {
         Ok(plaintext)
     }
 
-
-    /// Generate an encrypt keystream by concatonating the key and the message itself.
+    /// Generate an encrypt keystream by concatonating the key and message itself.
     ///
     /// Will simply return a copy of the key if its length is already larger than the message.
-    fn encrypt_keystream(&self, message: &str) -> String {
+    fn encrypt_keystream(&self, message: &str) -> Vec<char> {
+        //The key will only be used to encrypt the portion of the message that is alphabetic
+        let scrubbed_msg = alphabet::scrub_text(&message);
+
         //The key is large enough for the message already
-        if self.key.len() >= message.len() {
-            return self.key.clone();
+        if self.key.len() >= scrubbed_msg.len() {
+            return self.key[0..scrubbed_msg.len()].chars().collect();
         }
 
-        //Repeat the scrubed message until it (+ the original key), fits the length of the
-        //original message
-        let scrubbed_msg = alphabet::scrub_text(&message);
+        //The keystream is simply a concatonation of the base key + the scrubbed message
         let mut keystream = String::from(self.key.clone());
+        keystream.push_str(&scrubbed_msg);
 
-        keystream.push_str(&iter::repeat(scrubbed_msg.clone())
-            .take((message.len() / (self.key.len() + scrubbed_msg.len())) + 1)
-            .collect::<String>());
-
-        keystream[0..message.len()].to_string()
+        keystream[0..scrubbed_msg.len()].chars().collect()
     }
 }
 
@@ -143,40 +140,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn crypto_corner_test() {
-        let message = "MEETMEATTHECORNER";
-        let v = Autokey::new(String::from("king")).unwrap();
-        assert_eq!("WMRZYIEMFLEVHYRGF", v.encrypt(message).unwrap());
+    fn with_utf8() {
+        let m = "Attack 🗡️ the east wall";
+        let a = Autokey::new(String::from("fort")).unwrap();
+
+        assert_eq!(m, a.decrypt(&a.encrypt(m).unwrap()).unwrap());
     }
 
-
     #[test]
-    fn encrypt_test() {
+    fn simple_encrypt_decrypt_test() {
         let message = "defend the east wall of the castle";
         let v = Autokey::new(String::from("fortification")).unwrap();
-        println!();
-        println!("m    : {}", message);
-        let c_text = v.encrypt(message).unwrap();
-        println!("c    : {}", c_text);
 
+        let c_text = v.encrypt(message).unwrap();
         let p_text = v.decrypt(&c_text).unwrap();
-        println!("p    : {}", p_text);
-        println!();
 
         assert_eq!(message, p_text);
     }
-
-    // #[test]
-    // fn simple_encrypt_decrypt(){
-    //     let message = "I never get any credit";
-    //     let v = Autokey::new(String::from("givon")).unwrap();
-    //
-    //     let c_text = v.encrypt(message).unwrap();
-    //     println!("{}", v.fit_key(message));
-    //     let p_text = v.decrypt(&c_text).unwrap();
-    //
-    //     assert_eq!(message, p_text);
-    // }
 
     #[test]
     fn decrypt_test() {
@@ -186,66 +166,23 @@ mod tests {
     }
 
     #[test]
-    fn mixed_case() {
-        let message = "Attack at Dawn!";
-        let v = Autokey::new(String::from("giovan")).unwrap();
+    fn larger_base_key() {
+        let message = "Hello";
+        let v = Autokey::new(String::from("fortification")).unwrap();
 
-        let ciphertext = v.encrypt(message).unwrap();
-        let plain_text = v.decrypt(&ciphertext).unwrap();
-
-        assert_eq!(plain_text, message);
+        assert_eq!(vec!['f', 'o', 'r', 't', 'i'], v.encrypt_keystream(message));
     }
 
     #[test]
-    fn with_emoji(){
-        let v = Autokey::new(String::from("emojisarefun")).unwrap();
-        let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = v.encrypt(message).unwrap();
-        let decrypted = v.decrypt(&encrypted).unwrap();
+    fn smaller_base_key() {
+        let message = "We are under seige";
+        let v = Autokey::new(String::from("lemon")).unwrap();
 
-        assert_eq!(decrypted, message);
+        assert_eq!(vec!['l', 'e', 'm', 'o', 'n', 'W',
+                        'e', 'a', 'r', 'e', 'u', 'n',
+                        'd', 'e', 'r'], v.encrypt_keystream(message));
     }
 
-    // //Testing the ability to fit a key
-    // #[test]
-    // fn fit_smaller_key() {
-    //     let message = "We are under seige";
-    //     let v = Autokey::new(String::from("lemon")).unwrap();
-    //
-    //     assert_eq!("lemonWeareundersei", v.fit_key(message));
-    // }
-    //
-    // #[test]
-    // fn fit_larger_key() {
-    //     let message = "hi";
-    //     let v = Autokey::new(String::from("lemon")).unwrap();
-    //
-    //     assert_eq!("lemon", v.fit_key(message));
-    // }
-    //
-    // #[test]
-    // fn fit_with_symbols_in_message() {
-    //     let message = "HELP ME NOW! PLS@";
-    //     let v = Autokey::new(String::from("FORT")).unwrap();
-    //     assert_eq!("FORTHELPMENOWPLSH", v.fit_key(message));
-    // }
-    //
-    // #[test]
-    // fn fit_larger_key_with_symbols_in_message(){
-    //     let message = "EAST!@NOW";
-    //     let v = Autokey::new(String::from("FORTIFICATION")).unwrap();
-    //     assert_eq!("FORTIFICATION", v.fit_key(message));
-    // }
-    //
-    // #[test]
-    // fn fit_key_with_emoji_in_message(){
-    //     let message = "Attack🗡 now";
-    //     println!("len: {}", message.len());
-    //     let v = Autokey::new(String::from("knife")).unwrap();
-    //     assert_eq!("knifeAttacknow", v.fit_key(message));
-    // }
-
-    //Testing validity of key
     #[test]
     fn valid_key() {
         assert!(Autokey::new(String::from("LeMon")).is_ok());
