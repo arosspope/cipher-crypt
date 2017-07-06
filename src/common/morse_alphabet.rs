@@ -28,24 +28,24 @@ const MORSE_ALPHABET: [(char, &str); 75] = [
 ///
 /// Will return None if the Morse code isn't present in the alphabet
 pub fn to_plaintext(m: &str) -> Option<char> {
-	if let Some(index) = MORSE_ALPHABET.iter().position(|&a| a.1 == m) {
-		if let Some(entry) = MORSE_ALPHABET.get(index) {
-			return Some(entry.0)
-		}
-	}
+    if let Some(index) = MORSE_ALPHABET.iter().position(|&a| a.1 == m) {
+        if let Some(entry) = MORSE_ALPHABET.get(index) {
+            return Some(entry.0)
+        }
+    }
 
-	None
+    None
 }
 
 /// Attempts to convert the character given into Morse code
 ///
 /// Will return None if the character isn't present in the alphabet
 pub fn to_morse(c: char) -> Option<&'static str> {
-	if let Some(index) = MORSE_ALPHABET.iter().position(|&a| a.0 == c) {
-		if let Some(entry) = MORSE_ALPHABET.get(index) {
-			return Some(entry.1)
-		}
-	} 
+    if let Some(index) = MORSE_ALPHABET.iter().position(|&a| a.0 == c) {
+        if let Some(entry) = MORSE_ALPHABET.get(index) {
+            return Some(entry.1)
+        }
+    } 
 
-	None
+    None
 }
