@@ -7,7 +7,8 @@ A library of historic cryptographic algorithms implemented in rust.
 
 ## Usage
 
-To use this crypt of ciphers, add the following to your Cargo.toml:
+Importing this crypt of ciphers is as easy as
+adding the following to your Cargo.toml:
 
 ```toml
 [dependencies]
@@ -15,15 +16,7 @@ cipher-crypt = "^0.5"
 ```
 Using the crate as such:
 
-```rust
-extern crate cipher_crypt;
-use cipher_crypt::ROT13;
-
-fn main(){
-  let m = "I am my own inverse";
-  assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
-}
-```
+![rot13-demo](http://i.imgur.com/XmQOD1F.gif)
 
 ## Ciphers
 
