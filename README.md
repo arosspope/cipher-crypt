@@ -11,7 +11,7 @@ To use this crypt of ciphers, add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.4"
+cipher-crypt = "^0.5"
 ```
 Using the crate as such:
 

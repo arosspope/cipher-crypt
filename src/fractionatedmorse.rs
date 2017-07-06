@@ -6,21 +6,8 @@
 //! In addition to this, it allows many non-alphabetic symbols to be encoded.
 use common::cipher::Cipher;
 use common::alphabet;
-use common::keygen::generate_keyed_alphabet;
-use std::ascii::AsciiExt;
-
-// The Morse alphabet.
-const MORSE_ALPHABET: [(char, &str); 50] = [
-    ('a' , ".-"    ), ('b' , "-..."  ), ('c' , "-.-."  ), ('d' , "-.."   ), ('e' , "."     ),
-    ('f' , "..-."  ), ('g' , "--."   ), ('h' , "...."  ), ('i' , ".."    ), ('j' , ".---"  ),
-    ('k' , "-.-"   ), ('l' , ".-.."  ), ('m' , "--"    ), ('n' , "-."    ), ('o' , "---"   ),
-    ('p' , ".--."  ), ('q' , "--.-"  ), ('r' , ".-."   ), ('s' , "..."   ), ('t' , "-"     ),
-    ('u' , "..-"   ), ('v' , "...-"  ), ('w' , ".--"   ), ('x' , "-..-"  ), ('y' , "-.--"  ),
-    ('z' , "--.."  ), ('1' , ".----" ), ('2' , "..---" ), ('3' , "...--" ), ('4' , "....-" ),
-    ('5' , "....." ), ('6' , "-...." ), ('7' , "--..." ), ('8' , "---.." ), ('9' , "----." ),
-    ('0' , "-----" ), (' ' , ""      ), ('.' , ".-.-.-"), (',' , "--..--"), (':' , "---..."),
-    ('\'', ".----."), ('"', ".-..-." ), ('!' , "-.-.--"), ('?' , "..--.."), ('@' , ".--.-."),
-    ('-' , "-....-"), (';' , "-.-.-."), ('(' , "-.--." ), (')' , "-.--.-"), ('=' , "-...-" )];
+use common::keygen;
+use common::morse_alphabet;
 
 // The Fractionated Morse alphabet. Decodings depend on the keyed alphabet
 const FRAC_MORSE_ALPHABET: [&str; 26] = ["...", "..-", "..|", ".-.", ".--", ".-|", ".|.", ".|-",
@@ -50,13 +37,13 @@ impl Cipher for FractionatedMorse {
             }
         }
 
-        let keyed_alphabet = generate_keyed_alphabet(&key, false)?;
+        let keyed_alphabet = keygen::keyed_alphabet(&key, false)?;
         Ok(FractionatedMorse { keyed_alphabet: keyed_alphabet })
     }
 
     /// Encrypt a message using a Fractionated Morse cipher.
     ///
-    /// Morse code supports the characters `a-z`, `A-Z`, `0-9`, spaces and the special characters
+    /// Morse code supports the characters `a-z`, `A-Z`, `0-9` and the special characters
     /// `@ ( ) . , : ' " ! ? - ; =`. This function will return `Err` if the message contains any
     /// symbol not in this list. 
     ///
@@ -67,7 +54,7 @@ impl Cipher for FractionatedMorse {
     /// use cipher_crypt::{Cipher, FractionatedMorse};
     ///
     /// let fm = FractionatedMorse::new(String::from("key")).unwrap();
-    /// assert_eq!("cpsujixpzycbuuiq", fm.encrypt("Attack at dawn!").unwrap());
+    /// assert_eq!("cpsujiswhsspfanr", fm.encrypt("AttackAtDawn!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption process
@@ -91,8 +78,8 @@ impl Cipher for FractionatedMorse {
         //   (4) The alphabet `alphbetcdfgijkmnoqrsuvwxyz` is produced.
         //   (5) 0(a), 6(t), 19(s), 2(p)
         //   (6) The ciphertext `atsphcmr` is produced.
-        let morse = FractionatedMorse::encrypt_morse(message.to_string())?;
-        let ciphertext = FractionatedMorse::decrypt_frac_morse(&self.keyed_alphabet, morse)?;
+        let morse = FractionatedMorse::to_morse(message.to_string())?;
+        let ciphertext = FractionatedMorse::to_ciphertext(&self.keyed_alphabet, morse)?;
         Ok(ciphertext)
     }
 
@@ -103,9 +90,6 @@ impl Cipher for FractionatedMorse {
     /// characters. Furthermore, it is possible that a purely alphabetic message will not produce
     /// valid Morse code, in which case an `Err` will again be returned.
     ///
-    /// An additional `i` or `e` may be present at the end of the decrypted message due to padding
-    /// added during the encryption process.
-    ///
     /// # Examples
     /// Basic usage:
     ///
@@ -113,7 +97,7 @@ impl Cipher for FractionatedMorse {
     /// use cipher_crypt::{Cipher, FractionatedMorse};
     ///
     /// let fm = FractionatedMorse::new(String::from("key")).unwrap();
-    /// assert_eq!("attack at dawn!", fm.decrypt("cpsujixpzycbuuiq").unwrap());
+    /// assert_eq!("attackatdawn!", fm.decrypt("cpsujiswhsspfanr").unwrap());
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption process:
@@ -135,8 +119,8 @@ impl Cipher for FractionatedMorse {
         //       and so on.
         //   (4) The Morse message `....|.|.-..|.-..|---||..` is produced.
         //   (5) The plaintext `hello i` is recovered.
-        let frac_morse = FractionatedMorse::encrypt_frac_morse(&self.keyed_alphabet, cipher_text.to_string())?;
-        let plaintext = FractionatedMorse::decrypt_morse(frac_morse)?;
+        let frac_morse = FractionatedMorse::to_fractionated_morse(&self.keyed_alphabet, cipher_text.to_string())?;
+        let plaintext = FractionatedMorse::to_plaintext(frac_morse)?;
         Ok(plaintext)
     }
 }
@@ -146,48 +130,48 @@ impl FractionatedMorse {
 
     /// Takes a string and trys to convert it to Morse code, using the character `|` as a
     /// separator. The Morse code is ended with two separators `||`. This function returns `Err`
-    /// if an unsupported symbol is present. The support characters are `a-z`, `A-Z`, `0-9`, spaces
-    /// and the special characters `@ ( ) . , : ' " ! ? - ; =`.
-    fn encrypt_morse(message: String) -> Result<String, &'static str> {
+    /// if an unsupported symbol is present. The support characters are `a-z`, `A-Z`, `0-9` and
+    /// the special characters `@ ( ) . , : ' " ! ? - ; =`.
+    fn to_morse(message: String) -> Result<String, &'static str> {
         let mut morse = String::new();
 
-        // Convert each letter in message to corresponding Morse characters.
-        // We cannot have multiple spaces in a row, otherwise the invalid Fractionated Morse
-        // character `|||` will be produced. Therefore, split by whitespace and only add one space
-        // in-between each word.
-        for word in message.split_whitespace() {
-            for c in word.chars() {
-                if let Some(pos) = MORSE_ALPHABET.iter().position(|m| m.0 == c.to_ascii_lowercase()) {
-                    morse.extend(MORSE_ALPHABET[pos].1.chars());
-                    morse.push('|');
-                } else {
-                    return Err("Invalid message. Please strip any unsupported symbols.")
-                }
-            }
-            // Add a single space between each word. Spaces are represented having nothing
-            // between two seperators, `||`, so we push another seperator here. This also takes
-            // care of the final `||` required to end the message.
-            morse.push('|');
+        // Attempy to convert each letter in message to the corresponding Morse code.
+        for c in message.chars() {
+            if let Some(m) = morse_alphabet::to_morse(c) {
+                morse.extend(m.chars());
+                morse.push('|');
+            } else {
+                return Err("Invalid message. Please strip any whitespace or unsupported symbols.")
+            }     
         }
+
+        // Finish the morse message with a double seperator `||`.
+        morse.push('|');
 
         Ok(morse)
     }
 
     /// Takes a Morse code string, with each Morse character separated by `|`, and converts it to
     /// plaintext. This function returns `Err` if an invalid Morse character is encountered.
-    fn decrypt_morse(mut message: String) -> Result<String, &'static str> {
+    fn to_plaintext(mut morse: String) -> Result<String, &'static str> {
         let mut plaintext = String::new();
 
         // Remove character separators from the beginning of the message if present
-        while message.starts_with('|') {
-            message.remove(0);
+        while morse.starts_with('|') {
+            morse.remove(0);
         }
 
         // Loop over every Morse character
-        for morse_chr in message.split('|') {
+        for morse_chr in morse.split('|') {
+            // If a double seperator is present we have reached the end of the message therefore we
+            // can break. A double seperator will produce an empty string when split in the line above.
+            if morse_chr == "" {
+                break;
+            }
+
             // Find the Morse character in the alphabet and decode it.
-            if let Some(pos) = MORSE_ALPHABET.iter().position(|&m| m.1 == morse_chr) {
-                plaintext.push(MORSE_ALPHABET[pos].0);
+            if let Some(c) = morse_alphabet::to_plaintext(morse_chr) {
+                plaintext.push(c);
             } else {
                 return Err("Invalid Fractionated Morse message. Unknown Morse character found.")
             }
@@ -201,15 +185,15 @@ impl FractionatedMorse {
         Ok(plaintext)
     }
 
-    /// Takes a alphabetic string and converts it to Fractionated Morse. This function will
+    /// Takes purely alphabetic ciphertext and converts it to Fractionated Morse. This function will
     /// return `Err` if a non-alphabetic symbol is present in the message.
-    fn encrypt_frac_morse(keyed_alphabet: &String, message: String) -> Result<String, &'static str> {
+    fn to_fractionated_morse(key: &String, message: String) -> Result<String, &'static str> {
         let mut frac_morse = String::new();
 
         // We are using a keyed alphabet which is lowercase, therefore loop over a lowercase version
         // of the message.
         for c in message.to_lowercase().chars() {
-            if let Some(pos) = keyed_alphabet.chars().position(|a| a == c) {
+            if let Some(pos) = key.chars().position(|a| a == c) {
                 frac_morse.extend(FRAC_MORSE_ALPHABET[pos].chars());
             } else {
                 return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.")
@@ -219,23 +203,21 @@ impl FractionatedMorse {
         Ok(frac_morse)
     }
 
-    /// Takes a Morse string, pads it with dots to a length that is a multiple of 3, and converts
-    /// it to an alphabetic string. This function returns `Err` if an invalid Fractionated Morse
-    /// trigraph is encountered.
-    fn decrypt_frac_morse(keyed_alphabet: &String, mut message: String) -> Result<String, &'static str> {
+    /// Takes a Morse string and converts it to a purely alphabetic string using the Fractionate
+    /// Morse alphabet. This function returns `Err` if an invalid Fractionated Morse trigraph is
+    /// encountered.
+    fn to_ciphertext(key: &str, morse: String) -> Result<String, &'static str> {
         let mut ciphertext = String::new();
 
-        // Trigraphs are required, so pad the message with dots until the length is a multiple of 3.
-        while message.len() % 3 != 0 {
-            message.push('.');
-        }
+        // Pad the string so its length is a multiple of 3. This is required to allow the morse
+        // message to be intepreted as a Fractionated Morse message.
+        let fractionated_morse = FractionatedMorse::pad_morse_message(morse);
 
         // Loop over each trigraph and decode it to an alphabetic character
-        for trigraph in message.as_bytes().chunks(3) {
+        for trigraph in fractionated_morse.as_bytes().chunks(3) {
             if let Some(pos) = FRAC_MORSE_ALPHABET.iter().position(|&t| t.as_bytes() == trigraph) {
-                // FRAC_MORSE_ALPHABET and keyed_alphabet both have length 26, therefore this unwrap
-                // is safe.
-                ciphertext.push(keyed_alphabet.chars().nth(pos).unwrap());
+                // FRAC_MORSE_ALPHABET and key both have length 26, therefore this unwrap is safe.
+                ciphertext.push(key.chars().nth(pos).unwrap());
             } else {
                 // This will only occur for the trigraph `|||` which should not occur in a valid
                 // Fractionated Morse message.
@@ -244,6 +226,18 @@ impl FractionatedMorse {
         }
 
         Ok(ciphertext)
+    }
+
+    /// Takes a Morse string and pads it with dots to a length that is a multiple of 3. This allows
+    /// it to be interpreted as a Fractionated Morse message.
+    fn pad_morse_message(morse: String) -> String {
+        let mut fractionated_morse = morse;
+
+        while fractionated_morse.len() % 3 != 0 {
+            fractionated_morse.push('.');
+        }
+
+        fractionated_morse
     }
 }
 
@@ -282,9 +276,9 @@ mod tests {
 
     #[test]
     fn encrypt_punctuation() {
-        let message = "Testing  punctuation!   Will it work?";
+        let message = "Testingpunctuation!Willitwork?";
         let f = FractionatedMorse::new(String::from("Punctuation")).unwrap();
-        assert_eq!("kqoqvwbtiafeoqklqwlocjrkidrnqxrljcvktnq", f.encrypt(message).unwrap());
+        assert_eq!("kqoqvwigqlocxurxnhvvekjncidqxtwkfeqgb", f.encrypt(message).unwrap());
     }
 
     #[test]
@@ -303,18 +297,18 @@ mod tests {
 
     #[test]
     fn exhaustive_encrypt() {
-        let message = "abcdefghijklmnopqrstuvwxyz1234567890 .,:\'\"!?@-;()=";
-        let encrypted = "sbiaqtndfnhhulsailijuicothksekjblurhujxjejes\
-                         ehbhfhghgdgjoalbjgeogtbdcunftfdbxqciuiusbsn";
+        let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,:\'\"!?@-;()=";
+        let encrypted = "sbiaqtndfnhhulsailijuicothksekjblurhsbiaqtndfnhhulsailijuicot\
+                         hksekjblurhujxjejesehbhfhghgdgjacrxlfhufoxiajxbociescaqfqflem";
         let f = FractionatedMorse::new(String::from("exhaustive")).unwrap();
         assert_eq!(encrypted, f.encrypt(message).unwrap());
     }
 
     #[test]
     fn exhaustive_decrypt() {
-        let encrypted = "sbiaqtndfnhhulsailijuicothksekjblurhujxjejes\
-                         ehbhfhghgdgjoalbjgeogtbdcunftfdbxqciuiusbsn";
-        let decrypted = "abcdefghijklmnopqrstuvwxyz1234567890 .,:\'\"!?@-;()= i";
+        let encrypted = "sbiaqtndfnhhulsailijuicothksekjblurhsbiaqtndfnhhulsailijuicot\
+                         hksekjblurhujxjejesehbhfhghgdgjacrxlfhufoxiajxbociescaqfqflem";
+        let decrypted = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz1234567890.,:\'\"!?@-;()=";
         let f = FractionatedMorse::new(String::from("exhaustive")).unwrap();
         assert_eq!(decrypted, f.decrypt(encrypted).unwrap());
     }
@@ -322,6 +316,13 @@ mod tests {
     #[test]
     fn bad_key() {
         assert!(FractionatedMorse::new(String::from("bad key")).is_err());
+    }
+
+    #[test]
+    fn encrypt_bad_message() {
+        let message = "Spaces are not supported.";
+        let f = FractionatedMorse::new(String::from("")).unwrap();
+        assert!(f.encrypt(message).is_err());
     }
 
     #[test]

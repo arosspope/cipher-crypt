@@ -4,3 +4,4 @@ pub mod alphabet;
 pub mod substitute;
 pub mod cipher;
 pub mod keygen;
+pub mod morse_alphabet;
