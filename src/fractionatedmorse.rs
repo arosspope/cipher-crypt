@@ -128,14 +128,14 @@ impl Cipher for FractionatedMorse {
 
 impl FractionatedMorse {
 
-    /// Takes a string and trys to convert it to Morse code, using the character `|` as a
+    /// Takes a string and tries to convert it to Morse code, using the character `|` as a
     /// separator. The Morse code is ended with two separators `||`. This function returns `Err`
     /// if an unsupported symbol is present. The support characters are `a-z`, `A-Z`, `0-9` and
     /// the special characters `@ ( ) . , : ' " ! ? - ; =`.
     fn to_morse(message: String) -> Result<String, &'static str> {
         let mut morse = String::new();
 
-        // Attempy to convert each letter in message to the corresponding Morse code.
+        // Attempt to convert each letter in message to the corresponding Morse code.
         for c in message.chars() {
             if let Some(m) = morse_alphabet::to_morse(c) {
                 morse.extend(m.chars());
@@ -145,7 +145,7 @@ impl FractionatedMorse {
             }     
         }
 
-        // Finish the morse message with a double seperator `||`.
+        // Finish the Morse message with a double separator `||`.
         morse.push('|');
 
         Ok(morse)
@@ -163,8 +163,8 @@ impl FractionatedMorse {
 
         // Loop over every Morse character
         for morse_chr in morse.split('|') {
-            // If a double seperator is present we have reached the end of the message therefore we
-            // can break. A double seperator will produce an empty string when split in the line above.
+            // If a double separator is present we have reached the end of the message therefore we
+            // can break. A double separator will produce an empty string when split in the line above.
             if morse_chr == "" {
                 break;
             }
@@ -177,15 +177,10 @@ impl FractionatedMorse {
             }
         }
 
-        // Messages are ended with `||` but this will be decoded as a two spaces in the loop above.
-        // Therefore remove any trailing whitespace. This will also remove any whitespace present
-        // at the end of the plaintext.
-        plaintext = plaintext.trim_right().to_string();
-
         Ok(plaintext)
     }
 
-    /// Takes purely alphabetic ciphertext and converts it to Fractionated Morse. This function will
+    /// Takes a purely alphabetic ciphertext and converts it to Fractionated Morse. This function will
     /// return `Err` if a non-alphabetic symbol is present in the message.
     fn to_fractionated_morse(key: &String, message: String) -> Result<String, &'static str> {
         let mut frac_morse = String::new();
@@ -203,14 +198,14 @@ impl FractionatedMorse {
         Ok(frac_morse)
     }
 
-    /// Takes a Morse string and converts it to a purely alphabetic string using the Fractionate
+    /// Takes a Morse string and converts it to a purely alphabetic string using the Fractionated
     /// Morse alphabet. This function returns `Err` if an invalid Fractionated Morse trigraph is
     /// encountered.
     fn to_ciphertext(key: &str, morse: String) -> Result<String, &'static str> {
         let mut ciphertext = String::new();
 
-        // Pad the string so its length is a multiple of 3. This is required to allow the morse
-        // message to be intepreted as a Fractionated Morse message.
+        // Pad the string so its length is a multiple of 3. This is required to allow the Morse
+        // message to be interpreted as a Fractionated Morse message.
         let fractionated_morse = FractionatedMorse::pad_morse_message(morse);
 
         // Loop over each trigraph and decode it to an alphabetic character
