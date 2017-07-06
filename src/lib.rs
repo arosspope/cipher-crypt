@@ -32,6 +32,7 @@ pub mod rot13;
 pub mod railfence;
 pub mod fractionatedmorse;
 pub mod hill;
+pub mod autokey;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
@@ -40,3 +41,4 @@ pub use railfence::Railfence;
 pub use rot13 as ROT13;
 pub use hill::Hill;
 pub use fractionatedmorse::FractionatedMorse;
+pub use autokey::Autokey;

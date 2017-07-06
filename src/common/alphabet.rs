@@ -26,3 +26,29 @@ pub fn get_letter(index: usize, is_uppercase: bool) -> Option<char> {
         false => Some(ALPHABET_LOWER[index])
     }
 }
+
+/// Performs a modulo on an index so that its value references a position within the alphabet. This
+/// function handles negative wrap around modulo as rust does not natievly support it.
+///
+pub fn modulo(i: isize) -> usize {
+    (((i % 26) + 26) % 26) as usize
+}
+
+/// Will check if the text contains alphabetic symbols only.
+///
+pub fn is_alphabetic_only(text: &str) -> bool {
+    for c in text.chars() {
+        if find_position(c).is_none(){
+            return false;
+        }
+    }
+
+    true
+}
+
+/// Will scrub non-alphabetic characters from the text and return the scrubed version
+///
+pub fn scrub_text(text: &str) -> String {
+    text.chars().into_iter()
+        .filter(|&c| find_position(c).is_some()).collect()
+}
