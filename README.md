@@ -16,7 +16,7 @@ cipher-crypt = "^0.5"
 ```
 Using the crate as such:
 
-![rot13-demo](http://i.imgur.com/XmQOD1F.gif)
+![rot13-demo](http://i.imgur.com/5pywJBn.gif)
 
 ## Ciphers
 
