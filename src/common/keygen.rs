@@ -1,6 +1,5 @@
-//! Contains functions used to generate scrambled alphabets from a key.
+//! This module contains functions for the generation of keys.
 //!
-
 use std::ascii::AsciiExt;
 use super::alphabet;
 
@@ -8,34 +7,27 @@ use super::alphabet;
 /// e.g. A key of `alphabet` will produce the result `alphbetcdfgijkmnoqrsuvwxyz`.
 ///
 /// Will return Err if a non-alphabetic symbol is present in the key.
-pub fn keyed_alphabet(key: &str, make_uppercase: bool) -> Result<String, &'static str> {
+pub fn keyed_alphabet(key: &str, is_uppercase: bool) -> Result<String, &'static str> {
+    if !alphabet::is_alphabetic_only(&key) {
+        return Err("Invalid key. Key cannot contain non-alphabetic symbols.");
+    }
 
-    // A String to store our new keyed alphabet.
+    //Loop through each value in the key and add to our keyed alphabet if it isn't already there
     let mut keyed_alphabet = String::new();
-
-    // Loop over the key and add each unique letter to the keyed alphabet.
     for c in key.chars() {
-        match alphabet::find_position(c) {
-            Some(pos) => {
-                // Add the letter to the keyed alphabet if it is not already present. 
-                if keyed_alphabet.chars().position(|a| a.eq_ignore_ascii_case(&c)).is_none() {
-                    // pos is obtained from alphabet::find_position() therefore this unwrap is safe.
-                    keyed_alphabet.push(alphabet::get_letter(pos, make_uppercase).unwrap());
-                }
-            },
-            None => {
-                // Keys can only contain characters in the known alphabet.
-                return Err("Invalid key. Key cannot contain non-alphabetic symbols.");
+        if keyed_alphabet.chars().find(|a| a.eq_ignore_ascii_case(&c)).is_none() {
+            match is_uppercase {
+                true => keyed_alphabet.push_str(&c.to_uppercase().to_string()),
+                false => keyed_alphabet.push_str(&c.to_lowercase().to_string()),
             }
         }
     }
 
     // Add remaining letters to the end of the keyed alphabet.
     for index in 0..26 {
-        let chr = alphabet::get_letter(index, false).unwrap();
-        if keyed_alphabet.chars().position(|a| a.eq_ignore_ascii_case(&chr)).is_none() {
-            // index is less than 26 therefore this unwrap is safe.
-            keyed_alphabet.push(alphabet::get_letter(index, make_uppercase).unwrap());
+        let c = alphabet::get_letter(index, is_uppercase).unwrap();
+        if keyed_alphabet.chars().find(|a| a.eq_ignore_ascii_case(&c)).is_none() {
+            keyed_alphabet.push(c);
         }
     }
 
