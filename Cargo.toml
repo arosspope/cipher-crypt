@@ -1,12 +1,13 @@
 [package]
 name = "cipher-crypt"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["arosspope <andrew.pope456@gmail.com>"]
 license = "MIT/Apache-2.0"
 homepage = "https://github.com/arosspope/cipher-crypt.git"
 repository = "https://github.com/arosspope/cipher-crypt.git"
 description = "A cryptographic tomb of ciphers forgotten by time."
 keywords = ["cipher", "crypto", "caesar", "rot13", "vigenere"]
+categories = ["algorithms", "cryptography"]
 readme = "README.md"
 documentation = "https://docs.rs/cipher-crypt/"
 
