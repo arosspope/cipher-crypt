@@ -52,3 +52,16 @@ pub fn scrub_text(text: &str) -> String {
     text.chars().into_iter()
         .filter(|&c| find_position(c).is_some()).collect()
 }
+
+/// Finds the multiplicative inverse of a number such that `a*x = 1 (mod 26)`. Where `a`
+/// is the number we are inverting, and `x` is the multiplicative inverse.
+///
+pub fn multiplicative_inverse(a: isize) -> Option<usize> {
+    for x in 1..26 {
+        if modulo((a * x) as isize) == 1 {
+            return Some(x as usize);
+        }
+    }
+
+    None
+}
