@@ -301,18 +301,13 @@ impl Hill {
         let det = key.clone().det();
 
         //Find the inverse determinant such that: d*d^-1 = 1 mod 26
-        let mut det_inverse: Option<isize> = None;
-        for i in 1..26 {
-            if alphabet::modulo(det as isize * i) == 1 {
-                det_inverse = Some(i);
-                break;
-            }
-        }
+        let det_inv = alphabet::multiplicative_inverse(det as isize)
+            .expect("Inverse for determinant could not be found.");
 
         //Calculate the inverse key matrix
         Ok ( key.inverse().unwrap().apply(&|x| {
             let y = (x * det as f64).round() as isize;
-            (alphabet::modulo(y) as f64 * det_inverse.expect("Inverse for determinant could not be found.") as f64) % 26.0
+            (alphabet::modulo(y) as f64 * det_inv as f64) % 26.0
         }))
     }
 }
