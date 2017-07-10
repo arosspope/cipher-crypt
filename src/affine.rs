@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn with_utf8(){
         let a = Affine::new((15, 10)).unwrap();
-        let message = "Peace, Freedom and Liberty! 🗡️";
+        let message = "Peace ✌️ Freedom and Liberty!";
 
         assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
     }
