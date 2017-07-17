@@ -28,7 +28,7 @@ impl Cipher for Polybius {
     /// * `a` or `b` are not in the inclusive range `1 - 26`.
     /// * `a` has a factor in common with 26.
     fn new(a_b: (usize, usize)) -> Result<Polybius, &'static str> {
-        let p = keygen::polybius_square("wubalubadub dub", ['a', 'b', 'c', 'd', 'e'], ['a', 'b', 'c', 'd', 'e']);
+        let p = keygen::polybius_square("wubalubadub dub", ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']);
 
 
 
@@ -83,7 +83,7 @@ impl Cipher for Polybius {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 
     // #[test]
     // fn encrypt_message() {

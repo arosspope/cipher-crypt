@@ -46,3 +46,4 @@ pub use fractionated_morse::FractionatedMorse;
 pub use autokey::Autokey;
 pub use affine::Affine;
 pub use polybius::Polybius;
+pub use common::keygen;

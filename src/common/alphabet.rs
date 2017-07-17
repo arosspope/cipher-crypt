@@ -6,12 +6,26 @@ const ALPHABET_LOWER: [char; 26] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
 const ALPHABET_UPPER: [char; 26] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 
+const NUMERIC: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
 /// Attempts to find the position of the character in either the lower or upper alphabet.
 ///
 pub fn find_position(c: char) -> Option<usize> {
     ALPHABET_LOWER.iter().position(|&a| a == c)
         .or(ALPHABET_UPPER.iter().position(|&a| a == c))
 }
+
+/// Attempts to find the position of the character in the numeric alphabet.
+///
+/// Note the index of numbers start at 26, e.g. 1 => pos 27 in the alphabet.
+pub fn find_numeric_position(c: char) -> Option<usize> {
+    if let Some(pos) = NUMERIC.iter().position(|&n| n == c) {
+        return Some(pos + 26);
+    }
+
+    None
+}
+
 
 /// Returns a letter from within the alphabet at a specific index
 ///
@@ -39,6 +53,18 @@ pub fn modulo(i: isize) -> usize {
 pub fn is_alphabetic_only(text: &str) -> bool {
     for c in text.chars() {
         if find_position(c).is_none(){
+            return false;
+        }
+    }
+
+    true
+}
+
+/// Will check if the text contains alphabetic and numeric symbols only.
+///
+pub fn is_alphanumeric_only(text: &str) -> bool {
+    for c in text.chars() {
+        if find_numeric_position(c).is_none() && find_position(c).is_none() {
             return false;
         }
     }

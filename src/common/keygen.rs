@@ -35,36 +35,73 @@ pub fn keyed_alphabet(key: &str, is_uppercase: bool) -> Result<String, &'static 
     Ok(keyed_alphabet)
 }
 
-pub fn polybius_square(key_square: &str, col_key: [char; 5], row_key: [char; 5])
+/// Generate a 6x6 polybius square hashmap from an alphanumeric key.
+/// For successfull generation, the following must be met:
+///
+/// * The `key` must have a length of 36.
+/// * The `key` must contain each character of the alphanumeric alphabet `a-z`, `0-9`.
+/// * The `key` must contain alphanumeric characters only.
+/// * The `column_ids` and `row_ids` must contain alphabetic characters only.
+///
+/// # Example
+/// Lets say the key was `or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z` and the ids were
+/// `column_ids = ['A','B','C','D','E', 'F']` `row_ids = ['A','B','C','D','E', 'F']`. Then the
+/// polybius square would look like ...
+///
+///    A B C D E F
+/// A| o r 0 a n g
+/// B| e 1 b c d f
+/// C| 2 h i j k 3
+/// D| l m p 4 q s
+/// E| 5 t u 6 v w
+/// F| 7 x 8 y 9 z
+///
+/// ```
+/// use cipher_crypt::keygen;
+///
+/// let square = keygen::polybius_square("or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z",
+///     ['A','B','C','D','E', 'F'], ['A','B','C','D','E', 'F']).unwrap();
+///
+/// assert_eq!(&'c', square.get("bd").unwrap());
+/// ```
+pub fn polybius_square(key: &str, column_ids: [char; 6], row_ids: [char; 6])
     -> Result<HashMap<String, char>, &'static str> {
 
-    if key_square.len() != 25 {
-        return Err("A polybius key square must have a length of 25 (alphabet key with i/j
-            combined).");
-    } else if !alphabet::is_alphabetic_only(key_square) {
-        return Err("A polybius key square cannot contain non-alphabetic symbols.");
-    }
+    let unique_chars: HashMap<_, _> = key.chars().into_iter()
+        .map(|c| (c, c))
+        .collect();
 
-    //TODO: check that each element of the alphabet is present
-
-    //Check that i and j have been combined
-    if key_square.chars().into_iter().any(|c| c.eq_ignore_ascii_case(&'i')) &&
-        key_square.chars().into_iter().any(|c| c.eq_ignore_ascii_case(&'j'))
+    //Validate the key
+    if key.len() != 36
     {
-        return Err("The characters 'i' & 'j' are combined in the polybius square. Only one of the
-            two can be included in the key squre.");
+        return Err("The key must contain each character of the alphanumeric alphabet a-z 0-9.");
+    }
+    else if key.len() - unique_chars.len() > 0
+    {
+        return Err("The key cannot contain duplicate alphanumeric characters.");
+    }
+    else if !alphabet::is_alphanumeric_only(key)
+    {
+        return Err("The key cannot contain non-alphanumeric symbols.");
     }
 
-    let mut square_chars = key_square.chars().into_iter();
+    //Check that the column and row ids are valid
+    if !alphabet::is_alphabetic_only(&column_ids.iter().cloned().collect::<String>()) ||
+        !alphabet::is_alphabetic_only(&row_ids.iter().cloned().collect::<String>())
+    {
+        return Err("The column or row ids cannot contain non-alphanumeric symbols.");
+    }
+
     let mut polybius_square = HashMap::new();
+    let mut values = key.chars().into_iter();
 
-    for i in 0..5 { //columns
-        for j in 0..5 { //rows
-            let mut key = String::from(row_key[j].to_string());
-            key.push(col_key[i]);
-            polybius_square.insert(key, square_chars.next().expect("Key square not big enough."));
+    for r in 0..6 {
+        for c in 0..6 {
+            let k = String::from(row_ids[r].to_string() + &column_ids[c].to_string());
+            let v = values.next().expect("alphabet square is invalid");
 
-            //TODO: check if i or j then push a new entry if so
+            polybius_square.insert(k.to_lowercase(), v.to_ascii_lowercase());
+            polybius_square.insert(k.to_uppercase(), v.to_ascii_uppercase());
         }
     }
 
@@ -77,11 +114,30 @@ mod tests {
 
     #[test]
     fn polybius_hashmap_order(){
-        let p = polybius_square("abcdefghiklmnopqrstuvwxyz", ['a', 'b', 'c', 'd', 'e'], ['a', 'b', 'c', 'd', 'e']).unwrap();
+        let p = polybius_square("abcdefghijklmnopqrstuvwxyz0123456789",
+        ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']).unwrap();
 
-        assert_eq!(&'a', p.get("aa").unwrap());
-        assert_eq!(&'c', p.get("ac").unwrap());
-        assert_eq!(&'e', p.get("ae").unwrap());
+        assert_eq!(&'a', p.get("aa").unwrap()); assert_eq!(&'c', p.get("ac").unwrap());
+        assert_eq!(&'e', p.get("ae").unwrap()); assert_eq!(&'h', p.get("bb").unwrap());
+        assert_eq!(&'z', p.get("eb").unwrap());
+    }
+
+    #[test]
+    fn polybius_duplicate_characters(){
+        assert!(polybius_square("abcdefghijklnnopqrstuvwxyz0123456789",
+        ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']).is_err());
+    }
+
+    #[test]
+    fn polybius_missing_characters(){
+        assert!(polybius_square("adefghiklnnopqrstuvwxyz", ['a', 'b', 'c', 'd', 'e', 'f'],
+        ['a', 'b', 'c', 'd', 'e', 'f']).is_err());
+    }
+
+    #[test]
+    fn polybius_non_alpha_characters(){
+        assert!(polybius_square("abcd@#!ghiklnnopqrstuvwxyz0123456789",
+        ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']).is_err());
     }
 
     #[test]
