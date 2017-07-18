@@ -1,38 +1,26 @@
-//! The Affine cipher is a special case of the more general monoalphabetic substitution cipher.
 //!
-//! The cipher is less secure than a substitution cipher as it is vulnerable to all of the attacks
-//! that work against substitution ciphers, in addition to other attacks. The cipher's primary
-//! weakness comes from the fact that if the cryptanalyst can discover the plaintext of two
-//! ciphertext characters, then the key can be obtained by solving a simultaneous equation
 //!
-use num::integer::gcd;
-use common::{substitute, alphabet, keygen};
+use std::collections::HashMap;
+use common::{alphabet, keygen};
 use common::cipher::Cipher;
 
-/// An Affine cipher.
+/// A Polybius square cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct Polybius {
-    a_b: (usize, usize),
+    square: HashMap<String, char>,
 }
 
 impl Cipher for Polybius {
-    type Key = (usize, usize);
+    type Key = (String, [char; 6], [char; 6]);
     type Algorithm = Polybius;
-
 
     /// Initialise an Affine cipher given the keys `a` and `b`.
     ///
-    /// Will return `Err` if one of the following conditions is detected:
-    ///
-    /// * `a` or `b` are not in the inclusive range `1 - 26`.
-    /// * `a` has a factor in common with 26.
-    fn new(a_b: (usize, usize)) -> Result<Polybius, &'static str> {
-        let p = keygen::polybius_square("wubalubadub dub", ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']);
+    fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
+        let square = keygen::polybius_square(&key.0, key.1, key.2)?;
 
-
-
-        Ok(Polybius {a_b: a_b})
+        Ok(Polybius {square: square})
     }
 
     /// Encrypt a message using an Affine cipher.
@@ -47,13 +35,26 @@ impl Cipher for Polybius {
     /// assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        // Encryption of a letter:
-        //         E(x) = (ax + b) mod 26
-        // Where;  x    = position of letter in alphabet
-        //         a, b = the numbers of the affine key
+        let mut ciphertext = String::new();
 
-        substitute::shift_substitution(message,
-            |idx| alphabet::modulo(((self.a_b.0*idx) + self.a_b.1) as isize))
+        for c in message.chars() {
+            let mut entry = None;
+
+            //Attempt to find what the character will map to in the polybius square
+            for (key, val) in self.square.iter() {
+                if val == &c {
+                    entry = Some(key);
+                }
+            }
+
+            match entry {
+                Some(s) => ciphertext.push_str(s),
+                //For unknown characters, just push to the ciphertext 'as-is'
+                None => ciphertext.push(c)
+            }
+        }
+
+        Ok(ciphertext)
     }
 
     /// Decrypt a message using an Affine cipher.
@@ -68,22 +69,62 @@ impl Cipher for Polybius {
     /// assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        // Decryption of a letter:
-        //         D(x) = (a^-1*(x - b)) mod 26
-        // Where;  x    = position of letter in alphabet
-        //         a^-1 = multiplicative inverse of the key number `a`
-        //         b    = a number of the affine key
-        let a_inv = alphabet::multiplicative_inverse(self.a_b.0 as isize)
-            .expect("Multiplicative inverse for 'a' could not be calculated.");
+        //We read the ciphertext two bytes at a time and transpose to the original message by the
+        //polybius square
+        let mut message = String::new();
+        let mut buffer = String::new();
 
-        substitute::shift_substitution(ciphertext,
-            |idx| alphabet::modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize)))
+        for c in ciphertext.chars().into_iter() {
+            if buffer.len() == 2 {
+                match self.square.get(&buffer) {
+                    Some(&val) => message.push(val),
+                    None => return Err("Unknown sequence in the ciphertext."),
+                }
+
+                buffer.clear();
+            }
+
+            match alphabet::find_alphanumeric_position(c) {
+                Some(_) => buffer.push(c),
+                None => message.push(c)
+            }
+
+        }
+
+        Ok(message)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
+    use super::*;
+
+    #[test]
+    fn encrypt_message() {
+        //     A B C D E F
+        //  A| o r 0 a n g
+        //  B| e 1 b c d f
+        //  C| 2 h i j k 3
+        //  D| l m p 4 q s
+        //  E| 5 t u 6 v w
+        //  F| 7 x 8 y 9 z
+        let p = Polybius::new(("or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
+            ['A','B','C','D','E', 'F'],
+            ['A','B','C','D','E', 'F'])).unwrap();
+
+        assert_eq!("BBAC AAabadaeafbadf adaebe CA ADdcdcdabadf!",
+            p.encrypt("10 Oranges and 2 Apples!").unwrap());
+    }
+
+    #[test]
+    fn decrypt_message() {
+        let p = Polybius::new(("or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
+            ['A','B','C','D','E', 'F'],
+            ['A','B','C','D','E', 'F'])).unwrap();
+
+        assert_eq!("10 Oranges and 2 Apples!",
+            p.decrypt("BBAC AAabadaeafbadf adaebe CA ADdcdcdabadf!").unwrap());
+    }
 
     // #[test]
     // fn encrypt_message() {

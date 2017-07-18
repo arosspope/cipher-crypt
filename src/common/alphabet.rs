@@ -18,14 +18,17 @@ pub fn find_position(c: char) -> Option<usize> {
 /// Attempts to find the position of the character in the numeric alphabet.
 ///
 /// Note the index of numbers start at 26, e.g. 1 => pos 27 in the alphabet.
-pub fn find_numeric_position(c: char) -> Option<usize> {
+pub fn find_alphanumeric_position(c: char) -> Option<usize> {
+    if let Some(pos) = find_position(c) {
+        return Some(pos);
+    }
+
     if let Some(pos) = NUMERIC.iter().position(|&n| n == c) {
         return Some(pos + 26);
     }
 
     None
 }
-
 
 /// Returns a letter from within the alphabet at a specific index
 ///
@@ -64,12 +67,18 @@ pub fn is_alphabetic_only(text: &str) -> bool {
 ///
 pub fn is_alphanumeric_only(text: &str) -> bool {
     for c in text.chars() {
-        if find_numeric_position(c).is_none() && find_position(c).is_none() {
+        if find_alphanumeric_position(c).is_none() {
             return false;
         }
     }
 
     true
+}
+
+/// Determines if the char is a number.
+///
+pub fn is_numeric(c: char) -> bool {
+    NUMERIC.iter().any(|&n| n == c)
 }
 
 /// Will scrub non-alphabetic characters from the text and return the scrubed version

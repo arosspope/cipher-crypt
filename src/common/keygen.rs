@@ -100,8 +100,14 @@ pub fn polybius_square(key: &str, column_ids: [char; 6], row_ids: [char; 6])
             let k = String::from(row_ids[r].to_string() + &column_ids[c].to_string());
             let v = values.next().expect("alphabet square is invalid");
 
-            polybius_square.insert(k.to_lowercase(), v.to_ascii_lowercase());
-            polybius_square.insert(k.to_uppercase(), v.to_ascii_uppercase());
+            if alphabet::is_numeric(v) {
+                //Numbers dont have case, so we just insert one entry
+                polybius_square.insert(k.to_uppercase(), v.to_ascii_uppercase());
+            } else {
+                //Insert entry for both the upper and lowercase version of the character
+                polybius_square.insert(k.to_lowercase(), v.to_ascii_lowercase());
+                polybius_square.insert(k.to_uppercase(), v.to_ascii_uppercase());
+            }
         }
     }
 
