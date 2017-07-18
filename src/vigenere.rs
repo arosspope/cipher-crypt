@@ -7,6 +7,7 @@ use std::iter;
 use common::substitute;
 use common::alphabet;
 use common::cipher::Cipher;
+use common::alphabet::Alphabet;
 
 /// A Vigenère cipher.
 ///
@@ -25,7 +26,7 @@ impl Cipher for Vigenere {
     fn new(key: String) -> Result<Vigenere, &'static str> {
         if key.len() < 1 {
             return Err("Invalid key. It must have at least one character.");
-        } else if !alphabet::is_alphabetic_only(&key) {
+        } else if !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Vigenère keys cannot contain non-alphabetic symbols.");
         }
 
@@ -49,7 +50,7 @@ impl Cipher for Vigenere {
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
         substitute::key_substitution(message, &mut self.keystream(message),
-            |mi, ki| alphabet::modulo((mi + ki) as isize))
+            |mi, ki| alphabet::STANDARD.modulo((mi + ki) as isize))
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -69,7 +70,7 @@ impl Cipher for Vigenere {
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
         substitute::key_substitution(ciphertext, &mut self.keystream(ciphertext),
-            |ci, ki| alphabet::modulo(ci as isize - ki as isize))
+            |ci, ki| alphabet::STANDARD.modulo(ci as isize - ki as isize))
     }
 }
 
@@ -80,7 +81,7 @@ impl Vigenere {
     /// message.
     fn keystream(&self, message: &str) -> Vec<char> {
         //The key will only be used to encrypt the portion of the message that is alphabetic
-        let scrubbed_msg = alphabet::scrub_text(&message);
+        let scrubbed_msg = alphabet::STANDARD.scrub(&message);
 
         //The key is large enough for the message already
         if self.key.len() >= scrubbed_msg.len() {

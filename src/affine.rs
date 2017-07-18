@@ -7,6 +7,7 @@
 //!
 use num::integer::gcd;
 use common::{substitute, alphabet};
+use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 
 /// An Affine cipher.
@@ -60,7 +61,7 @@ impl Cipher for Affine {
         //         a, b = the numbers of the affine key
 
         substitute::shift_substitution(message,
-            |idx| alphabet::modulo(((self.a_b.0*idx) + self.a_b.1) as isize))
+            |idx| alphabet::STANDARD.modulo(((self.a_b.0*idx) + self.a_b.1) as isize))
     }
 
     /// Decrypt a message using an Affine cipher.
@@ -80,11 +81,11 @@ impl Cipher for Affine {
         // Where;  x    = position of letter in alphabet
         //         a^-1 = multiplicative inverse of the key number `a`
         //         b    = a number of the affine key
-        let a_inv = alphabet::multiplicative_inverse(self.a_b.0 as isize)
+        let a_inv = alphabet::STANDARD.multiplicative_inverse(self.a_b.0 as isize)
             .expect("Multiplicative inverse for 'a' could not be calculated.");
 
         substitute::shift_substitution(ciphertext,
-            |idx| alphabet::modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize)))
+            |idx| alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize)))
     }
 }
 

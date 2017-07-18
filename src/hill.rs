@@ -14,6 +14,7 @@
 //! `Hill::from_phrase(...)`.
 //!
 use common::alphabet;
+use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 use num::integer::gcd;
 use rulinalg::matrix::{Matrix, BaseMatrix, BaseMatrixMut};
@@ -210,7 +211,7 @@ impl Hill {
 
         let mut matrix: Vec<isize> = Vec::new();
         for c in phrase.chars(){
-            match alphabet::find_position(c) {
+            match alphabet::STANDARD.find_position(c) {
                 Some(pos) => matrix.push(pos as isize),
                 None => return Err("Phrase cannot contain non-alphabetic symbols."),
             }
@@ -225,7 +226,7 @@ impl Hill {
     fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
         //Only allow chars in the alphabet (no whitespace or symbols)
         for c in message.chars(){
-            if alphabet::find_position(c).is_none(){
+            if alphabet::STANDARD.find_position(c).is_none(){
                 return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.");
             }
         }
@@ -273,7 +274,7 @@ impl Hill {
         let mut index_representation: Vec<f64> = Vec::new();
         for c in chunk.chars() {
             index_representation.push(
-                alphabet::find_position(c)
+                alphabet::STANDARD.find_position(c)
                 .expect("Attempted transformation of non-alphabetic symbol") as f64
             );
         }
@@ -287,7 +288,7 @@ impl Hill {
             let orig = chunk.chars().nth(i).expect("Expected to find char at index.");
 
             transformed.push(
-                alphabet::get_letter(*pos as usize, orig.is_uppercase())
+                alphabet::STANDARD.get_letter(*pos as usize, orig.is_uppercase())
                 .expect("Calculate index is invalid.")
             );
         }
@@ -301,13 +302,13 @@ impl Hill {
         let det = key.clone().det();
 
         //Find the inverse determinant such that: d*d^-1 = 1 mod 26
-        let det_inv = alphabet::multiplicative_inverse(det as isize)
+        let det_inv = alphabet::STANDARD.multiplicative_inverse(det as isize)
             .expect("Inverse for determinant could not be found.");
 
         //Calculate the inverse key matrix
         Ok ( key.inverse().unwrap().apply(&|x| {
             let y = (x * det as f64).round() as isize;
-            (alphabet::modulo(y) as f64 * det_inv as f64) % 26.0
+            (alphabet::STANDARD.modulo(y) as f64 * det_inv as f64) % 26.0
         }))
     }
 }

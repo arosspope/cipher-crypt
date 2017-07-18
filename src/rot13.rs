@@ -5,6 +5,7 @@
 //! this module does not implement the `Cipher` trait.
 //!
 use common::{alphabet, substitute};
+use common::alphabet::Alphabet;
 
 /// Encrypt or decrypt a message using the ROT13 substitute cipher.
 ///
@@ -20,7 +21,8 @@ use common::{alphabet, substitute};
 pub fn apply(message: &str) -> String {
     // The closure below is guaranteed to produce a number less than 26, therefore the
     // substitution will not return an error and we can unwrap safely.
-    substitute::shift_substitution(message, |i| alphabet::modulo((i + 13) as isize)).unwrap()
+    substitute::shift_substitution(message,
+        |i| alphabet::STANDARD.modulo((i + 13) as isize)).unwrap()
 }
 
 #[cfg(test)]

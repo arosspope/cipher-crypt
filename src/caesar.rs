@@ -6,6 +6,7 @@
 //!
 use common::{substitute, alphabet};
 use common::cipher::Cipher;
+use common::alphabet::Alphabet;
 
 /// A Caesar cipher.
 ///
@@ -47,7 +48,7 @@ impl Cipher for Caesar {
         //         n = shift factor (or key)
 
         substitute::shift_substitution(message,
-            |idx| alphabet::modulo((idx + self.shift) as isize))
+            |idx| alphabet::STANDARD.modulo((idx + self.shift) as isize))
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -68,7 +69,7 @@ impl Cipher for Caesar {
         //         n = shift factor (or key)
 
         substitute::shift_substitution(ciphertext,
-            |idx| alphabet::modulo(idx as isize - self.shift as isize))
+            |idx| alphabet::STANDARD.modulo(idx as isize - self.shift as isize))
     }
 }
 

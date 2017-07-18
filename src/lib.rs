@@ -34,6 +34,7 @@ pub mod fractionated_morse;
 pub mod hill;
 pub mod autokey;
 pub mod affine;
+pub mod polybius;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
@@ -44,3 +45,4 @@ pub use hill::Hill;
 pub use fractionated_morse::FractionatedMorse;
 pub use autokey::Autokey;
 pub use affine::Affine;
+pub use polybius::Polybius;

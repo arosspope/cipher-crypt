@@ -12,7 +12,7 @@ adding the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.7"
+cipher-crypt = "^0.8"
 ```
 Using the crate as such:
 
@@ -27,7 +27,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Affine
 - [x] Rail-fence
 - [ ] Baconian
-- [ ] Polybius Square
+- [x] Polybius Square
 - [ ] Columnar Transposition
 - [x] Autokey
 - [ ] Porta
