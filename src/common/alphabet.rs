@@ -8,95 +8,135 @@ const ALPHABET_UPPER: [char; 26] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 
 const NUMERIC: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-/// Attempts to find the position of the character in either the lower or upper alphabet.
-///
-pub fn find_position(c: char) -> Option<usize> {
-    ALPHABET_LOWER.iter().position(|&a| a == c)
-        .or(ALPHABET_UPPER.iter().position(|&a| a == c))
-}
+pub const STANDARD: Standard = Standard;
+pub const ALPHANUMERIC: Alphanumeric = Alphanumeric;
 
-/// Attempts to find the position of the character in the numeric alphabet.
-///
-/// Note the index of numbers start at 26, e.g. 1 => pos 27 in the alphabet.
-pub fn find_alphanumeric_position(c: char) -> Option<usize> {
-    if let Some(pos) = find_position(c) {
-        return Some(pos);
+pub trait Alphabet {
+    /// Attempts to find the position of the character in the alphabet.
+    ///
+    fn find_position(&self, c: char) -> Option<usize>;
+
+    /// Returns a letter from within the alphabet at a specific index.
+    ///
+    /// Will return None if the index is out of bounds
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char>;
+
+    /// Performs a modulo on an index so that its value references a position within the alphabet.
+    /// This function handles negative wrap around modulo as rust does not natievly support it.
+    ///
+    fn modulo(&self, i: isize) -> usize {
+        (((i % self.length() as isize) + self.length() as isize) % self.length() as isize) as usize
     }
 
-    if let Some(pos) = NUMERIC.iter().position(|&n| n == c) {
-        return Some(pos + 26);
+    /// Will check if the text contains valid alphabetic symbols only.
+    ///
+    fn is_valid(&self, text: &str) -> bool;
+
+    /// Will scrub non-alphabetic characters from the text and return the scrubed version.
+    ///
+    fn scrub(&self, text: &str) -> String {
+        text.chars().into_iter()
+            .filter(|&c| self.find_position(c).is_some()).collect()
     }
 
-    None
-}
+    /// Finds the multiplicative inverse of an index such that `a*x = 1 (mod n)`. Where `a`
+    /// is the number we are inverting, `x` is the multiplicative inverse, and `n` is the length of
+    /// the alphabet.
+    ///
+    fn multiplicative_inverse(&self, a: isize) -> Option<usize> {
+        for x in 1..self.length() {
+            if self.modulo((a * x as isize) as isize) == 1 {
+                return Some(x as usize);
+            }
+        }
 
-/// Returns a letter from within the alphabet at a specific index
-///
-/// Will return None if the index is out of bounds
-pub fn get_letter(index: usize, is_uppercase: bool) -> Option<char> {
-    if index > 25 {
-        return None;
+        None
     }
 
-    match is_uppercase {
-        true => Some(ALPHABET_UPPER[index]),
-        false => Some(ALPHABET_LOWER[index])
+    /// Returns the length of the alphabet
+    ///
+    fn length(&self) -> usize;
+}
+
+pub struct Standard;
+impl Alphabet for Standard {
+    fn find_position(&self, c: char) -> Option<usize> {
+        ALPHABET_LOWER.iter().position(|&a| a == c)
+            .or(ALPHABET_UPPER.iter().position(|&a| a == c))
     }
-}
 
-/// Performs a modulo on an index so that its value references a position within the alphabet. This
-/// function handles negative wrap around modulo as rust does not natievly support it.
-///
-pub fn modulo(i: isize) -> usize {
-    (((i % 26) + 26) % 26) as usize
-}
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char> {
+        if index > self.length() {
+            return None;
+        }
 
-/// Will check if the text contains alphabetic symbols only.
-///
-pub fn is_alphabetic_only(text: &str) -> bool {
-    for c in text.chars() {
-        if find_position(c).is_none(){
-            return false;
+        match is_uppercase {
+            true => Some(ALPHABET_UPPER[index]),
+            false => Some(ALPHABET_LOWER[index])
         }
     }
 
-    true
+    fn is_valid(&self, text: &str) -> bool {
+        for c in text.chars() {
+            if self.find_position(c).is_none(){
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn length(&self) -> usize {
+        26
+    }
 }
 
-/// Will check if the text contains alphabetic and numeric symbols only.
-///
-pub fn is_alphanumeric_only(text: &str) -> bool {
-    for c in text.chars() {
-        if find_alphanumeric_position(c).is_none() {
-            return false;
+pub struct Alphanumeric;
+impl Alphabet for Alphanumeric {
+    fn find_position(&self, c: char) -> Option<usize> {
+        if let Some(pos) = STANDARD.find_position(c) {
+            return Some(pos);
+        }
+
+        if let Some(pos) = NUMERIC.iter().position(|&n| n == c) {
+            return Some(pos + 26);
+        }
+
+        None
+    }
+
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char> {
+        if index > self.length() {
+            return None;
+        }
+
+        if index > 25 {
+            return Some(NUMERIC[index - 26]);
+        }
+
+        match is_uppercase {
+            true => Some(ALPHABET_UPPER[index]),
+            false => Some(ALPHABET_LOWER[index])
         }
     }
 
-    true
+    fn is_valid(&self, text: &str) -> bool {
+        for c in text.chars() {
+            if self.find_position(c).is_none() {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn length(&self) -> usize {
+        36
+    }
 }
 
 /// Determines if the char is a number.
 ///
 pub fn is_numeric(c: char) -> bool {
     NUMERIC.iter().any(|&n| n == c)
-}
-
-/// Will scrub non-alphabetic characters from the text and return the scrubed version
-///
-pub fn scrub_text(text: &str) -> String {
-    text.chars().into_iter()
-        .filter(|&c| find_position(c).is_some()).collect()
-}
-
-/// Finds the multiplicative inverse of a number such that `a*x = 1 (mod 26)`. Where `a`
-/// is the number we are inverting, and `x` is the multiplicative inverse.
-///
-pub fn multiplicative_inverse(a: isize) -> Option<usize> {
-    for x in 1..26 {
-        if modulo((a * x) as isize) == 1 {
-            return Some(x as usize);
-        }
-    }
-
-    None
 }

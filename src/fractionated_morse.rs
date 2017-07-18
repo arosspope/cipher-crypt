@@ -8,6 +8,7 @@
 //!
 use common::cipher::Cipher;
 use common::{alphabet, keygen, morse};
+use common::alphabet::Alphabet;
 
 // The fractionated morse trigraph 'alphabet'. Each sequence represents a letter of the alphabet.
 const TRIGRAPH_ALPHABET: [&str; 26] = ["...", "..-", "..|", ".-.", ".--", ".-|", ".|.", ".|-",
@@ -29,11 +30,11 @@ impl Cipher for FractionatedMorse {
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols or is empty.
     fn new(key: String) -> Result<FractionatedMorse, &'static str> {
-        if key.len() < 1 || !alphabet::is_alphabetic_only(&key) {
+        if key.len() < 1 || !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Keys cannot contain non-alphabetic symbols.");
         }
 
-        let keyed_alphabet = keygen::keyed_alphabet(&key, true)?;
+        let keyed_alphabet = keygen::keyed_alphabet(&key, alphabet::STANDARD, true)?;
         Ok(FractionatedMorse { keyed_alphabet: keyed_alphabet })
     }
 

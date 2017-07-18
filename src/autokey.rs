@@ -6,6 +6,7 @@
 //! generally more secure than the Vigenere cipher.
 use common::cipher::Cipher;
 use common::{substitute, alphabet};
+use common::alphabet::Alphabet;
 
 /// An Autokey cipher.
 ///
@@ -24,7 +25,7 @@ impl Cipher for Autokey {
     fn new(key: String) -> Result<Autokey, &'static str> {
         if key.len() < 1 {
             return Err("Invalid key. It must have at least one character.");
-        } else if !alphabet::is_alphabetic_only(&key) {
+        } else if !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Autokey keys cannot contain non-alphabetic symbols.");
         }
 
@@ -48,7 +49,7 @@ impl Cipher for Autokey {
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
         substitute::key_substitution(message, &mut self.encrypt_keystream(message),
-            |mi, ki| alphabet::modulo((mi + ki) as isize))
+            |mi, ki| alphabet::STANDARD.modulo((mi + ki) as isize))
     }
 
     /// Decrypt a message using an Autokey cipher.
@@ -86,7 +87,7 @@ impl Autokey {
 
         for cc in ciphertext.chars() {
             //Find the index of the ciphertext character in the alphabet (if it exists in there)
-            let pos = alphabet::find_position(cc);
+            let pos = alphabet::STANDARD.find_position(cc);
             match pos {
                 Some(ci) => {
                     //Get the next key character in the stream (we always read from position 0)
@@ -95,12 +96,12 @@ impl Autokey {
                     }
 
                     let kc = keystream[0];
-                    if let Some(ki) = alphabet::find_position(kc) {
+                    if let Some(ki) = alphabet::STANDARD.find_position(kc) {
                         //Calculate the index and retrieve the letter to substitute
-                        let si = alphabet::modulo(ci as isize - ki as isize);
+                        let si = alphabet::STANDARD.modulo(ci as isize - ki as isize);
 
                         //We can safely unwrap as we know the index will be within the alphabet
-                        let s = alphabet::get_letter(si, cc.is_uppercase()).unwrap();
+                        let s = alphabet::STANDARD.get_letter(si, cc.is_uppercase()).unwrap();
 
                         //Push to the decrypted text AND the keystream
                         plaintext.push(s);
@@ -123,7 +124,7 @@ impl Autokey {
     /// Will simply return a copy of the key if its length is already larger than the message.
     fn encrypt_keystream(&self, message: &str) -> Vec<char> {
         //The key will only be used to encrypt the portion of the message that is alphabetic
-        let scrubbed_msg = alphabet::scrub_text(&message);
+        let scrubbed_msg = alphabet::STANDARD.scrub(&message);
 
         //The key is large enough for the message already
         if self.key.len() >= scrubbed_msg.len() {
