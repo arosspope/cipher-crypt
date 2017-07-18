@@ -6,8 +6,8 @@ use super::alphabet;
 use super::alphabet::{Alphabet, STANDARD, ALPHANUMERIC};
 
 /// Generates a scrambled alphabet using a key phrase for a given alphabet type.
-/// Lets consider the key `or0ange` for an alphanumeric alphabet. The resulting keyed alphabet
-/// would be ``
+/// Lets consider the key `or0an3ge` for an alphanumeric alphabet. The resulting keyed alphabet
+/// would be `or0an3gebcdfhijklmpqstuvwxyz12456789`.
 ///
 /// Will return Err if invalid alphabetic symbols are within the key.
 pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: T, to_uppercase: bool)
@@ -91,8 +91,22 @@ pub fn polybius_square(key: &str, column_ids: [char; 6], row_ids: [char; 6])
     if !STANDARD.is_valid(&column_ids.iter().cloned().collect::<String>()) ||
         !STANDARD.is_valid(&row_ids.iter().cloned().collect::<String>())
     {
-        return Err("The column or row ids cannot contain non-alphabetic symbols.");
+        return Err("The column and row ids cannot contain non-alphabetic symbols.");
     }
+
+    //We need to check that each character within the row or column is unique
+    let unique_cols: HashMap<_, _>  = column_ids.iter().cloned()
+        .map(|c| (c.to_ascii_lowercase(), c))
+        .collect();
+
+    let unique_rows: HashMap<_, _>  = row_ids.iter().cloned()
+            .map(|c| (c.to_ascii_lowercase(), c))
+            .collect();
+
+    if column_ids.len() - unique_cols.len() > 0 || row_ids.len() - unique_rows.len() > 0 {
+        return Err("The column or row ids cannot contain repeated characters.");
+    }
+
 
     let mut polybius_square = HashMap::new();
     let mut values = key.chars().into_iter();
@@ -149,6 +163,18 @@ mod tests {
         ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']).is_err());
     }
 
+    #[test]
+    fn polybius_repeated_column_ids() {
+        assert!(polybius_square("abcdefghijklmnopqrstuvwxyz0123456789",
+        ['a', 'a', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'd', 'e', 'f']).is_err());
+    }
+
+    #[test]
+    fn polybius_repeated_row_ids() {
+        assert!(polybius_square("abcdefghijklmnopqrstuvwxyz0123456789",
+        ['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'c', 'e', 'f']).is_err());
+    }
+
     //Keyed alphabet tests
     #[test]
     fn generate_numeric_alphabet() {
@@ -156,60 +182,39 @@ mod tests {
         assert_eq!(keyed_alphabet, "or0angebcdfhijklmpqstuvwxyz123456789");
     }
 
-//     //Tests for alphabetic characters
-//     #[test]
-//     fn generate_alphabet() {
-//         let keyed_alphabet = keyed_alphabet("test", false).unwrap();
-//         assert_eq!(keyed_alphabet, "tesabcdfghijklmnopqruvwxyz");
-//     }
-//
-//     #[test]
-//     fn generate_alphabet_mixed_key() {
-//         let keyed_alphabet = keyed_alphabet("ALphaBEt", false).unwrap();
-//         assert_eq!(keyed_alphabet, "alphbetcdfgijkmnoqrsuvwxyz");
-//     }
-//
-//     #[test]
-//     fn generate_uppercase_alphabet() {
-//         let keyed_alphabet = keyed_alphabet("OranGE", true).unwrap();
-//         assert_eq!(keyed_alphabet, "ORANGEBCDFHIJKLMPQSTUVWXYZ");
-//     }
-//
-//     #[test]
-//     fn generate_alphabet_bad_key() {
-//         assert!(keyed_alphabet("bad key", false).is_err());
-//     }
-// //Tests for alphabetic characters
-//     #[test]
-//     fn generate_alphabet() {
-//         let keyed_alphabet = keyed_alphabet("test", false).unwrap();
-//         assert_eq!(keyed_alphabet, "tesabcdfghijklmnopqruvwxyz");
-//     }
-//
-//     #[test]
-//     fn generate_alphabet_mixed_key() {
-//         let keyed_alphabet = keyed_alphabet("ALphaBEt", false).unwrap();
-//         assert_eq!(keyed_alphabet, "alphbetcdfgijkmnoqrsuvwxyz");
-//     }
-//
-//     #[test]
-//     fn generate_uppercase_alphabet() {
-//         let keyed_alphabet = keyed_alphabet("OranGE", true).unwrap();
-//         assert_eq!(keyed_alphabet, "ORANGEBCDFHIJKLMPQSTUVWXYZ");
-//     }
-//
-//     #[test]
-//     fn generate_alphabet_bad_key() {
-//         assert!(keyed_alphabet("bad key",
-//     #[test]
-//     fn generate_alphabet_no_key() {
-//         let keyed_alphabet = keyed_alphabet("", false).unwrap();
-//         assert_eq!(keyed_alphabet, "abcdefghijklmnopqrstuvwxyz");
-//     }
-//
-//     #[test]
-//     fn generate_alphabet_long_key() {
-//         let keyed_alphabet = keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", true).unwrap();
-//         assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
-//     }
+    #[test]
+    fn generate_standard_alphabet() {
+        let keyed_alphabet = keyed_alphabet("test", STANDARD, false).unwrap();
+        assert_eq!(keyed_alphabet, "tesabcdfghijklmnopqruvwxyz");
+    }
+
+    #[test]
+    fn generate_alphabet_mixed_key() {
+        let keyed_alphabet = keyed_alphabet("ALphaBEt", STANDARD, false).unwrap();
+        assert_eq!(keyed_alphabet, "alphbetcdfgijkmnoqrsuvwxyz");
+    }
+
+    #[test]
+    fn generate_uppercase_alphabet() {
+        let keyed_alphabet = keyed_alphabet("OranGE", STANDARD, true).unwrap();
+        assert_eq!(keyed_alphabet, "ORANGEBCDFHIJKLMPQSTUVWXYZ");
+    }
+
+    #[test]
+    fn generate_alphabet_bad_key() {
+        assert!(keyed_alphabet("bad key", STANDARD, false).is_err());
+    }
+
+    #[test]
+    fn generate_alphabet_no_key() {
+        let keyed_alphabet = keyed_alphabet("", STANDARD, false).unwrap();
+        assert_eq!(keyed_alphabet, "abcdefghijklmnopqrstuvwxyz");
+    }
+
+    #[test]
+    fn generate_alphabet_long_key() {
+        let keyed_alphabet = keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii",
+            STANDARD, true).unwrap();
+        assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
+    }
 }

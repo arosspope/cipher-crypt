@@ -1,9 +1,11 @@
-//!
+//! The Polybius square, also known as the Polybius checkerboard, is a device invented by the
+//! Ancient Greek historian and scholar Polybius, for fractionating plaintext characters so that
+//! they can be represented by a smaller set of symbols.
 //!
 use std::collections::HashMap;
-use common::{alphabet, keygen};
-use common::alphabet::Alphabet;
 use common::cipher::Cipher;
+use common::alphabet::Alphabet;
+use common::{alphabet, keygen};
 
 /// A Polybius square cipher.
 ///
@@ -16,8 +18,46 @@ impl Cipher for Polybius {
     type Key = (String, [char; 6], [char; 6]);
     type Algorithm = Polybius;
 
-    /// Initialise an Affine cipher given the keys `a` and `b`.
+    /// Initialise a Polybius square cipher.
     ///
+    /// In this implementation each part of the `key` is used to initialise a 6x6 polybius square.
+    /// The `key` tuple maps to the following `(String, [char; 6], [char; 6]) = (phase,
+    /// column_ids, row_ids)`.
+    ///
+    /// Where ...
+    ///
+    /// * `phrase` is used to generate an alphanumeric keyed alphabet. It can contain characters
+    /// `a-z 0-9`.
+    /// * `column_ids` are unique identifiers used for each column of the polybius square. Valid
+    /// characters are alphabetic only (`a-z`).
+    /// * `row_ids` are unique identifiers used for each row of the polybius square. Valid
+    /// characters can be alphabetic only (`a-z`).
+    ///
+    /// # Example
+    /// Lets say the phrase was `or0an3ge` the column_ids were `['A','Z','C','D','E','F']`
+    /// and the row_ids were `['A','B','G','D','E','F']`. Then the polybius square would look like
+    /// ...
+    ///
+    /// ```md,no_run
+    /// __ A Z C D E F
+    /// A| o r 0 a n 3
+    /// B| g e b c d f
+    /// G| h i j k l m
+    /// D| p q s t u v
+    /// E| w x y z 1 2
+    /// F| 4 5 6 7 8 9
+    /// ```
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Polybius};
+    ///
+    /// let p = Polybius::new((String::from("or0an3ge"), ['A','Z','C','D','E','F'],
+    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///
+    /// assert_eq!("EEAC AAazadaebabzdc adaebe EF ADdadagebzdc!",
+    ///    p.encrypt("10 Oranges and 2 Apples!").unwrap());
+    /// ```
     fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
         let alphabet_key = keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
         let square = keygen::polybius_square(&alphabet_key, key.1, key.2)?;
@@ -25,16 +65,19 @@ impl Cipher for Polybius {
         Ok(Polybius {square: square})
     }
 
-    /// Encrypt a message using an Affine cipher.
+    /// Encrypt a message using a Polybius square cipher.
     ///
     /// # Examples
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::{Cipher, Affine};
+    /// use cipher_crypt::{Cipher, Polybius};
     ///
-    /// let a = Affine::new((3, 7)).unwrap();
-    /// assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
+    /// let p = Polybius::new((String::from("p0lyb1us"), ['A','Z','C','D','E','F'],
+    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///
+    /// assert_eq!("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac",
+    ///    p.encrypt("Attack 🗡️ the east wall").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         let mut ciphertext = String::new();
@@ -59,27 +102,30 @@ impl Cipher for Polybius {
         Ok(ciphertext)
     }
 
-    /// Decrypt a message using an Affine cipher.
+    /// Decrypt a message using a Polybius square cipher.
     ///
     /// # Examples
     /// Basic usage:
     ///
     /// ```
-    /// use cipher_crypt::{Cipher, Affine};
+    /// use cipher_crypt::{Cipher, Polybius};
     ///
-    /// let a = Affine::new((3, 7)).unwrap();
-    /// assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
+    /// let p = Polybius::new((String::from("p0lyb1us"), ['A','Z','C','D','E','F'],
+    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///
+    /// assert_eq!("Attack 🗡️ the east wall",
+    ///    p.decrypt("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        //We read the ciphertext two bytes at a time and transpose to the original message by the
+        //We read the ciphertext two bytes at a time and transpose the original message using the
         //polybius square
         let mut message = String::new();
         let mut buffer = String::new();
 
         for c in ciphertext.chars().into_iter() {
             //Determine if the character could potentially be part of a 'polybius sequence' to
-            //be decrypted
-            match alphabet::ALPHANUMERIC.find_position(c) {
+            //be decrypted. Only standard alphabetic characters can be part of a valid sequence.
+            match alphabet::STANDARD.find_position(c) {
                 Some(_) => buffer.push(c),
                 None => message.push(c)
             }
@@ -149,68 +195,24 @@ mod tests {
         assert_eq!(m, p.decrypt(&p.encrypt(m).unwrap()).unwrap());
     }
 
-    //Should i test keys ....?
+    #[test]
+    fn invalid_key_phrase(){
+        assert!(Polybius::new(("F@IL".to_string(),
+            ['A','B','C','D','E','F'],
+            ['A','B','C','D','E','F'])).is_err());
+    }
 
+    #[test]
+    fn invalid_ids(){
+        assert!(Polybius::new(("oranges".to_string(),
+            ['A','!','C','D','E','F'],
+            ['A','B','@','D','E','F'])).is_err());
+    }
 
-    // #[test]
-    // fn encrypt_message() {
-    //     let a = Affine::new((3, 7)).unwrap();
-    //     assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_message() {
-    //     let a = Affine::new((3, 7)).unwrap();
-    //     assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
-    // }
-    //
-    // #[test]
-    // fn with_utf8(){
-    //     let a = Affine::new((15, 10)).unwrap();
-    //     let message = "Peace ✌️ Freedom and Liberty!";
-    //
-    //     assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
-    // }
-    //
-    // #[test]
-    // fn exhaustive_encrypt(){
-    //     //Test with every combination of a and b
-    //     let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    //
-    //     for a in 1..27 {
-    //         if gcd(a, 26) > 1 {
-    //             continue;
-    //         }
-    //
-    //         for b in 1..27 {
-    //             let a = Affine::new((a, b)).unwrap();
-    //             assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
-    //         }
-    //     }
-    // }
-    //
-    // #[test]
-    // fn valid_key(){
-    //     assert!(Affine::new((15, 17)).is_ok());
-    // }
-    //
-    // #[test]
-    // fn b_shares_factor(){
-    //     assert!(Affine::new((15, 2)).is_ok());
-    // }
-    //
-    // #[test]
-    // fn a_shares_factor(){
-    //     assert!(Affine::new((2, 15)).is_err());
-    // }
-    //
-    // #[test]
-    // fn keys_to_small(){
-    //     assert!(Affine::new((0, 10)).is_err());
-    // }
-    //
-    // #[test]
-    // fn keys_to_big(){
-    //     assert!(Affine::new((30, 51)).is_err());
-    // }
+    #[test]
+    fn repeated_ids(){
+        assert!(Polybius::new(("oranges".to_string(),
+            ['A','A','C','D','E','F'],
+            ['A','C','C','D','E','F'])).is_err());
+    }
 }

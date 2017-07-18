@@ -140,3 +140,5 @@ impl Alphabet for Alphanumeric {
 pub fn is_numeric(c: char) -> bool {
     NUMERIC.iter().any(|&n| n == c)
 }
+
+//TODO: Some tests would be nice
