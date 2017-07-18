@@ -27,7 +27,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Affine
 - [x] Rail-fence
 - [ ] Baconian
-- [ ] Polybius Square
+- [x] Polybius Square
 - [ ] Columnar Transposition
 - [x] Autokey
 - [ ] Porta
