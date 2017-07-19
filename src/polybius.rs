@@ -4,8 +4,7 @@
 //!
 use std::collections::HashMap;
 use common::cipher::Cipher;
-use common::alphabet::Alphabet;
-use common::{alphabet, keygen};
+use common::{alphabet, keygen, substitute};
 
 /// A Polybius square cipher.
 ///
@@ -80,26 +79,7 @@ impl Cipher for Polybius {
     ///    p.encrypt("Attack 🗡️ the east wall").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let mut ciphertext = String::new();
-
-        for c in message.chars() {
-            let mut entry = None;
-
-            //Attempt to find what the character will map to in the polybius square
-            for (key, val) in self.square.iter() {
-                if val == &c {
-                    entry = Some(key);
-                }
-            }
-
-            match entry {
-                Some(s) => ciphertext.push_str(s),
-                //For unknown characters, just push to the ciphertext 'as-is'
-                None => ciphertext.push(c)
-            }
-        }
-
-        Ok(ciphertext)
+        Ok(substitute::polybius_encrypt(&self.square, message))
     }
 
     /// Decrypt a message using a Polybius square cipher.
@@ -117,30 +97,7 @@ impl Cipher for Polybius {
     ///    p.decrypt("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        //We read the ciphertext two bytes at a time and transpose the original message using the
-        //polybius square
-        let mut message = String::new();
-        let mut buffer = String::new();
-
-        for c in ciphertext.chars().into_iter() {
-            //Determine if the character could potentially be part of a 'polybius sequence' to
-            //be decrypted. Only standard alphabetic characters can be part of a valid sequence.
-            match alphabet::STANDARD.find_position(c) {
-                Some(_) => buffer.push(c),
-                None => message.push(c)
-            }
-
-            if buffer.len() == 2 {
-                match self.square.get(&buffer) {
-                    Some(&val) => message.push(val),
-                    None => return Err("Unknown sequence in the ciphertext."),
-                }
-
-                buffer.clear();
-            }
-        }
-
-        Ok(message)
+        substitute::polybius_decrypt(&self.square, ciphertext)
     }
 }
 

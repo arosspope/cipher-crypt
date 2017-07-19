@@ -2,6 +2,66 @@
 //!
 use super::alphabet;
 use super::alphabet::Alphabet;
+use std::collections::HashMap;
+
+/// Encrypts a message using a 6x6 polybius square lookup table.
+///
+/// It is assumed the map was generated through the function `keygen::polybius_square`.
+pub fn polybius_encrypt(square: &HashMap<String, char>, message: &str) -> String {
+    let mut ciphertext = String::new();
+
+    for c in message.chars() {
+        let mut entry = None;
+
+        //Attempt to find what the character will map to in the polybius square
+        for (key, val) in square.iter() {
+            if val == &c {
+                entry = Some(key);
+            }
+        }
+
+        match entry {
+            Some(s) => ciphertext.push_str(s),
+            //For unknown characters, just push to the ciphertext 'as-is'
+            None => ciphertext.push(c)
+        }
+    }
+
+    ciphertext
+}
+
+/// Encrypts a message using a 6x6 polybius square lookup table.
+///
+/// Will return `Err` if there is an unknown 'ploybius sequence' in the ciphertext. It is assumed
+/// the map was generated through the function `keygen::polybius_square`.
+pub fn polybius_decrypt(square: &HashMap<String, char>, ciphertext: &str) ->
+    Result<String, &'static str>
+{
+    //We read the ciphertext two bytes at a time and transpose the original message using the
+    //polybius square
+    let mut message = String::new();
+    let mut buffer = String::new();
+
+    for c in ciphertext.chars().into_iter() {
+        //Determine if the character could potentially be part of a 'polybius sequence' to
+        //be decrypted. Only standard alphabetic characters can be part of a valid sequence.
+        match alphabet::STANDARD.find_position(c) {
+            Some(_) => buffer.push(c),
+            None => message.push(c)
+        }
+
+        if buffer.len() == 2 {
+            match square.get(&buffer) {
+                Some(&val) => message.push(val),
+                None => return Err("Unknown sequence in the ciphertext."),
+            }
+
+            buffer.clear();
+        }
+    }
+
+    Ok(message)
+}
 
 /// Performs a shift substitution of letters within a piece of text based on the index of them
 /// within the alphabet.
