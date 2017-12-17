@@ -1,3 +1,9 @@
+//! The Columnar cipher is a transposition cipher. In a columnar transposition, the message is
+//! written out in rows of a fixed length, and then read out again column by column. The
+//! columns are chosen in some scrambled order.
+//!
+//! Columnar transposition continued to be used for serious purposes as a component of more
+//! complex ciphers at least into the 1950s.
 use common::cipher::Cipher;
 
 /// A ColumnarTransposition cipher.
@@ -11,20 +17,19 @@ impl Cipher for ColumnarTransposition {
     type Key = usize;
     type Algorithm = ColumnarTransposition;
 
-    /// Initialize a ColumnarTransposition cipher with a specified key
-    /// which is the height of the columns.
-    /// Note: Will also encrypt spacing
+    /// Initialize a Columnar Transposition cipher given a specific key (height of the columns).
+    /// Note: This cipher will also encrypt spacing.
     ///
-    /// Returns `Err` if the `key == 0`.
+    /// Returns `Err` if key is less than or equal to 0.
     fn new(key: usize) -> Result<ColumnarTransposition, &'static str> {
-        if key == 0 {
-            Err("Invalid key, columns cannot be zero characters high")
+        if key <= 0 {
+            Err("Invalid key. Number of columns to encrypt must be greater than 0.")
         } else {
             Ok(ColumnarTransposition { height: key })
         }
     }
 
-    /// Encrypt a message with a ColumnarTransposition cipher.
+    /// Encrypt a message with a Columnar Transposition cipher.
     ///
     /// # Examples
     /// Basic usage:
@@ -38,10 +43,9 @@ impl Cipher for ColumnarTransposition {
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption process:
         //
-        // - Create a table which is `self.height` high and the width is 
+        // - Create a table which is `self.height` high and the width is
         //   such that the total number of entries is greater or equal to
         //   the length of the message.
-        //
         // - Write the message row-wise into the table
         // - Read the table column-wise as the ciphertext
 
@@ -73,7 +77,7 @@ impl Cipher for ColumnarTransposition {
         Ok(ciphertext)
     }
 
-    /// Decrypt a ciphertext with a ColumnarTransposition cipher.
+    /// Decrypt a ciphertext with a Columnar Transposition cipher.
     ///
     /// # Examples
     /// Basic usage:
@@ -87,7 +91,7 @@ impl Cipher for ColumnarTransposition {
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption process:
         //
-        // - Create a table which is `self.height` high and the width is 
+        // - Create a table which is `self.height` high and the width is
         //   such that the total number of entries is greater or equal to
         //   the length of the message.
         //
@@ -111,7 +115,7 @@ impl Cipher for ColumnarTransposition {
             table[row][col] = element;
         }
 
-        // Iterate over trable and create plaintext, along rows
+        // Iterate over table and create plaintext, along rows
         let mut plaintext = String::with_capacity(ciphertext.len());
         for row in table {
             for element in row {
@@ -119,14 +123,22 @@ impl Cipher for ColumnarTransposition {
             }
         }
 
-        // Return plaintext
-        Ok(plaintext)
+        // Return plaintext and trim any tailing whitespace
+        Ok(plaintext.trim().to_string())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn simple(){
+        let message = "Attack at Dawn.";
+        let ct = ColumnarTransposition::new(8).unwrap();
+
+        assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
+    }
 
     #[test]
     fn encrypt_fit() {
@@ -193,9 +205,9 @@ mod tests {
 
     #[test]
     fn decrypt_notfit() {
-        let ciphertext = "glersupey olsttwas  ttpahhst  ehanoosb  ";
+        let ciphertext = "glersupey olsttwas  ttpahhst  ehanoosb";
         let ct = ColumnarTransposition::new(10).unwrap();
-        assert_eq!("gotellthespartansthouwhopassestby       ", ct.decrypt(ciphertext).unwrap());
+        assert_eq!("gotellthespartansthouwhopassestby", ct.decrypt(ciphertext).unwrap());
     }
 
     #[test]
@@ -210,5 +222,13 @@ mod tests {
         let ciphertext = "attackatdawn";
         let ct = ColumnarTransposition::new(42).unwrap();
         assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
+    }
+
+    #[test]
+    fn with_utf8(){
+        let c = ColumnarTransposition::new(42).unwrap();
+        let message = "Peace, Freedom 🗡️ and Liberty!";
+        let encrypted = c.encrypt(message).unwrap();
+        assert_eq!(c.decrypt(&encrypted).unwrap(), message);
     }
 }
