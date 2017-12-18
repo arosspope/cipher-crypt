@@ -39,6 +39,33 @@ pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: T, to_uppercase: bool)
     Ok(keyed_alphabet)
 }
 
+pub fn columnar_key(key: &str) -> Result<Vec<(usize, Vec<Option<char>>)>, &'static str> {
+    let unique_chars: HashMap<_, _> = key.chars().into_iter()
+        .map(|c| (c, c))
+        .collect();
+
+    //Validate key
+    if key.len() <= 0 {
+        return Err("The key cannot be zero length.");
+    }
+    else if key.len() - unique_chars.len() > 0
+    {
+        return Err("The key cannot contain duplicate alphanumeric characters.");
+    }
+    else if !ALPHANUMERIC.is_valid(key)
+    {
+        return Err("The key cannot contain non-alphanumeric symbols.");
+    }
+
+    let mut c_key: Vec<(usize, Vec<Option<char>>)> = Vec::new();
+    for chr in key.chars() {
+        let pos = STANDARD.find_position(chr).unwrap();
+        c_key.push((pos, Vec::new()));
+    }
+
+    Ok(c_key)
+}
+
 /// Generate a 6x6 polybius square hashmap from an alphanumeric key.
 /// For successfull generation, the following must be met:
 ///

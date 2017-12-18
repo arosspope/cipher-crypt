@@ -5,6 +5,7 @@
 //! Columnar transposition continued to be used for serious purposes as a component of more
 //! complex ciphers at least into the 1950s.
 use common::cipher::Cipher;
+use common::{alphabet, keygen};
 
 /// A ColumnarTransposition cipher.
 ///
@@ -22,6 +23,9 @@ impl Cipher for ColumnarTransposition {
     ///
     /// Returns `Err` if key is less than or equal to 0.
     fn new(key: usize) -> Result<ColumnarTransposition, &'static str> {
+        let s = "thing";
+        keygen::columnar_key(s)?;
+        
         if key <= 0 {
             Err("Invalid key. Number of columns to encrypt must be greater than 0.")
         } else {
