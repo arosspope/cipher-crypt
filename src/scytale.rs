@@ -35,11 +35,12 @@ impl Cipher for Scytale {
         }
     }
 
-    /// Encrypt a message with a Scytale cipher.
+    /// Encrypt a message using a Scytale cipher.
     ///
-    /// Whilst most characters can be encrypted during the transposition process, the space
-    /// character cannot be as it is reserved for message padding. Therefore messages containing
-    /// spaces will be rejected. [TODO - can we get away with this??]
+    /// Whilst all characters (including utf8) can be encrypted during the transposition process,
+    /// it is important to note that the space character is also treated as padding. As such,
+    /// whitespace characters at the end of a message are not preserved during the decryption
+    /// process.
     ///
     /// # Examples
     /// Basic usage:
@@ -79,7 +80,7 @@ impl Cipher for Scytale {
         Ok(ciphertext)
     }
 
-    /// Decrypt a ciphertext with a Scytale cipher.
+    /// Decrypt a message using a Scytale cipher.
     ///
     /// # Examples
     /// Basic usage:
