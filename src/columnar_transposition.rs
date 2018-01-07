@@ -6,6 +6,7 @@
 //! complex ciphers at least into the 1950s.
 use common::cipher::Cipher;
 use common::keygen;
+use common::alphabet::{Alphabet, STANDARD};
 
 /// A ColumnarTransposition cipher.
 ///
@@ -97,7 +98,7 @@ impl Cipher for ColumnarTransposition {
         let mut ciphertext = String::new();
         for column in key.iter(){
             for e in column.1.iter(){
-                ciphertext.push(e.unwrap());
+                ciphertext.push(e.unwrap()); //It's safe to unwrap as we know what we've pushed
             }
         }
 
@@ -105,6 +106,7 @@ impl Cipher for ColumnarTransposition {
 
         Ok(ciphertext)
     }
+
 
     /// Decrypt a ciphertext with a Columnar Transposition cipher.
     ///
@@ -117,43 +119,90 @@ impl Cipher for ColumnarTransposition {
     /// let ct = ColumnarTransposition::new(3).unwrap();
     /// assert_eq!("Super-secret message!", ct.decrypt("Seeucsprseeartg- esm!").unwrap());
     /// ```
+    // fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
+    //     // Decryption process:
+    //     //
+    //     // - Create a table which is `self.height` high and the width is
+    //     //   such that the total number of entries is greater or equal to
+    //     //   the length of the message.
+    //     //
+    //     // - Write the ciphertext column-wise into the table
+    //     // - Read the table row-wise as the plaintext
+    //
+    //     // The trivial decryption keys are not considered
+    //     if self.height >= ciphertext.len() || self.height == 1 {
+    //         return Ok(ciphertext.to_string())
+    //     }
+    //
+    //     // Create the smallest table that fits the ciphertext
+    //     let width = (ciphertext.len() as f64 / self.height as f64).ceil() as usize;
+    //     let mut table = vec![vec![' '; width]; self.height];
+    //
+    //     // Iterate over ciphertext and insert into the table, along columns
+    //     for (pos, element) in ciphertext.chars().enumerate() {
+    //         let col = pos / self.height;
+    //         let row = pos % self.height;
+    //
+    //         table[row][col] = element;
+    //     }
+    //
+    //     // Iterate over table and create plaintext, along rows
+    //     let mut plaintext = String::with_capacity(ciphertext.len());
+    //     for row in table {
+    //         for element in row {
+    //             plaintext.push(element);
+    //         }
+    //     }
+    //
+    //     // Return plaintext and trim any tailing whitespace
+    //     Ok(plaintext.trim().to_string())
+    // }
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        // Decryption process:
-        //
-        // - Create a table which is `self.height` high and the width is
-        //   such that the total number of entries is greater or equal to
-        //   the length of the message.
-        //
-        // - Write the ciphertext column-wise into the table
-        // - Read the table row-wise as the plaintext
+        let s = "zebras";
+        let col_size: usize = (ciphertext.len() as f32 / s.len() as f32).ceil() as usize;
+        let mut key = keygen::columnar_key(s)?;
+        let mut cipher_chars: Vec<char> = ciphertext.chars().collect();
 
-        // The trivial decryption keys are not considered
-        if self.height >= ciphertext.len() || self.height == 1 {
-            return Ok(ciphertext.to_string())
+        if (col_size * s.len() - ciphertext.len()) > 0 {
+            //We are dealing with an uneven message, must add null elements to some columns
+            //TODO
+            key[3].1.push(None);
+            key[4].1.push(None);
+            key[5].1.push(None);
         }
 
-        // Create the smallest table that fits the ciphertext
-        let width = (ciphertext.len() as f64 / self.height as f64).ceil() as usize;
-        let mut table = vec![vec![' '; width]; self.height];
+        let mut order: Vec<usize> = s.chars()
+            .map(|c| STANDARD.find_position(c).unwrap()).collect();
+        order.sort();
 
-        // Iterate over ciphertext and insert into the table, along columns
-        for (pos, element) in ciphertext.chars().enumerate() {
-            let col = pos / self.height;
-            let row = pos % self.height;
+        println!("{:?}", order);
 
-            table[row][col] = element;
-        }
-
-        // Iterate over table and create plaintext, along rows
-        let mut plaintext = String::with_capacity(ciphertext.len());
-        for row in table {
-            for element in row {
-                plaintext.push(element);
+        for c_id in order.iter() {
+            if let Some(pos) = key.iter().position(|x| x.0 == *c_id){
+                while key[pos].1.len() < col_size {
+                    let c_len = key[pos].1.len();
+                    key[pos].1.insert(c_len.saturating_sub(2), cipher_chars.pop());
+                }
             }
         }
 
-        // Return plaintext and trim any tailing whitespace
-        Ok(plaintext.trim().to_string())
+
+
+
+        let mut plaintext = String::new();
+
+        //Go along each element in
+        for i in 0..col_size {
+            for col in key.iter() {
+                if let Some(e) = col.1.get(i) {
+                    plaintext.push(e.unwrap_or(' '));
+                }
+            }
+        }
+
+        println!("{}", col_size);
+
+        Ok(plaintext)
     }
 }
 
