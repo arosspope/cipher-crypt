@@ -1,11 +1,16 @@
-//! The Scytale cither is said to be used by ancient greeks in general, and Spartans in particular,
-//! where a leather or parchment strip is wrapped around a cylinder, called the scytale.
-//! After wrapping the strip around the scytale, the message is written horizontally, leaving the
-//! message encrypted for anyone reading without the scytale.
-//! 
-//! Because the scytale encryption is only keyed by the number of letters that fit on each roll
-//! around the scytale, meaning it is trivially cracked.
-//! 
+//! One of the oldest cryptography tools was a scytale. This tool was used to perform
+//! transposition encryption, consisting of a cylinder with a strip of parchment (containing a
+//! message) wound around it.
+//!
+//! The ancient Greeks used this cipher to communicate during military campaigns. Sender and
+//! recipient each had a cylinder of exactly the same radius. The sender wound a narrow ribbon of
+//! parchment around their cylinder. Then they wrote on it lengthwise. After the ribbon is unwound,
+//! the writing could be read only by a person who had a cylinder of exactly the same
+//! circumference.
+//!
+//! Scytale encryption is only keyed by the number of letters that fit on each roll
+//! around the scytale. Therefore, it can be trivially cracked.
+//!
 use common::cipher::Cipher;
 
 /// A Scytale cipher.
@@ -19,14 +24,12 @@ impl Cipher for Scytale {
     type Key = usize;
     type Algorithm = Scytale;
 
-    /// Initialize a Scytale cipher with a specified key
-    /// which is the height of the columns.
-    /// Note: Will also encrypt spacing
+    /// Initialize a Scytale cipher with a specific cylinder height.
     ///
-    /// Returns `Err` if the `key == 0`.
+    /// Will return `Err` if the `key == 0`.
     fn new(key: usize) -> Result<Scytale, &'static str> {
         if key == 0 {
-            Err("Invalid key, columns cannot be zero characters high")
+            Err("Invalid key, height cannot be zero.")
         } else {
             Ok(Scytale { height: key })
         }
@@ -34,50 +37,45 @@ impl Cipher for Scytale {
 
     /// Encrypt a message with a Scytale cipher.
     ///
+    /// Whilst most characters can be encrypted during the transposition process, the space
+    /// character cannot be as it is reserved for message padding. Therefore messages containing
+    /// spaces will be rejected. [TODO - can we get away with this??]
+    ///
     /// # Examples
     /// Basic usage:
     ///
     /// ```
     /// use cipher_crypt::{Cipher, Scytale};
     ///
-    /// let ct = Scytale::new(3).unwrap();
-    /// assert_eq!("Seeucsprseeartg- esm!", ct.encrypt("Super-secret message!").unwrap());
+    /// let s = Scytale::new(6).unwrap();
+    /// assert_eq!("Pegr lefoporaryr !", s.encrypt("Prepare for glory!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        // Encryption process:
-        //
-        // - Create a table which is `self.height` high and the width is 
-        //   such that the total number of entries is greater or equal to
-        //   the length of the message.
-        //
-        // - Write the message row-wise into the table
-        // - Read the table column-wise as the ciphertext
-
-        // The trivial encryption keys are not considered
-        if self.height >= message.len() || self.height == 1 {
+        // In both these cases the message is not altered
+        if self.height >= message.chars().count() || self.height == 1 {
             return Ok(message.to_string())
         }
 
         // Create the smallest table that fits the message
-        let width = (message.len() as f64 / self.height as f64).ceil() as usize;
+        let width = (message.chars().count() as f64 / self.height as f64).ceil() as usize;
         let mut table = vec![vec![' '; width]; self.height];
 
         // Iterate over message and insert into the table, along rows
         for (pos, element) in message.chars().enumerate() {
-            let col = pos % width;
-            let row = pos / width;
+            let col = pos % self.height;
+            let row = pos / self.height;
 
-            table[row][col] = element;
+            table[col][row] = element;
         }
-        // Iterate over table and create ciphertext, along columns
-        let mut ciphertext = String::with_capacity(message.len());
-        for row in 0..width {
-            for col in 0..self.height {
+
+        // Traverse each column and construct ciphertext
+        let mut ciphertext = String::new();
+        for col in 0..self.height {
+            for row in 0..width {
                 ciphertext.push(table[col][row]);
             }
         }
 
-        // Return ciphertext
         Ok(ciphertext)
     }
 
@@ -89,46 +87,37 @@ impl Cipher for Scytale {
     /// ```
     /// use cipher_crypt::{Cipher, Scytale};
     ///
-    /// let ct = Scytale::new(3).unwrap();
-    /// assert_eq!("Super-secret message!", ct.decrypt("Seeucsprseeartg- esm!").unwrap());
+    /// let ct = Scytale::new(6).unwrap();
+    /// assert_eq!("Prepare for glory!", ct.decrypt("Pegr lefoporaryr !").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        // Decryption process:
-        //
-        // - Create a table which is `self.height` high and the width is 
-        //   such that the total number of entries is greater or equal to
-        //   the length of the message.
-        //
-        // - Write the ciphertext column-wise into the table
-        // - Read the table row-wise as the plaintext
-
-        // The trivial decryption keys are not considered
-        if self.height >= ciphertext.len() || self.height == 1 {
+        // In both these cases the ciphertext has not been altered
+        if self.height >= ciphertext.chars().count() || self.height == 1 {
             return Ok(ciphertext.to_string())
         }
 
         // Create the smallest table that fits the ciphertext
-        let width = (ciphertext.len() as f64 / self.height as f64).ceil() as usize;
+        let width = (ciphertext.chars().count() as f64 / self.height as f64).ceil() as usize;
         let mut table = vec![vec![' '; width]; self.height];
 
         // Iterate over ciphertext and insert into the table, along columns
         for (pos, element) in ciphertext.chars().enumerate() {
-            let col = pos / self.height;
-            let row = pos % self.height;
+            let col = pos / width;
+            let row = pos % width;
 
-            table[row][col] = element;
+            table[col][row] = element;
         }
 
-        // Iterate over trable and create plaintext, along rows
-        let mut plaintext = String::with_capacity(ciphertext.len());
-        for row in table {
-            for element in row {
-                plaintext.push(element);
+        // Traverse each row and construct plaintext
+        let mut plaintext = String::new();
+        for row in 0..width {
+            for col in 0..self.height {
+                plaintext.push(table[col][row]);
             }
         }
 
-        // Return plaintext
-        Ok(plaintext)
+        //Make sure to strip any padding characters
+        Ok(plaintext.trim_right().to_string())
     }
 }
 
@@ -137,86 +126,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encrypt_fit() {
-        let message = "attackatdawn";
-        let ct = Scytale::new(6).unwrap();
-        assert_eq!("atcadwtaktan", ct.encrypt(message).unwrap());
+    fn simple_encrypt(){
+        let s = Scytale::new(6).unwrap();
+        assert_eq!("aatttdaacwkn", s.encrypt("attackatdawn").unwrap());
     }
 
     #[test]
-    fn encrypt_mixed_case_fit() {
-        let message = "AttackAtDawn";
-        let ct = Scytale::new(6).unwrap();
-        assert_eq!("AtcADwtaktan", ct.encrypt(message).unwrap());
+    fn simple_decrypt(){
+        let s = Scytale::new(6).unwrap();
+        assert_eq!("attackatdawn", s.decrypt("aatttdaacwkn").unwrap());
     }
 
     #[test]
-    fn encrypt_mixed_case_space_fit() {
-        let message = "Attack At Dawn";
-        let ct = Scytale::new(7).unwrap();
-        assert_eq!("Atc tDwtakA an", ct.encrypt(message).unwrap());
+    fn padding_required(){
+        let s = Scytale::new(5).unwrap();
+        let m = "attackatdawn";
+        assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
-    fn encrypt_notfit() {
-        let message = "gotellthespartansthouwhopassestby";
-        let ct = Scytale::new(10).unwrap();
-        assert_eq!("glersupey olsttwas  ttpahhst  ehanoosb  ", ct.encrypt(message).unwrap());
+    fn invalid_height(){
+        assert!(Scytale::new(0).is_err());
     }
 
     #[test]
-    fn encrypt_short_key() {
-        let message = "attackatdawn";
-        let ct = Scytale::new(1).unwrap();
-        assert_eq!("attackatdawn", ct.encrypt(message).unwrap());
+    fn with_utf8(){
+        let s = Scytale::new(5).unwrap();
+        let m = "Attack 🗡️ at once.";
+        assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
-    fn encrypt_long_key() {
-        let message = "attackatdawn";
-        let ct = Scytale::new(42).unwrap();
-        assert_eq!("attackatdawn", ct.encrypt(message).unwrap());
+    fn with_spaces(){
+        //Spaces at the end of a message are not preserved
+        let s = Scytale::new(5).unwrap();
+        let m = "Attack At Dawn comrades!  ";
+        assert_eq!("Attack At Dawn comrades!", s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
-    fn decrypt_fit() {
-        let ciphertext = "atcadwtaktan";
-        let ct = Scytale::new(6).unwrap();
-        assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
-    }
-
-    #[test]
-    fn decrypt_mixed_case_fit() {
-        let ciphertext = "AtcADwtaktan";
-        let ct = Scytale::new(6).unwrap();
-        assert_eq!("AttackAtDawn", ct.decrypt(ciphertext).unwrap());
-    }
-
-    #[test]
-    fn decrypt_mixed_case_space_fit() {
-        let ciphertext = "Atc tDwtakA an";
-        let ct = Scytale::new(7).unwrap();
-        assert_eq!("Attack At Dawn", ct.decrypt(ciphertext).unwrap());
-    }
-
-    #[test]
-    fn decrypt_notfit() {
-        let ciphertext = "glersupey olsttwas  ttpahhst  ehanoosb  ";
-        let ct = Scytale::new(10).unwrap();
-        assert_eq!("gotellthespartansthouwhopassestby       ", ct.decrypt(ciphertext).unwrap());
-    }
-
-    #[test]
-    fn decrypt_short_key() {
-        let ciphertext = "attackatdawn";
-        let ct = Scytale::new(1).unwrap();
-        assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
-    }
-
-    #[test]
-    fn decrypt_long_key() {
-        let ciphertext = "attackatdawn";
-        let ct = Scytale::new(42).unwrap();
-        assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
+    fn longer_height(){
+        let s = Scytale::new(20).unwrap();
+        let m = "attackatdawn";
+        assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 }
