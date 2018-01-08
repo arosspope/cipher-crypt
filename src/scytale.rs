@@ -1,5 +1,5 @@
-//! One of the oldest cryptography tools was a scytale. This tool was used to perform
-//! transposition encryption, consisting of a cylinder with a strip of parchment (containing a
+//! One of the oldest cryptography tools was a scytale, which was used to perform
+//! transposition encryption. It consisted of a cylinder with a strip of parchment (containing a
 //! message) wound around it.
 //!
 //! The ancient Greeks used this cipher to communicate during military campaigns. Sender and
