@@ -1,9 +1,10 @@
-//! The Columnar cipher is a transposition cipher. In a columnar transposition, the message is
-//! written out in rows of a fixed length, and then read out again column by column. The
-//! columns are chosen in some scrambled order.
+//! The Columnar cipher is a transposition cipher. In columnar transposition the message is
+//! written out in rows of a fixed length, and then transcribed to a message via the columns.
+//! The columns are scrambled based on a secret key.
 //!
-//! Columnar transposition continued to be used for serious purposes as a component of more
-//! complex ciphers at least into the 1950s.
+//! Columnar transposition continued to be used as a component of more complex ciphers up
+//! until the 1950s.
+//!
 use common::cipher::Cipher;
 use common::{keygen, alphabet};
 use common::alphabet::Alphabet;
@@ -21,10 +22,9 @@ impl Cipher for ColumnarTransposition {
 
     /// Initialize a Columnar Transposition cipher given a specific key.
     ///
-    /// Returns `Err` if key is less than or equal to 0.
     /// Will return `Err` if one of the following conditions is detected:
     ///
-    /// * The `key` length is = 0.
+    /// * The `key` length is 0.
     /// * The `key` contains non-alphanumeric symbols.
     /// * The `key` contains duplicate characters.
     fn new(key: String) -> Result<ColumnarTransposition, &'static str> {
@@ -34,14 +34,19 @@ impl Cipher for ColumnarTransposition {
 
     /// Encrypt a message with a Columnar Transposition cipher.
     ///
+    /// Whilst all characters (including utf8) can be encrypted during the transposition process,
+    /// it is important to note that the space character is also treated as padding. As such,
+    /// whitespace characters at the end of a message are not preserved during the decryption
+    /// process.
+    ///
     /// # Examples
     /// Basic usage:
     ///
     /// ```
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
-    /// let ct = ColumnarTransposition::new(3).unwrap();
-    /// assert_eq!("Seeucsprseeartg- esm!", ct.encrypt("Super-secret message!").unwrap());
+    /// let ct = ColumnarTransposition::new(String::from("zebras")).unwrap();
+    /// assert_eq!("res pce!uemeers -ta Ss g", ct.encrypt("Super-secret message!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         let mut key = keygen::columnar_key(&self.key)?;
@@ -86,8 +91,8 @@ impl Cipher for ColumnarTransposition {
     /// ```
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
-    /// let ct = ColumnarTransposition::new(3).unwrap();
-    /// assert_eq!("Super-secret message!", ct.decrypt("Seeucsprseeartg- esm!").unwrap());
+    /// let ct = ColumnarTransposition::new(String::from("zebras")).unwrap();
+    /// assert_eq!("Super-secret message!", ct.decrypt("res pce!uemeers -ta Ss g").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         let mut key = keygen::columnar_key(&self.key)?;
@@ -141,90 +146,6 @@ mod tests {
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
-    // #[test]
-    // fn encrypt_fit() {
-    //     let message = "attackatdawn";
-    //     let ct = ColumnarTransposition::new(6).unwrap();
-    //     assert_eq!("atcadwtaktan", ct.encrypt(message).unwrap());
-    // }
-    //
-    // #[test]
-    // fn encrypt_mixed_case_fit() {
-    //     let message = "AttackAtDawn";
-    //     let ct = ColumnarTransposition::new(6).unwrap();
-    //     assert_eq!("AtcADwtaktan", ct.encrypt(message).unwrap());
-    // }
-    //
-    // #[test]
-    // fn encrypt_mixed_case_space_fit() {
-    //     let message = "Attack At Dawn";
-    //     let ct = ColumnarTransposition::new(7).unwrap();
-    //     assert_eq!("Atc tDwtakA an", ct.encrypt(message).unwrap());
-    // }
-    //
-    // #[test]
-    // fn encrypt_notfit() {
-    //     let message = "gotellthespartansthouwhopassestby";
-    //     let ct = ColumnarTransposition::new(10).unwrap();
-    //     assert_eq!("glersupey olsttwas  ttpahhst  ehanoosb  ", ct.encrypt(message).unwrap());
-    // }
-    //
-    // #[test]
-    // fn encrypt_short_key() {
-    //     let message = "attackatdawn";
-    //     let ct = ColumnarTransposition::new(1).unwrap();
-    //     assert_eq!("attackatdawn", ct.encrypt(message).unwrap());
-    // }
-    //
-    // #[test]
-    // fn encrypt_long_key() {
-    //     let message = "attackatdawn";
-    //     let ct = ColumnarTransposition::new(42).unwrap();
-    //     assert_eq!("attackatdawn", ct.encrypt(message).unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_fit() {
-    //     let ciphertext = "atcadwtaktan";
-    //     let ct = ColumnarTransposition::new(6).unwrap();
-    //     assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_mixed_case_fit() {
-    //     let ciphertext = "AtcADwtaktan";
-    //     let ct = ColumnarTransposition::new(6).unwrap();
-    //     assert_eq!("AttackAtDawn", ct.decrypt(ciphertext).unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_mixed_case_space_fit() {
-    //     let ciphertext = "Atc tDwtakA an";
-    //     let ct = ColumnarTransposition::new(7).unwrap();
-    //     assert_eq!("Attack At Dawn", ct.decrypt(ciphertext).unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_notfit() {
-    //     let ciphertext = "glersupey olsttwas  ttpahhst  ehanoosb";
-    //     let ct = ColumnarTransposition::new(10).unwrap();
-    //     assert_eq!("gotellthespartansthouwhopassestby", ct.decrypt(ciphertext).unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_short_key() {
-    //     let ciphertext = "attackatdawn";
-    //     let ct = ColumnarTransposition::new(1).unwrap();
-    //     assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
-    // }
-    //
-    // #[test]
-    // fn decrypt_long_key() {
-    //     let ciphertext = "attackatdawn";
-    //     let ct = ColumnarTransposition::new(42).unwrap();
-    //     assert_eq!("attackatdawn", ct.decrypt(ciphertext).unwrap());
-    // }
-
     #[test]
     fn with_utf8(){
         let c = ColumnarTransposition::new(String::from("zebras")).unwrap();
@@ -233,5 +154,18 @@ mod tests {
         assert_eq!(c.decrypt(&encrypted).unwrap(), message);
     }
 
-    //TODO: Single Column tests + spaces + trailing spaces
+    #[test]
+    fn single_column(){
+        let message = "we are discovered";
+        let ct = ColumnarTransposition::new(String::from("z")).unwrap();
+        assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
+    }
+
+    #[test]
+    fn trailing_spaces(){
+        let message = "we are discovered  "; //The trailing spaces will be stripped
+        let ct = ColumnarTransposition::new(String::from("z")).unwrap();
+
+        assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), "we are discovered");
+    }
 }

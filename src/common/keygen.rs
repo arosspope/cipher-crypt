@@ -38,6 +38,13 @@ pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: T, to_uppercase: bool)
     Ok(keyed_alphabet)
 }
 
+/// Validate a Columnar Transposition key given a specific key.
+///
+/// Will return `Err` if one of the following conditions is detected:
+///
+/// * The `key` length is = 0.
+/// * The `key` contains non-alphanumeric symbols.
+/// * The `key` contains duplicate characters.
 pub fn columnar_key(key: &str) -> Result<Vec<(char, Vec<char>)>, &'static str> {
     let unique_chars: HashMap<_, _> = key.chars().into_iter()
         .map(|c| (c, c))
@@ -245,6 +252,18 @@ mod tests {
 
     #[test]
     fn generate_columnar_key() {
-        assert!(false); //TODO
+        assert_eq!(vec![('z', vec![]),('e', vec![]),('b', vec![]), ('r', vec![]), ('a', vec![]),
+        ('s', vec![])],
+        columnar_key("zebras").unwrap());
+    }
+
+    #[test]
+    fn generate_columnar_empty_key() {
+        assert!(columnar_key("").is_err());
+    }
+
+    #[test]
+    fn generate_columnar_invalid_key() {
+        assert!(columnar_key("Fx !@#$").is_err());
     }
 }
