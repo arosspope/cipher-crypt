@@ -1,7 +1,6 @@
 //! This module contains functions for the generation of keys.
 //!
 use std::collections::HashMap;
-use std::ascii::AsciiExt;
 use super::alphabet;
 use super::alphabet::{Alphabet, STANDARD, ALPHANUMERIC};
 
@@ -39,7 +38,7 @@ pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: T, to_uppercase: bool)
     Ok(keyed_alphabet)
 }
 
-pub fn columnar_key(key: &str) -> Result<Vec<(usize, Vec<Option<char>>)>, &'static str> {
+pub fn columnar_key(key: &str) -> Result<Vec<(char, Vec<char>)>, &'static str> {
     let unique_chars: HashMap<_, _> = key.chars().into_iter()
         .map(|c| (c, c))
         .collect();
@@ -57,10 +56,9 @@ pub fn columnar_key(key: &str) -> Result<Vec<(usize, Vec<Option<char>>)>, &'stat
         return Err("The key cannot contain non-alphanumeric symbols.");
     }
 
-    let mut c_key: Vec<(usize, Vec<Option<char>>)> = Vec::new();
+    let mut c_key: Vec<(char, Vec<char>)> = Vec::new();
     for chr in key.chars() {
-        let pos = STANDARD.find_position(chr).unwrap();
-        c_key.push((pos, Vec::new()));
+        c_key.push((chr, Vec::new()));
     }
 
     Ok(c_key)
@@ -243,5 +241,10 @@ mod tests {
         let keyed_alphabet = keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii",
             STANDARD, true).unwrap();
         assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
+    }
+
+    #[test]
+    fn generate_columnar_key() {
+        assert!(false); //TODO
     }
 }

@@ -5,33 +5,31 @@
 //! Columnar transposition continued to be used for serious purposes as a component of more
 //! complex ciphers at least into the 1950s.
 use common::cipher::Cipher;
-use common::keygen;
-use common::alphabet::{Alphabet, STANDARD};
+use common::{keygen, alphabet};
+use common::alphabet::Alphabet;
 
 /// A ColumnarTransposition cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct ColumnarTransposition {
-    height: usize,
+    key: String,
 }
 
 impl Cipher for ColumnarTransposition {
-    type Key = usize;
+    type Key = String;
     type Algorithm = ColumnarTransposition;
 
-    /// Initialize a Columnar Transposition cipher given a specific key (height of the columns).
-    /// Note: This cipher will also encrypt spacing.
+    /// Initialize a Columnar Transposition cipher given a specific key.
     ///
     /// Returns `Err` if key is less than or equal to 0.
-    fn new(key: usize) -> Result<ColumnarTransposition, &'static str> {
-        let s = "thing";
-        keygen::columnar_key(s)?;
-
-        if key <= 0 {
-            Err("Invalid key. Number of columns to encrypt must be greater than 0.")
-        } else {
-            Ok(ColumnarTransposition { height: key })
-        }
+    /// Will return `Err` if one of the following conditions is detected:
+    ///
+    /// * The `key` length is = 0.
+    /// * The `key` contains non-alphanumeric symbols.
+    /// * The `key` contains duplicate characters.
+    fn new(key: String) -> Result<ColumnarTransposition, &'static str> {
+        keygen::columnar_key(&key)?;
+        Ok(ColumnarTransposition { key: key })
     }
 
     /// Encrypt a message with a Columnar Transposition cipher.
@@ -45,68 +43,40 @@ impl Cipher for ColumnarTransposition {
     /// let ct = ColumnarTransposition::new(3).unwrap();
     /// assert_eq!("Seeucsprseeartg- esm!", ct.encrypt("Super-secret message!").unwrap());
     /// ```
-    // fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-    //     // Encryption process:
-    //     //
-    //     // - Create a table which is `self.height` high and the width is
-    //     //   such that the total number of entries is greater or equal to
-    //     //   the length of the message.
-    //     // - Write the message row-wise into the table
-    //     // - Read the table column-wise as the ciphertext
-    //
-    //     // The trivial encryption keys are not considered
-    //     if self.height >= message.len() || self.height == 1 {
-    //         return Ok(message.to_string())
-    //     }
-    //
-    //     // Create the smallest table that fits the message
-    //     let width = (message.len() as f64 / self.height as f64).ceil() as usize;
-    //     let mut table = vec![vec![' '; width]; self.height];
-    //
-    //     // Iterate over message and insert into the table, along rows
-    //     for (pos, element) in message.chars().enumerate() {
-    //         let col = pos % width;
-    //         let row = pos / width;
-    //
-    //         table[row][col] = element;
-    //     }
-    //     // Iterate over table and create ciphertext, along columns
-    //     let mut ciphertext = String::with_capacity(message.len());
-    //     for row in 0..width {
-    //         for col in 0..self.height {
-    //             ciphertext.push(table[col][row]);
-    //         }
-    //     }
-    //
-    //     // Return ciphertext
-    //     Ok(ciphertext)
-    // }
-
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let s = "zebras";
-        let mut key = keygen::columnar_key(s)?;
+        let mut key = keygen::columnar_key(&self.key)?;
 
+        //Construct the column
         let mut i = 0;
-        for chr in message.chars(){
-            key[i].1.push(Some(chr));
+        let mut chars = message.chars();
+        loop {
+            if let Some(c) = chars.next() {
+                key[i].1.push(c);
+            } else if i > 0 {
+                key[i].1.push(' '); //We must add padding characters
+            } else {
+                break;
+            }
+
             i = (i + 1) % key.len();
         }
 
-        key.sort(); //Re-order the columns based on key
+        //Sort the key based on it's alphabet positions
+        key.sort_by(|a, b|
+            alphabet::STANDARD.find_position(a.0).unwrap()
+            .cmp(&alphabet::STANDARD.find_position(b.0).unwrap())
+        );
 
         //Construct the cipher text
         let mut ciphertext = String::new();
-        for column in key.iter(){
-            for e in column.1.iter(){
-                ciphertext.push(e.unwrap()); //It's safe to unwrap as we know what we've pushed
+        for column in key.iter() {
+            for chr in column.1.iter() {
+                ciphertext.push(*chr);
             }
         }
 
-        println!("{}", ciphertext);
-
         Ok(ciphertext)
     }
-
 
     /// Decrypt a ciphertext with a Columnar Transposition cipher.
     ///
@@ -119,90 +89,43 @@ impl Cipher for ColumnarTransposition {
     /// let ct = ColumnarTransposition::new(3).unwrap();
     /// assert_eq!("Super-secret message!", ct.decrypt("Seeucsprseeartg- esm!").unwrap());
     /// ```
-    // fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-    //     // Decryption process:
-    //     //
-    //     // - Create a table which is `self.height` high and the width is
-    //     //   such that the total number of entries is greater or equal to
-    //     //   the length of the message.
-    //     //
-    //     // - Write the ciphertext column-wise into the table
-    //     // - Read the table row-wise as the plaintext
-    //
-    //     // The trivial decryption keys are not considered
-    //     if self.height >= ciphertext.len() || self.height == 1 {
-    //         return Ok(ciphertext.to_string())
-    //     }
-    //
-    //     // Create the smallest table that fits the ciphertext
-    //     let width = (ciphertext.len() as f64 / self.height as f64).ceil() as usize;
-    //     let mut table = vec![vec![' '; width]; self.height];
-    //
-    //     // Iterate over ciphertext and insert into the table, along columns
-    //     for (pos, element) in ciphertext.chars().enumerate() {
-    //         let col = pos / self.height;
-    //         let row = pos % self.height;
-    //
-    //         table[row][col] = element;
-    //     }
-    //
-    //     // Iterate over table and create plaintext, along rows
-    //     let mut plaintext = String::with_capacity(ciphertext.len());
-    //     for row in table {
-    //         for element in row {
-    //             plaintext.push(element);
-    //         }
-    //     }
-    //
-    //     // Return plaintext and trim any tailing whitespace
-    //     Ok(plaintext.trim().to_string())
-    // }
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        let s = "zebras";
-        let col_size: usize = (ciphertext.len() as f32 / s.len() as f32).ceil() as usize;
-        let mut key = keygen::columnar_key(s)?;
-        let mut cipher_chars: Vec<char> = ciphertext.chars().collect();
+        let mut key = keygen::columnar_key(&self.key)?;
 
-        if (col_size * s.len() - ciphertext.len()) > 0 {
-            //We are dealing with an uneven message, must add null elements to some columns
-            //TODO
-            key[3].1.push(None);
-            key[4].1.push(None);
-            key[5].1.push(None);
-        }
+        //Sort the key so that it's in its encryption order
+        key.sort_by(|a, b|
+            alphabet::STANDARD.find_position(a.0).unwrap()
+            .cmp(&alphabet::STANDARD.find_position(b.0).unwrap())
+        );
 
-        let mut order: Vec<usize> = s.chars()
-            .map(|c| STANDARD.find_position(c).unwrap()).collect();
-        order.sort();
+        //Transcribe the ciphertext along each column
+        let mut chars = ciphertext.chars();
+        let col_size: usize = (ciphertext.chars().count() as f32 / self.key.len() as f32).ceil() as usize;
 
-        println!("{:?}", order);
-
-        for c_id in order.iter() {
-            if let Some(pos) = key.iter().position(|x| x.0 == *c_id){
-                while key[pos].1.len() < col_size {
-                    let c_len = key[pos].1.len();
-                    key[pos].1.insert(c_len.saturating_sub(2), cipher_chars.pop());
+        'outer: for column in &mut key {
+            loop {
+                if column.1.len() >= col_size {
+                    break;
+                } else if let Some(c) = chars.next() {
+                    column.1.push(c);
+                } else {
+                    break 'outer; //No more characters left in ciphertext
                 }
             }
         }
-
-
-
 
         let mut plaintext = String::new();
-
-        //Go along each element in
         for i in 0..col_size {
-            for col in key.iter() {
-                if let Some(e) = col.1.get(i) {
-                    plaintext.push(e.unwrap_or(' '));
+            for chr in self.key.chars(){
+                if let Some(column) = key.iter().find(|x| x.0 == chr){
+                    plaintext.push(column.1[i]);
+                } else {
+                    return Err("Could not find column during decryption.");
                 }
             }
         }
 
-        println!("{}", col_size);
-
-        Ok(plaintext)
+        Ok(plaintext.trim_right().to_string())
     }
 }
 
@@ -213,7 +136,7 @@ mod tests {
     #[test]
     fn simple(){
         let message = "wearediscovered";
-        let ct = ColumnarTransposition::new(8).unwrap();
+        let ct = ColumnarTransposition::new(String::from("zebras")).unwrap();
 
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
@@ -304,9 +227,11 @@ mod tests {
 
     #[test]
     fn with_utf8(){
-        let c = ColumnarTransposition::new(42).unwrap();
+        let c = ColumnarTransposition::new(String::from("zebras")).unwrap();
         let message = "Peace, Freedom 🗡️ and Liberty!";
         let encrypted = c.encrypt(message).unwrap();
         assert_eq!(c.decrypt(&encrypted).unwrap(), message);
     }
+
+    //TODO: Single Column tests + spaces + trailing spaces
 }
