@@ -36,6 +36,7 @@ pub mod autokey;
 pub mod affine;
 pub mod polybius;
 pub mod scytale;
+pub mod columnar_transposition;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
@@ -48,3 +49,4 @@ pub use autokey::Autokey;
 pub use affine::Affine;
 pub use polybius::Polybius;
 pub use scytale::Scytale;
+pub use columnar_transposition::ColumnarTransposition;
