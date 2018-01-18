@@ -26,21 +26,22 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Caesar
 - [x] Affine
 - [x] Rail-fence
-- [ ] Baconian
 - [x] Polybius Square
-- [x] Columnar Transposition
+- [x] Scytale
 - [x] Autokey
-- [ ] Porta
 - [x] Vigenère
+- [x] Hill
+- [x] Fractionated Morse
+- [ ] Baconian
+- [ ] Columnar Transposition
+- [ ] Porta
 - [ ] Homophonic
 - [ ] Four-Square
-- [x] Hill
 - [ ] Playfair
 - [ ] ADFGVX
 - [ ] Bifid
 - [ ] Straddle Checkerboard
 - [ ] Trifid
-- [x] Fractionated Morse
 
 ## Contributions
 
