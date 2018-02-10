@@ -3,5 +3,6 @@ rust:
   - stable
   - nightly
 script:
+  - rustup component add rustfmt-preview --toolchain=nightly
   - cargo +nightly fmt -- --write-mode=diff
   - cargo test --release --verbose
