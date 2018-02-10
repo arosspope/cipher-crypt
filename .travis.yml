@@ -1,8 +1,8 @@
 language: rust
 rust:
   - stable
-  - nightly
 script:
+  - rustup install nightly
   - rustup component add rustfmt-preview --toolchain=nightly
   - cargo +nightly fmt -- --write-mode=diff
   - cargo test --release --verbose
