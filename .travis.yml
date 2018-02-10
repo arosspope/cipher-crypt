@@ -1,5 +1,7 @@
 language: rust
 rust:
   - stable
+  - nightly
 script:
+  - cargo +nightly fmt -- --write-mode=diff
   - cargo test --release --verbose

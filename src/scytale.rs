@@ -54,7 +54,7 @@ impl Cipher for Scytale {
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // In both these cases the message is not altered
         if self.height >= message.chars().count() || self.height == 1 {
-            return Ok(message.to_string())
+            return Ok(message.to_string());
         }
 
         // Create the smallest table that fits the message
@@ -94,7 +94,7 @@ impl Cipher for Scytale {
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // In both these cases the ciphertext has not been altered
         if self.height >= ciphertext.chars().count() || self.height == 1 {
-            return Ok(ciphertext.to_string())
+            return Ok(ciphertext.to_string());
         }
 
         // Create the smallest table that fits the ciphertext
@@ -127,46 +127,49 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple_encrypt(){
+    fn simple_encrypt() {
         let s = Scytale::new(6).unwrap();
         assert_eq!("aatttdaacwkn", s.encrypt("attackatdawn").unwrap());
     }
 
     #[test]
-    fn simple_decrypt(){
+    fn simple_decrypt() {
         let s = Scytale::new(6).unwrap();
         assert_eq!("attackatdawn", s.decrypt("aatttdaacwkn").unwrap());
     }
 
     #[test]
-    fn padding_required(){
+    fn padding_required() {
         let s = Scytale::new(5).unwrap();
         let m = "attackatdawn";
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
-    fn invalid_height(){
+    fn invalid_height() {
         assert!(Scytale::new(0).is_err());
     }
 
     #[test]
-    fn with_utf8(){
+    fn with_utf8() {
         let s = Scytale::new(5).unwrap();
         let m = "Attack 🗡️ at once.";
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
-    fn with_spaces(){
+    fn with_spaces() {
         //Spaces at the end of a message are not preserved
         let s = Scytale::new(5).unwrap();
         let m = "Attack At Dawn comrades!  ";
-        assert_eq!("Attack At Dawn comrades!", s.decrypt(&s.encrypt(m).unwrap()).unwrap());
+        assert_eq!(
+            "Attack At Dawn comrades!",
+            s.decrypt(&s.encrypt(m).unwrap()).unwrap()
+        );
     }
 
     #[test]
-    fn longer_height(){
+    fn longer_height() {
         let s = Scytale::new(20).unwrap();
         let m = "attackatdawn";
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());

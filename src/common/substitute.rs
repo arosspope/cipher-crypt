@@ -11,10 +11,11 @@ use super::alphabet::Alphabet;
 ///     * ti = the index of the character to shift
 ///     * note; the closure should the shift value set within
 pub fn shift_substitution<F>(text: &str, calc_index: F) -> Result<String, &'static str>
-    where F: Fn(usize) -> usize
+where
+    F: Fn(usize) -> usize,
 {
     let mut s_text = String::new();
-    for c in text.chars(){
+    for c in text.chars() {
         //Find the index of the character in the alphabet (if it exists in there)
         let pos = alphabet::STANDARD.find_position(c);
         match pos {
@@ -24,9 +25,9 @@ pub fn shift_substitution<F>(text: &str, calc_index: F) -> Result<String, &'stat
                 if let Some(s) = alphabet::STANDARD.get_letter(si, c.is_uppercase()) {
                     s_text.push(s);
                 } else {
-                    return Err("Calculated an index outside of the known alphabet.")
+                    return Err("Calculated an index outside of the known alphabet.");
                 }
-            },
+            }
             None => s_text.push(c), //Push non-alphabetic chars 'as-is'
         }
     }
@@ -41,9 +42,13 @@ pub fn shift_substitution<F>(text: &str, calc_index: F) -> Result<String, &'stat
 /// Where:
 ///     * ti = the index of the character to shift
 ///     * ki = the index of the next key character in the stream
-pub fn key_substitution<F>(text: &str, keystream: &mut Vec<char>, calc_index: F)
-    -> Result<String, &'static str>
-    where F: Fn(usize, usize) -> usize
+pub fn key_substitution<F>(
+    text: &str,
+    keystream: &mut Vec<char>,
+    calc_index: F,
+) -> Result<String, &'static str>
+where
+    F: Fn(usize, usize) -> usize,
 {
     let mut s_text = String::new();
 
@@ -61,19 +66,21 @@ pub fn key_substitution<F>(text: &str, keystream: &mut Vec<char>, calc_index: F)
                 if let Some(ki) = alphabet::STANDARD.find_position(kc) {
                     //Calculate the index and retrieve the letter to substitute
                     let si = calc_index(ti, ki);
-                    if let Some(s) = alphabet::STANDARD.get_letter(si, tc.is_uppercase()){
+                    if let Some(s) = alphabet::STANDARD.get_letter(si, tc.is_uppercase()) {
                         s_text.push(s);
                     } else {
-                        return Err("Calculated a substitution index outside of the known alphabet.");
+                        return Err(
+                            "Calculated a substitution index outside of the known alphabet.",
+                        );
                     }
 
                     //This character in the keystream has been consumed, shuffle the stream to
                     //the left.
                     keystream.remove(0);
                 } else {
-                    return Err("Keystream contains a non-alphabetic symbol.")
+                    return Err("Keystream contains a non-alphabetic symbol.");
                 }
-            },
+            }
             None => s_text.push(tc), //Push non-alphabetic chars 'as-is'
         }
     }

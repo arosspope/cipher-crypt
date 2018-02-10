@@ -6,10 +6,10 @@
 //! until the 1950s.
 //!
 use common::cipher::Cipher;
-use common::{keygen, alphabet};
+use common::{alphabet, keygen};
 use common::alphabet::Alphabet;
 
-/// A ColumnarTransposition cipher.
+/// A Columnar Transposition cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct ColumnarTransposition {
@@ -67,15 +67,17 @@ impl Cipher for ColumnarTransposition {
         }
 
         //Sort the key based on it's alphabet positions
-        key.sort_by(|a, b|
-            alphabet::STANDARD.find_position(a.0).unwrap()
-            .cmp(&alphabet::STANDARD.find_position(b.0).unwrap())
-        );
+        key.sort_by(|a, b| {
+            alphabet::STANDARD
+                .find_position(a.0)
+                .unwrap()
+                .cmp(&alphabet::STANDARD.find_position(b.0).unwrap())
+        });
 
         //Construct the cipher text
         let mut ciphertext = String::new();
-        for column in key.iter() {
-            for chr in column.1.iter() {
+        for column in &key {
+            for chr in &column.1 {
                 ciphertext.push(*chr);
             }
         }
@@ -98,14 +100,17 @@ impl Cipher for ColumnarTransposition {
         let mut key = keygen::columnar_key(&self.key)?;
 
         //Sort the key so that it's in its encryption order
-        key.sort_by(|a, b|
-            alphabet::STANDARD.find_position(a.0).unwrap()
-            .cmp(&alphabet::STANDARD.find_position(b.0).unwrap())
-        );
+        key.sort_by(|a, b| {
+            alphabet::STANDARD
+                .find_position(a.0)
+                .unwrap()
+                .cmp(&alphabet::STANDARD.find_position(b.0).unwrap())
+        });
 
         //Transcribe the ciphertext along each column
         let mut chars = ciphertext.chars();
-        let col_size: usize = (ciphertext.chars().count() as f32 / self.key.len() as f32).ceil() as usize;
+        let col_size: usize =
+            (ciphertext.chars().count() as f32 / self.key.len() as f32).ceil() as usize;
 
         'outer: for column in &mut key {
             loop {
@@ -121,8 +126,8 @@ impl Cipher for ColumnarTransposition {
 
         let mut plaintext = String::new();
         for i in 0..col_size {
-            for chr in self.key.chars(){
-                if let Some(column) = key.iter().find(|x| x.0 == chr){
+            for chr in self.key.chars() {
+                if let Some(column) = key.iter().find(|x| x.0 == chr) {
                     plaintext.push(column.1[i]);
                 } else {
                     return Err("Could not find column during decryption.");
@@ -139,7 +144,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple(){
+    fn simple() {
         let message = "wearediscovered";
         let ct = ColumnarTransposition::new(String::from("zebras")).unwrap();
 
@@ -147,7 +152,7 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8(){
+    fn with_utf8() {
         let c = ColumnarTransposition::new(String::from("zebras")).unwrap();
         let message = "Peace, Freedom 🗡️ and Liberty!";
         let encrypted = c.encrypt(message).unwrap();
@@ -155,17 +160,20 @@ mod tests {
     }
 
     #[test]
-    fn single_column(){
+    fn single_column() {
         let message = "we are discovered";
         let ct = ColumnarTransposition::new(String::from("z")).unwrap();
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
     #[test]
-    fn trailing_spaces(){
+    fn trailing_spaces() {
         let message = "we are discovered  "; //The trailing spaces will be stripped
         let ct = ColumnarTransposition::new(String::from("z")).unwrap();
 
-        assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), "we are discovered");
+        assert_eq!(
+            ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
+            "we are discovered"
+        );
     }
 }

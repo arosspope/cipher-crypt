@@ -4,7 +4,7 @@
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
 //! and in modern practice offers essentially no communication security.
 //!
-use common::{substitute, alphabet};
+use common::{alphabet, substitute};
 use common::cipher::Cipher;
 use common::alphabet::Alphabet;
 
@@ -24,7 +24,7 @@ impl Cipher for Caesar {
     /// Will return `Err` if the shift value is outside the range `1-26`.
     fn new(shift: usize) -> Result<Caesar, &'static str> {
         if shift >= 1 && shift <= 26 {
-            return Ok(Caesar {shift: shift});
+            return Ok(Caesar { shift: shift });
         }
 
         Err("Invalid shift factor. Must be in the range 1-26")
@@ -47,8 +47,9 @@ impl Cipher for Caesar {
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(message,
-            |idx| alphabet::STANDARD.modulo((idx + self.shift) as isize))
+        substitute::shift_substitution(message, |idx| {
+            alphabet::STANDARD.modulo((idx + self.shift) as isize)
+        })
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -68,8 +69,9 @@ impl Cipher for Caesar {
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(ciphertext,
-            |idx| alphabet::STANDARD.modulo(idx as isize - self.shift as isize))
+        substitute::shift_substitution(ciphertext, |idx| {
+            alphabet::STANDARD.modulo(idx as isize - self.shift as isize)
+        })
     }
 }
 
@@ -90,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8(){
+    fn with_utf8() {
         let c = Caesar::new(3).unwrap();
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = c.encrypt(message).unwrap();
@@ -100,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    fn exhaustive_encrypt(){
+    fn exhaustive_encrypt() {
         //Test with every possible shift combination
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

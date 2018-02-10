@@ -49,8 +49,9 @@ impl Cipher for Vigenere {
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(message, &mut self.keystream(message),
-            |mi, ki| alphabet::STANDARD.modulo((mi + ki) as isize))
+        substitute::key_substitution(message, &mut self.keystream(message), |mi, ki| {
+            alphabet::STANDARD.modulo((mi + ki) as isize)
+        })
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -69,8 +70,9 @@ impl Cipher for Vigenere {
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(ciphertext, &mut self.keystream(ciphertext),
-            |ci, ki| alphabet::STANDARD.modulo(ci as isize - ki as isize))
+        substitute::key_substitution(ciphertext, &mut self.keystream(ciphertext), |ci, ki| {
+            alphabet::STANDARD.modulo(ci as isize - ki as isize)
+        })
     }
 }
 
@@ -81,7 +83,7 @@ impl Vigenere {
     /// message.
     fn keystream(&self, message: &str) -> Vec<char> {
         //The key will only be used to encrypt the portion of the message that is alphabetic
-        let scrubbed_msg = alphabet::STANDARD.scrub(&message);
+        let scrubbed_msg = alphabet::STANDARD.scrub(message);
 
         //The key is large enough for the message already
         if self.key.len() >= scrubbed_msg.len() {
@@ -127,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8(){
+    fn with_utf8() {
         let v = Vigenere::new(String::from("utfeightisfun")).unwrap();
         let message = "Peace 🗡️ Freedom and Liberty!";
         let encrypted = v.encrypt(message).unwrap();
@@ -141,9 +143,12 @@ mod tests {
         let message = "We are under seige!"; //19 character message
         let v = Vigenere::new(String::from("lemon")).unwrap(); //key length of 5
 
-        assert_eq!(vec!['l', 'e', 'm', 'o', 'n',
-                        'l', 'e', 'm', 'o', 'n',
-                        'l', 'e', 'm', 'o', 'n',], v.keystream(message));
+        assert_eq!(
+            vec![
+                'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n'
+            ],
+            v.keystream(message)
+        );
     }
 
     #[test]

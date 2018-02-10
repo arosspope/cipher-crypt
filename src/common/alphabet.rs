@@ -1,10 +1,14 @@
 //! Contains helpful constants and functions used in substitution ciphers.
 //!
-const ALPHABET_LOWER: [char; 26] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
-'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+const ALPHABET_LOWER: [char; 26] = [
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+    't', 'u', 'v', 'w', 'x', 'y', 'z',
+];
 
-const ALPHABET_UPPER: [char; 26] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
-'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+const ALPHABET_UPPER: [char; 26] = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
 
 const NUMERIC: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
@@ -35,8 +39,10 @@ pub trait Alphabet {
     /// Will scrub non-alphabetic characters from the text and return the scrubed version.
     ///
     fn scrub(&self, text: &str) -> String {
-        text.chars().into_iter()
-            .filter(|&c| self.find_position(c).is_some()).collect()
+        text.chars()
+            .into_iter()
+            .filter(|&c| self.find_position(c).is_some())
+            .collect()
     }
 
     /// Finds the multiplicative inverse of an index such that `a*x = 1 (mod n)`. Where `a`
@@ -61,8 +67,10 @@ pub trait Alphabet {
 pub struct Standard;
 impl Alphabet for Standard {
     fn find_position(&self, c: char) -> Option<usize> {
-        ALPHABET_LOWER.iter().position(|&a| a == c)
-            .or(ALPHABET_UPPER.iter().position(|&a| a == c))
+        ALPHABET_LOWER
+            .iter()
+            .position(|&a| a == c)
+            .or_else(|| ALPHABET_UPPER.iter().position(|&a| a == c))
     }
 
     fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char> {
@@ -70,15 +78,16 @@ impl Alphabet for Standard {
             return None;
         }
 
-        match is_uppercase {
-            true => Some(ALPHABET_UPPER[index]),
-            false => Some(ALPHABET_LOWER[index])
+        if is_uppercase {
+            Some(ALPHABET_UPPER[index])
+        } else {
+            Some(ALPHABET_LOWER[index])
         }
     }
 
     fn is_valid(&self, text: &str) -> bool {
         for c in text.chars() {
-            if self.find_position(c).is_none(){
+            if self.find_position(c).is_none() {
                 return false;
             }
         }
@@ -114,9 +123,10 @@ impl Alphabet for Alphanumeric {
             return Some(NUMERIC[index - 26]);
         }
 
-        match is_uppercase {
-            true => Some(ALPHABET_UPPER[index]),
-            false => Some(ALPHABET_LOWER[index])
+        if is_uppercase {
+            Some(ALPHABET_UPPER[index])
+        } else {
+            Some(ALPHABET_LOWER[index])
         }
     }
 
