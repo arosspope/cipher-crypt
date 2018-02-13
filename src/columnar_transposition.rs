@@ -58,6 +58,7 @@ impl Cipher for ColumnarTransposition {
             if let Some(c) = chars.next() {
                 key[i].1.push(c);
             } else if i > 0 {
+                // TODO - not sure specification includes padding spaces
                 key[i].1.push(' '); //We must add padding characters
             } else {
                 break;
@@ -78,7 +79,11 @@ impl Cipher for ColumnarTransposition {
         let mut ciphertext = String::new();
         for column in &key {
             for chr in &column.1 {
+                // TODO: Really need to strip the whitespace
+                // and handle the ragged columns in decrypt
+                // if !chr.is_whitespace() {
                 ciphertext.push(*chr);
+                // }
             }
         }
 
@@ -109,12 +114,13 @@ impl Cipher for ColumnarTransposition {
 
         //Transcribe the ciphertext along each column
         let mut chars = ciphertext.chars();
-        let col_size: usize =
+        // This will fail as the columns may be differing lengths
+        let max_col_size: usize =
             (ciphertext.chars().count() as f32 / self.key.len() as f32).ceil() as usize;
 
         'outer: for column in &mut key {
             loop {
-                if column.1.len() >= col_size {
+                if column.1.len() >= max_col_size {
                     break;
                 } else if let Some(c) = chars.next() {
                     column.1.push(c);
@@ -125,10 +131,17 @@ impl Cipher for ColumnarTransposition {
         }
 
         let mut plaintext = String::new();
-        for i in 0..col_size {
+        // Okay this can be messy as the columns may be of unequal length
+        // Iterate over the headers of the columns
+        for i in 0..max_col_size {
             for chr in self.key.chars() {
                 if let Some(column) = key.iter().find(|x| x.0 == chr) {
+                    // TODO: Fix is the columns are uneven
+                    //  Currently breaks the decryption
+                    // Also, this breaks when whitespace is added to end of string
+                    // if i < column.1.len() {
                     plaintext.push(column.1[i]);
+                // }
                 } else {
                     return Err("Could not find column during decryption.");
                 }

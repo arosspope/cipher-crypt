@@ -37,6 +37,7 @@ pub mod affine;
 pub mod polybius;
 pub mod scytale;
 pub mod columnar_transposition;
+pub mod adfgvx;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
@@ -50,3 +51,4 @@ pub use affine::Affine;
 pub use polybius::Polybius;
 pub use scytale::Scytale;
 pub use columnar_transposition::ColumnarTransposition;
+pub use adfgvx::ADFGVX;
