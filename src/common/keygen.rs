@@ -1,7 +1,6 @@
 //! This module contains functions for the generation of keys.
 //!
 use std::collections::HashMap;
-use std::ascii::AsciiExt;
 use super::alphabet;
 use super::alphabet::{Alphabet, STANDARD, ALPHANUMERIC};
 
@@ -37,6 +36,39 @@ pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: T, to_uppercase: bool)
     }
 
     Ok(keyed_alphabet)
+}
+
+/// Validate a Columnar Transposition key given a specific key.
+///
+/// Will return `Err` if one of the following conditions is detected:
+///
+/// * The `key` length is = 0.
+/// * The `key` contains non-alphanumeric symbols.
+/// * The `key` contains duplicate characters.
+pub fn columnar_key(key: &str) -> Result<Vec<(char, Vec<char>)>, &'static str> {
+    let unique_chars: HashMap<_, _> = key.chars().into_iter()
+        .map(|c| (c, c))
+        .collect();
+
+    //Validate key
+    if key.len() <= 0 {
+        return Err("The key cannot be zero length.");
+    }
+    else if key.len() - unique_chars.len() > 0
+    {
+        return Err("The key cannot contain duplicate alphanumeric characters.");
+    }
+    else if !ALPHANUMERIC.is_valid(key)
+    {
+        return Err("The key cannot contain non-alphanumeric symbols.");
+    }
+
+    let mut c_key: Vec<(char, Vec<char>)> = Vec::new();
+    for chr in key.chars() {
+        c_key.push((chr, Vec::new()));
+    }
+
+    Ok(c_key)
 }
 
 /// Generate a 6x6 polybius square hashmap from an alphanumeric key.
@@ -216,5 +248,22 @@ mod tests {
         let keyed_alphabet = keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii",
             STANDARD, true).unwrap();
         assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
+    }
+
+    #[test]
+    fn generate_columnar_key() {
+        assert_eq!(vec![('z', vec![]),('e', vec![]),('b', vec![]), ('r', vec![]), ('a', vec![]),
+        ('s', vec![])],
+        columnar_key("zebras").unwrap());
+    }
+
+    #[test]
+    fn generate_columnar_empty_key() {
+        assert!(columnar_key("").is_err());
+    }
+
+    #[test]
+    fn generate_columnar_invalid_key() {
+        assert!(columnar_key("Fx !@#$").is_err());
     }
 }
