@@ -22,8 +22,8 @@
 //! There's a reason these archaic methods are no longer used - it's because they are extremely
 //! easy to crack! Intended for learning purposes only, these ciphers should not be used to
 //! encrypt data of any real value.
-extern crate rulinalg;
 extern crate num;
+extern crate rulinalg;
 
 mod common;
 pub mod caesar;
@@ -37,6 +37,7 @@ pub mod affine;
 pub mod polybius;
 pub mod scytale;
 pub mod columnar_transposition;
+pub mod adfgvx;
 
 pub use common::cipher::Cipher;
 pub use caesar::Caesar;
@@ -50,3 +51,4 @@ pub use affine::Affine;
 pub use polybius::Polybius;
 pub use scytale::Scytale;
 pub use columnar_transposition::ColumnarTransposition;
+pub use adfgvx::ADFGVX;

@@ -6,7 +6,7 @@
 //! ciphertext characters, then the key can be obtained by solving a simultaneous equation
 //!
 use num::integer::gcd;
-use common::{substitute, alphabet};
+use common::{alphabet, substitute};
 use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 
@@ -40,7 +40,7 @@ impl Cipher for Affine {
             return Err("The key 'a' cannot share a common factor with 26.");
         }
 
-        Ok(Affine {a_b: a_b})
+        Ok(Affine { a_b: a_b })
     }
 
     /// Encrypt a message using an Affine cipher.
@@ -60,8 +60,9 @@ impl Cipher for Affine {
         // Where;  x    = position of letter in alphabet
         //         a, b = the numbers of the affine key
 
-        substitute::shift_substitution(message,
-            |idx| alphabet::STANDARD.modulo(((self.a_b.0*idx) + self.a_b.1) as isize))
+        substitute::shift_substitution(message, |idx| {
+            alphabet::STANDARD.modulo(((self.a_b.0 * idx) + self.a_b.1) as isize)
+        })
     }
 
     /// Decrypt a message using an Affine cipher.
@@ -81,11 +82,13 @@ impl Cipher for Affine {
         // Where;  x    = position of letter in alphabet
         //         a^-1 = multiplicative inverse of the key number `a`
         //         b    = a number of the affine key
-        let a_inv = alphabet::STANDARD.multiplicative_inverse(self.a_b.0 as isize)
+        let a_inv = alphabet::STANDARD
+            .multiplicative_inverse(self.a_b.0 as isize)
             .expect("Multiplicative inverse for 'a' could not be calculated.");
 
-        substitute::shift_substitution(ciphertext,
-            |idx| alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize)))
+        substitute::shift_substitution(ciphertext, |idx| {
+            alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize))
+        })
     }
 }
 
@@ -106,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8(){
+    fn with_utf8() {
         let a = Affine::new((15, 10)).unwrap();
         let message = "Peace ✌️ Freedom and Liberty!";
 
@@ -114,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn exhaustive_encrypt(){
+    fn exhaustive_encrypt() {
         //Test with every combination of a and b
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -131,27 +134,27 @@ mod tests {
     }
 
     #[test]
-    fn valid_key(){
+    fn valid_key() {
         assert!(Affine::new((15, 17)).is_ok());
     }
 
     #[test]
-    fn b_shares_factor(){
+    fn b_shares_factor() {
         assert!(Affine::new((15, 2)).is_ok());
     }
 
     #[test]
-    fn a_shares_factor(){
+    fn a_shares_factor() {
         assert!(Affine::new((2, 15)).is_err());
     }
 
     #[test]
-    fn keys_to_small(){
+    fn keys_to_small() {
         assert!(Affine::new((0, 10)).is_err());
     }
 
     #[test]
-    fn keys_to_big(){
+    fn keys_to_big() {
         assert!(Affine::new((30, 51)).is_err());
     }
 }

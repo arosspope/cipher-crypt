@@ -58,7 +58,7 @@ impl Cipher for Railfence {
         // We simply return the message as the 'encrypted' message when there is one rail.
         // This is because the message is transposed along a single rail without being altered.
         if self.rails == 1 {
-            return Ok(message.to_string())
+            return Ok(message.to_string());
         }
 
         // Initialise the fence (a simple table)
@@ -120,7 +120,7 @@ impl Cipher for Railfence {
         // As mentioned previously, a single rail means that the original message has not been
         // altered
         if self.rails == 1 {
-            return Ok(ciphertext.to_string())
+            return Ok(ciphertext.to_string());
         }
 
         let mut table = vec![vec![(false, '.'); ciphertext.len()]; self.rails];
@@ -133,7 +133,7 @@ impl Cipher for Railfence {
 
         // Fill the identified positions in the table with the ciphertext, line by line
         let mut ct_chars = ciphertext.chars();
-        'outer: for row in table.iter_mut() {
+        'outer: for row in &mut table {
             // For each element in the row, determine if a char should be placed there
             for element in row.iter_mut() {
                 if element.0 {
@@ -176,13 +176,11 @@ impl Railfence {
         // For the first half of a cycle, the row is given by the index,
         // but for the second half it decreases and is therefore given by the reverse index,
         // the distance from the end of the cycle.
-        let rail = if col % cycle <= cycle / 2 {
+        if col % cycle <= cycle / 2 {
             col % cycle
         } else {
             cycle - col % cycle
-        };
-
-        rail
+        }
     }
 }
 

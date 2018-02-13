@@ -21,8 +21,8 @@ use common::alphabet::Alphabet;
 pub fn apply(message: &str) -> String {
     // The closure below is guaranteed to produce a number less than 26, therefore the
     // substitution will not return an error and we can unwrap safely.
-    substitute::shift_substitution(message,
-        |i| alphabet::STANDARD.modulo((i + 13) as isize)).unwrap()
+    substitute::shift_substitution(message, |i| alphabet::STANDARD.modulo((i + 13) as isize))
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -30,7 +30,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn with_utf8(){
+    fn with_utf8() {
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = apply(message);
         let decrypted = apply(&encrypted);
@@ -39,7 +39,7 @@ mod tests {
     }
 
     #[test]
-    fn alphabet_encrypt(){
+    fn alphabet_encrypt() {
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         let encrypted = apply(message);
