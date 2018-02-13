@@ -38,6 +38,7 @@ impl Cipher for ADFGVX {
     ///
     /// # Examples
     /// Basic usage:
+    /// 
     /// ```
     /// use cipher_crypt::{Cipher, ADFGVX};
     ///
@@ -56,6 +57,7 @@ impl Cipher for ADFGVX {
     ///         .unwrap()
     ///         .to_uppercase()
     /// );
+    /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Can't get around the borrowing here...
@@ -82,6 +84,8 @@ impl Cipher for ADFGVX {
     /// Basic usage:
     ///
     /// ```
+    /// use cipher_crypt::{Cipher, ADFGVX};
+    /// 
     /// let a = ADFGVX::new((
     ///        "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
     ///        "GERMAN".to_string(),
