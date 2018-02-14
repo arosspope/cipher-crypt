@@ -46,10 +46,10 @@ impl Cipher for ADFGVX {
     ///     "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
     ///     "GERMAN".to_string(),
     /// )).unwrap();
-
+    /// 
     /// let cipher_text = concat!(
-    ///     "GFXFFGXGDFAXDAVGD GXVADAAXXXFDDFGGGFDFAXD",
-    ///     "AVGDVDAGFAXVVXFDDFGGGFVVVAGFFA VVVAGFFAGXVADAAXX VDAGFAXVVGFXFFGXG "
+    ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
+    ///     "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
     /// );
     /// assert_eq!(
     ///     cipher_text,
@@ -87,18 +87,18 @@ impl Cipher for ADFGVX {
     /// use cipher_crypt::{Cipher, ADFGVX};
     ///
     /// let a = ADFGVX::new((
-    ///        "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
-    ///        "GERMAN".to_string(),
-    ///    )).unwrap();
-    ///
-    /// let cipher_text =
-    ///             concat!(
-    ///               "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
-    ///               "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG ");
+    ///     "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
+    ///     "GERMAN".to_string(),
+    /// )).unwrap();
+    /// 
+    /// let cipher_text = concat!(
+    ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
+    ///     "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+    /// );
     /// assert_eq!(
     ///     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
     ///      a.decrypt(cipher_text).unwrap()
-    ///    );
+    /// );
     /// ```
     ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
