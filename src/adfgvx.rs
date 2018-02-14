@@ -46,7 +46,7 @@ impl Cipher for ADFGVX {
     ///     "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
     ///     "GERMAN".to_string(),
     /// )).unwrap();
-    /// 
+    ///
     /// let cipher_text = concat!(
     ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
     ///     "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
@@ -90,7 +90,7 @@ impl Cipher for ADFGVX {
     ///     "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
     ///     "GERMAN".to_string(),
     /// )).unwrap();
-    /// 
+    ///
     /// let cipher_text = concat!(
     ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
     ///     "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
