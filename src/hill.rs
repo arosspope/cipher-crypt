@@ -17,7 +17,7 @@ use common::alphabet;
 use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 use num::integer::gcd;
-use rulinalg::matrix::{Matrix, BaseMatrix, BaseMatrixMut};
+use rulinalg::matrix::{BaseMatrix, BaseMatrixMut, Matrix};
 
 /// A Hill cipher.
 ///
@@ -56,23 +56,24 @@ impl Cipher for Hill {
     /// ```
     fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
         if key.cols() != key.rows() {
-            return Err("Key must be a square matrix.")
+            return Err("Key must be a square matrix.");
         }
 
         //We want to restrict the caller to supplying matrices of type isize
         //However, the majority of the matrix operations will be done with type f64
-        let m: Matrix<f64> = key.clone().try_into()
+        let m: Matrix<f64> = key.clone()
+            .try_into()
             .expect("Could not convert Matrix of type `isize` to `f64`.");
 
         if m.clone().inverse().is_err() || Hill::calc_inverse_key(m.clone()).is_err() {
-            return Err("The inverse of this matrix cannot be calculated for decryption.")
+            return Err("The inverse of this matrix cannot be calculated for decryption.");
         }
 
         if gcd(m.clone().det() as isize, 26) != 1 {
             return Err("The inverse determinant of the key cannot be calculated.");
         }
 
-        Ok(Hill {key: key})
+        Ok(Hill { key: key })
     }
 
     /// Encrypt a message using a Hill cipher.
@@ -162,15 +163,16 @@ impl Cipher for Hill {
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         /*
-            The decryption process is very similar to the encryption process as explained
-            in its function. However, the key is inverted in such way that performing a matrix multiplication on the character vector will result in the original unencrypted chars.
+        The decryption process is very similar to the encryption process as explained in
+        its function. However, the key is inverted in such way that performing a matrix
+        multiplication on the character vector will result in the original unencrypted chars.
 
-            For example, given the chunk [15, 5, 14] = ['P', 'F', 'O], and the inverse of the key
-            `k`, `k^-1`. Decryption occurs like so:
+        For example, given the chunk [15, 5, 14] = ['P', 'F', 'O], and the inverse of the key
+        `k`, `k^-1`. Decryption occurs like so:
 
-                k^-1 * [15, 5, 14] mod 26 = [0, 19, 19] -> ['A', 'T', 'T'] decrypted characters
+            k^-1 * [15, 5, 14] mod 26 = [0, 19, 19] -> ['A', 'T', 'T'] decrypted characters
 
-            This is repeated until all the 'chunks' of the message have been consumed/transformed.
+        This is repeated until all the 'chunks' of the message have been consumed/transformed.
         */
         let inverse_key = Hill::calc_inverse_key(self.key.clone().try_into().unwrap())?;
 
@@ -210,7 +212,7 @@ impl Hill {
         }
 
         let mut matrix: Vec<isize> = Vec::new();
-        for c in phrase.chars(){
+        for c in phrase.chars() {
             match alphabet::STANDARD.find_position(c) {
                 Some(pos) => matrix.push(pos as isize),
                 None => return Err("Phrase cannot contain non-alphabetic symbols."),
@@ -225,9 +227,11 @@ impl Hill {
     ///
     fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
         //Only allow chars in the alphabet (no whitespace or symbols)
-        for c in message.chars(){
-            if alphabet::STANDARD.find_position(c).is_none(){
-                return Err("Invalid message. Please strip any whitespace or non-alphabetic symbols.");
+        for c in message.chars() {
+            if alphabet::STANDARD.find_position(c).is_none() {
+                return Err(
+                    "Invalid message. Please strip any whitespace or non-alphabetic symbols.",
+                );
             }
         }
 
@@ -248,7 +252,7 @@ impl Hill {
         //For each set of chunks in the message, transform based on the key.
         let mut i = 0;
         while i < buffer.len() {
-            match Hill::transform_chunk(&key, &buffer[i..(i+chunk_size)]) {
+            match Hill::transform_chunk(key, &buffer[i..(i + chunk_size)]) {
                 Ok(s) => transformed_message.push_str(&s),
                 Err(e) => return Err(e),
             }
@@ -273,10 +277,10 @@ impl Hill {
         //e.g. ['A', 'T', 'T'] -> [0, 19, 19]
         let mut index_representation: Vec<f64> = Vec::new();
         for c in chunk.chars() {
-            index_representation.push(
-                alphabet::STANDARD.find_position(c)
-                .expect("Attempted transformation of non-alphabetic symbol") as f64
-            );
+            index_representation.push(alphabet::STANDARD
+                .find_position(c)
+                .expect("Attempted transformation of non-alphabetic symbol")
+                as f64);
         }
 
         //Perform the transformation `k * [0, 19, 19] mod 26`
@@ -285,15 +289,19 @@ impl Hill {
 
         //Convert the transformed indices back into characters of the alphabet
         for (i, pos) in product.iter().enumerate() {
-            let orig = chunk.chars().nth(i).expect("Expected to find char at index.");
+            let orig = chunk
+                .chars()
+                .nth(i)
+                .expect("Expected to find char at index.");
 
             transformed.push(
-                alphabet::STANDARD.get_letter(*pos as usize, orig.is_uppercase())
-                .expect("Calculate index is invalid.")
+                alphabet::STANDARD
+                    .get_letter(*pos as usize, orig.is_uppercase())
+                    .expect("Calculate index is invalid."),
             );
         }
 
-        Ok (transformed)
+        Ok(transformed)
     }
 
     /// Calculates the inverse key for decryption
@@ -302,11 +310,12 @@ impl Hill {
         let det = key.clone().det();
 
         //Find the inverse determinant such that: d*d^-1 = 1 mod 26
-        let det_inv = alphabet::STANDARD.multiplicative_inverse(det as isize)
+        let det_inv = alphabet::STANDARD
+            .multiplicative_inverse(det as isize)
             .expect("Inverse for determinant could not be found.");
 
         //Calculate the inverse key matrix
-        Ok ( key.inverse().unwrap().apply(&|x| {
+        Ok(key.inverse().unwrap().apply(&|x| {
             let y = (x * det as f64).round() as isize;
             (alphabet::STANDARD.modulo(y) as f64 * det_inv as f64) % 26.0
         }))
@@ -318,12 +327,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn keygen_from_phrase(){
+    fn keygen_from_phrase() {
         assert!(Hill::from_phrase("CEFJCBDRH", 3).is_ok());
     }
 
     #[test]
-    fn invalid_phrase(){
+    fn invalid_phrase() {
         assert!(Hill::from_phrase("killer", 2).is_err());
     }
 
@@ -336,13 +345,13 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_with_symbols(){
+    fn encrypt_with_symbols() {
         let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
         assert!(h.encrypt("This won!t w@rk").is_err());
     }
 
     #[test]
-    fn decrypt_with_symbols(){
+    fn decrypt_with_symbols() {
         let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
         assert!(h.decrypt("This won!t w@rk").is_err());
     }
@@ -365,13 +374,13 @@ mod tests {
     }
 
     #[test]
-    fn non_square_matrix(){
+    fn non_square_matrix() {
         //A 3 x 2 matrix
         assert!(Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17])).is_err());
     }
 
     #[test]
-    fn non_invertable_matrix(){
+    fn non_invertable_matrix() {
         assert!(Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8])).is_err());
     }
 }

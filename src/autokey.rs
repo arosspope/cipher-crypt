@@ -5,7 +5,7 @@
 //! keystream would be `CRYPTA TT ACKA`. It was invented by Blaise de Vigenère in 1586, and is
 //! generally more secure than the Vigenere cipher.
 use common::cipher::Cipher;
-use common::{substitute, alphabet};
+use common::{alphabet, substitute};
 use common::alphabet::Alphabet;
 
 /// An Autokey cipher.
@@ -48,8 +48,9 @@ impl Cipher for Autokey {
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(message, &mut self.encrypt_keystream(message),
-            |mi, ki| alphabet::STANDARD.modulo((mi + ki) as isize))
+        substitute::key_substitution(message, &mut self.encrypt_keystream(message), |mi, ki| {
+            alphabet::STANDARD.modulo((mi + ki) as isize)
+        })
     }
 
     /// Decrypt a message using an Autokey cipher.
@@ -83,7 +84,7 @@ impl Autokey {
         let mut plaintext = String::new();
 
         //We start the stream with the base key
-        let mut keystream: Vec<char> = String::from(self.key.clone()).chars().collect();
+        let mut keystream: Vec<char> = self.key.clone().chars().collect();
 
         for cc in ciphertext.chars() {
             //Find the index of the ciphertext character in the alphabet (if it exists in there)
@@ -92,7 +93,9 @@ impl Autokey {
                 Some(ci) => {
                     //Get the next key character in the stream (we always read from position 0)
                     if keystream.len() < 1 {
-                        return Err("Keystream is not large enough for full substitution of message");
+                        return Err(
+                            "Keystream is not large enough for full substitution of message",
+                        );
                     }
 
                     let kc = keystream[0];
@@ -101,17 +104,18 @@ impl Autokey {
                         let si = alphabet::STANDARD.modulo(ci as isize - ki as isize);
 
                         //We can safely unwrap as we know the index will be within the alphabet
-                        let s = alphabet::STANDARD.get_letter(si, cc.is_uppercase()).unwrap();
+                        let s = alphabet::STANDARD
+                            .get_letter(si, cc.is_uppercase())
+                            .unwrap();
 
                         //Push to the decrypted text AND the keystream
                         plaintext.push(s);
                         keystream.push(s);
                         keystream.remove(0); //We have consumed the keystream chartacter
                     } else {
-                        return Err("Keystream contains a non-alphabetic symbol.")
+                        return Err("Keystream contains a non-alphabetic symbol.");
                     }
-
-                },
+                }
                 None => plaintext.push(cc), //Push non-alphabetic chars 'as-is'
             }
         }
@@ -124,7 +128,7 @@ impl Autokey {
     /// Will simply return a copy of the key if its length is already larger than the message.
     fn encrypt_keystream(&self, message: &str) -> Vec<char> {
         //The key will only be used to encrypt the portion of the message that is alphabetic
-        let scrubbed_msg = alphabet::STANDARD.scrub(&message);
+        let scrubbed_msg = alphabet::STANDARD.scrub(message);
 
         //The key is large enough for the message already
         if self.key.len() >= scrubbed_msg.len() {
@@ -132,7 +136,7 @@ impl Autokey {
         }
 
         //The keystream is simply a concatonation of the base key + the scrubbed message
-        let mut keystream = String::from(self.key.clone());
+        let mut keystream = self.key.clone();
         keystream.push_str(&scrubbed_msg);
 
         keystream[0..scrubbed_msg.len()].chars().collect()
@@ -182,9 +186,12 @@ mod tests {
         let message = "We are under seige";
         let v = Autokey::new(String::from("lemon")).unwrap();
 
-        assert_eq!(vec!['l', 'e', 'm', 'o', 'n', 'W',
-                        'e', 'a', 'r', 'e', 'u', 'n',
-                        'd', 'e', 'r'], v.encrypt_keystream(message));
+        assert_eq!(
+            vec![
+                'l', 'e', 'm', 'o', 'n', 'W', 'e', 'a', 'r', 'e', 'u', 'n', 'd', 'e', 'r'
+            ],
+            v.encrypt_keystream(message)
+        );
     }
 
     #[test]

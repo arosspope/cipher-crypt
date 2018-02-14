@@ -1,4 +1,5 @@
 # Cipher-crypt
+
 [![Crates.io](https://img.shields.io/crates/v/cipher-crypt.svg)](https://crates.io/crates/cipher-crypt)
 [![Documentation](https://docs.rs/cipher-crypt/badge.svg)](https://docs.rs/cipher-crypt)
 [![Build Status](https://travis-ci.org/arosspope/cipher-crypt.svg?branch=master)](https://travis-ci.org/arosspope/cipher-crypt)
@@ -12,8 +13,9 @@ adding the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.10"
+cipher-crypt = "^0.11"
 ```
+
 Using the crate as such:
 
 ![rot13-demo](http://i.imgur.com/5pywJBn.gif)
@@ -33,12 +35,12 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Hill
 - [x] Fractionated Morse
 - [x] Columnar Transposition
+- [x] ADFGVX
 - [ ] Baconian
 - [ ] Porta
 - [ ] Homophonic
 - [ ] Four-Square
 - [ ] Playfair
-- [ ] ADFGVX
 - [ ] Bifid
 - [ ] Straddle Checkerboard
 - [ ] Trifid
