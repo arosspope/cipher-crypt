@@ -1,6 +1,5 @@
 //! This module contains functions for the generation of keys.
 //!
-use std::ascii::AsciiExt;
 use std::collections::HashMap;
 use super::alphabet;
 use super::alphabet::{Alphabet, ALPHANUMERIC, STANDARD};
