@@ -11,9 +11,10 @@ use common::{alphabet, keygen, morse};
 use common::alphabet::Alphabet;
 
 // The fractionated morse trigraph 'alphabet'. Each sequence represents a letter of the alphabet.
-const TRIGRAPH_ALPHABET: [&str; 26] = ["...", "..-", "..|", ".-.", ".--", ".-|", ".|.", ".|-",
-".||", "-..", "-.-", "-.|", "--.", "---", "--|", "-|.", "-|-", "-||", "|..", "|.-", "|.|", "|-.",
-"|--", "|-|", "||.", "||-"];
+const TRIGRAPH_ALPHABET: [&str; 26] = [
+    "...", "..-", "..|", ".-.", ".--", ".-|", ".|.", ".|-", ".||", "-..", "-.-", "-.|", "--.",
+    "---", "--|", "-|.", "-|-", "-||", "|..", "|.-", "|.|", "|-.", "|--", "|-|", "||.", "||-",
+];
 
 /// A Fractionated Morse cipher.
 ///
@@ -35,7 +36,9 @@ impl Cipher for FractionatedMorse {
         }
 
         let keyed_alphabet = keygen::keyed_alphabet(&key, alphabet::STANDARD, true)?;
-        Ok(FractionatedMorse { keyed_alphabet: keyed_alphabet })
+        Ok(FractionatedMorse {
+            keyed_alphabet: keyed_alphabet,
+        })
     }
 
     /// Encrypt a message using a Fractionated Morse cipher.
@@ -119,11 +122,10 @@ impl Cipher for FractionatedMorse {
         //       and so on.
         //   (4) The Morse message `....|.|.-..|.-..|---||..` is produced.
         //   (5) The plaintext `hello i` is recovered.
-        let seq = FractionatedMorse::to_trigraphs(&self.keyed_alphabet, &cipher_text)?;
+        let seq = FractionatedMorse::to_trigraphs(&self.keyed_alphabet, cipher_text)?;
         FractionatedMorse::decrypt_sequence(&seq)
     }
 }
-
 
 impl FractionatedMorse {
     /// Takes a message and converts it to Morse code, using the character `|` as a separator.
@@ -139,7 +141,7 @@ impl FractionatedMorse {
                 Some(sequence) => {
                     morse.push_str(sequence);
                     morse.push('|');
-                },
+                }
                 None => return Err("Unsupported character detected."),
             }
         }
@@ -157,7 +159,10 @@ impl FractionatedMorse {
 
         // Loop over each trigraph and decode it to an alphabetic character
         for trigraph in morse.as_bytes().chunks(3) {
-            match TRIGRAPH_ALPHABET.iter().position(|&t| t.as_bytes() == trigraph) {
+            match TRIGRAPH_ALPHABET
+                .iter()
+                .position(|&t| t.as_bytes() == trigraph)
+            {
                 Some(pos) => ciphertext.push(key.chars().nth(pos).unwrap()), //Safe unwrap
                 None => return Err("Unknown trigraph sequence within the morse code."),
             }
@@ -174,7 +179,8 @@ impl FractionatedMorse {
 
         // We are using an uppercase keyed alphabet, so the message must be also
         for c in ciphertext.to_uppercase().chars() {
-            match key.chars().position(|k| k == c) { //Find position of char in the keyed alphabet
+            match key.chars().position(|k| k == c) {
+                //Find position of char in the keyed alphabet
                 Some(pos) => sequence.push_str(TRIGRAPH_ALPHABET[pos]),
                 None => return Err("Ciphertext cannot contain non-alphabetic symbols."),
             }
@@ -221,7 +227,6 @@ impl FractionatedMorse {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
