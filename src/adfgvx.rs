@@ -55,7 +55,6 @@ impl Cipher for ADFGVX {
     ///     cipher_text,
     ///     a.encrypt("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
     ///         .unwrap()
-    ///         .to_uppercase()
     /// );
     /// ```
     ///
