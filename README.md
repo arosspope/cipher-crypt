@@ -35,12 +35,12 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Hill
 - [x] Fractionated Morse
 - [x] Columnar Transposition
+- [x] ADFGVX
 - [ ] Baconian
 - [ ] Porta
 - [ ] Homophonic
 - [ ] Four-Square
 - [ ] Playfair
-- [x] ADFGVX
 - [ ] Bifid
 - [ ] Straddle Checkerboard
 - [ ] Trifid
