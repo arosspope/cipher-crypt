@@ -50,8 +50,8 @@ impl Cipher for ADFGVX {
     /// )).unwrap();
     ///
     /// let cipher_text = concat!(
-    ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
-    ///     "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+    ///     "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAXVVxfdd",
+    ///     "fgggfVVVAGFFAvvvagffaGXVADAAXXvdagfaxvvGFXFFGXG"
     /// );
     ///
     /// assert_eq!(
@@ -72,9 +72,8 @@ impl Cipher for ADFGVX {
         // Encrypt with this
         let initial_ciphertext = p.encrypt(message).unwrap();
         //  2. Columnar transposition
-        let ct = ColumnarTransposition::new(keyword).unwrap();
+        let ct = ColumnarTransposition::new((keyword, String::from(""))).unwrap();
         // Encrypt with this
-        // TODO: Issue is that it is adding in spurious ' ' white space chars...
         let ciphertext = ct.encrypt(&initial_ciphertext).unwrap();
 
         Ok(ciphertext)
@@ -110,7 +109,7 @@ impl Cipher for ADFGVX {
 
         // Two steps to decrypt:
         // 1. Create a ColumnarTransposition and decrypt
-        let ct = ColumnarTransposition::new(keyword).unwrap();
+        let ct = ColumnarTransposition::new((keyword, String::from(""))).unwrap();
         let round_one = ct.decrypt(ciphertext).unwrap();
         // 2. Create a Polybius square and decrypt
         let p = Polybius::new((key.to_string(), ADFGVX_CHARS, ADFGVX_CHARS)).unwrap();
@@ -139,9 +138,10 @@ mod tests {
         )).unwrap();
 
         let cipher_text = concat!(
-            "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
-            "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+            "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
+            "VVxfddfgggfVVVAGFFAvvvagffaGXVADAAXXvdagfaxvvGFXFFGXG"
         );
+        // Only if no null is used - different cipher text otherwise
         assert_eq!(
             cipher_text,
             a.encrypt("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -167,14 +167,34 @@ mod tests {
     }
 
     #[test]
+    fn encrypt_decrypt_message() {
+        let a = ADFGVX::new((
+            "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
+            "VICTORY".to_string(),
+        )).unwrap();
+
+        let plain_text = concat!(
+            "We attack at dawn, not later when it is light, ",
+            "or at some strange time of the clock. Only at dawn."
+        );
+        assert_eq!(
+            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap(),
+            plain_text
+        );
+    }
+
+    #[test]
     fn with_utf8() {
-        let m = "Attack 🗡️ the east wall";
+        let plain_text = "Attack 🗡️ the east wall";
         let a = ADFGVX::new((
             "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
             "GERMAN".to_string(),
         )).unwrap();
 
-        assert_eq!(m, a.decrypt(&a.encrypt(m).unwrap()).unwrap());
+        assert_eq!(
+            plain_text,
+            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap()
+        );
     }
 
     #[test]
