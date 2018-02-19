@@ -72,9 +72,14 @@ impl Cipher for ColumnarTransposition {
     /// ```
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
-    /// let ct = ColumnarTransposition::new((String::from("zebras"), String::from(""))).unwrap();
+    /// let key_word = String::from("zebras");
+    /// let null_char = String::from("");
+    ///
+    /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+    ///
     /// assert_eq!("respce!uemeers-taSs g", ct.encrypt("Super-secret message!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         let mut key = keygen::columnar_key(&self.key)?;
 
@@ -106,11 +111,7 @@ impl Cipher for ColumnarTransposition {
         let mut ciphertext = String::new();
         for column in &key {
             for chr in &column.1 {
-                if self.use_nulls && *chr == self.null_char {
-                    ciphertext.push(*chr);
-                } else {
-                    ciphertext.push(*chr);
-                }
+                ciphertext.push(*chr);
             }
         }
 
@@ -134,11 +135,15 @@ impl Cipher for ColumnarTransposition {
     /// ```
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
+    /// let key_word = String::from("zebras");
+    /// let null_char = String::from("");
     /// let message = "we are discovered  "; // Only trailing spaces will be stripped
     ///
-    /// let ct = ColumnarTransposition::new((String::from("zebras"), String::from(" "))).unwrap();
+    /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+    ///
     /// assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),"we are discovered");
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         let mut key = keygen::columnar_key(&self.key)?;
 
@@ -152,21 +157,9 @@ impl Cipher for ColumnarTransposition {
         // according to order of the keyword
         // So, if the keyword is 'zebras' then the largest column is 'z'
         //  according to offset size
-        // So, for the ciphertext from keyword 'zebras' (on its side):
-        // 'RCDEN IRL EDEFTASEEOEO. CW V AE'
-        // 'a' ['R', 'C', 'D', 'E', 'N'] <- 1
-        // 'b' [' ', 'I', 'R', 'L', ' '] <- 2
-        // 'e' ['E', 'D', 'E', 'F', 'T'] <- 3
-        // 'r' ['A', 'S', 'E', 'E', 'O'] <- 4
-        // 's' ['E', 'O', '.', ' ', 'C'] <- 5
-        // 'z' ['W', ' ', 'V', ' ', 'A', 'E']
-        //
-        // keyword_length - (ciphertext_length % keyword_length) is the offset size
-        //  from the first character of keyword
         // So, if keyword_length is 6 and cipher_text is 31 there are 5 columns that are offset
         let offset = key.len() - (ciphertext.chars().count() % key.len());
         // Now we need to know which columns are offset
-        // In the example above, all except 'z' are offset by 1
         // Create a set of columns that are offset
         // Then: if column !in offset_cols { // do something }
         let mut offset_cols = String::from("");
@@ -190,10 +183,7 @@ impl Cipher for ColumnarTransposition {
 
         'outer: for column in &mut key {
             loop {
-                let mut offset_num = 0;
-                if offset_cols.contains(column.0) {
-                    offset_num = 1;
-                }
+                let offset_num = if offset_cols.contains(column.0) { 1 } else { 0 };
                 // This will test for offset size
                 if column.1.len() >= max_col_size - offset_num {
                     break;
