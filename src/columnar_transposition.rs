@@ -13,45 +13,34 @@ use common::alphabet::Alphabet;
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct ColumnarTransposition {
     key: String,
-    null_char: char,
+    null_char: Option<char>,
     use_nulls: bool,
 }
 
 impl Cipher for ColumnarTransposition {
-    type Key = (String, String);
+    type Key = (String, Option<char>);
     type Algorithm = ColumnarTransposition;
 
     /// Initialize a Columnar Transposition cipher given:
     /// * a specific `key`, and
-    /// * a specified `null` - a character that will pad the columns
+    /// * an optional `null` - a character that will pad the columns
     ///
     /// Will return `Err` if one of the following conditions is detected:
     ///
     /// * The `key` length is 0.
     /// * The `key` contains non-alphanumeric symbols.
     /// * The `key` contains duplicate characters.
-    /// * The `null` contains more than one character
     /// * The `null` contains a character in the `key`
-    fn new(key: (String, String)) -> Result<ColumnarTransposition, &'static str> {
+    fn new(key: (String, Option<char>)) -> Result<ColumnarTransposition, &'static str> {
         keygen::columnar_key(&key.0)?;
 
-        let mut use_nulls = key.1.len() == 1;
-        let mut null_char = '\u{0}'; // Default null
+        let use_nulls = match key.1 { None => false, Some(_c) => true, };
+        let null_char = Some(key.1).unwrap();
 
-        if use_nulls {
-            // Should have an assigned char
-            null_char = key.1.chars().next().unwrap();
-            // Check the null char is not in the key
-            if key.0.contains(null_char) {
-                return Err("The `null_char` cannot be be in the keyword.");
-            }
-        } else if key.1.is_empty() {
-            // Will not use
-            use_nulls = false;
-        } else {
-            // Not empty or single character, error!
-            return Err("The `null_char` cannot be greater than one char in length.");
+        if use_nulls && key.0.contains(null_char.unwrap()) {
+            return Err("The `null_char` cannot be be in the keyword.");
         }
+        println!("Using nulls: {:?}", use_nulls);
 
         Ok(ColumnarTransposition {
             key: key.0,
@@ -73,7 +62,7 @@ impl Cipher for ColumnarTransposition {
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
     /// let key_word = String::from("zebras");
-    /// let null_char = String::from("");
+    /// let null_char = None;
     ///
     /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
     ///
@@ -91,7 +80,8 @@ impl Cipher for ColumnarTransposition {
             if let Some(c) = chars.next() {
                 key[i].1.push(c);
             } else if self.use_nulls && i > 0 {
-                key[i].1.push(self.null_char);
+                let null_char = Some(self.null_char).unwrap();
+                key[i].1.push(null_char.unwrap());
             } else {
                 break;
             }
@@ -126,7 +116,10 @@ impl Cipher for ColumnarTransposition {
     /// ```
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
-    /// let ct = ColumnarTransposition::new((String::from("zebras"), String::from(""))).unwrap();
+    /// let key_word = String::from("zebras");
+    /// let null_char = None;
+    ///
+    /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
     /// assert_eq!("Super-secret message!", ct.decrypt("respce!uemeers-taSs g").unwrap());
     /// ```
     /// Using whitespace as null (special case):
@@ -136,7 +129,7 @@ impl Cipher for ColumnarTransposition {
     /// use cipher_crypt::{Cipher, ColumnarTransposition};
     ///
     /// let key_word = String::from("zebras");
-    /// let null_char = String::from("");
+    /// let null_char = None;
     /// let message = "we are discovered  "; // Only trailing spaces will be stripped
     ///
     /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
@@ -203,11 +196,13 @@ impl Cipher for ColumnarTransposition {
                     if i < column.1.len() {
                         let c = column.1[i];
                         // Special case for whitespace as the nulls can be trimmed
-                        if self.use_nulls && c == self.null_char && !c.is_whitespace() {
-                            break;
-                        } else {
-                            plaintext.push(c);
+                        if self.use_nulls {
+                            let null_char = Some(self.null_char).unwrap();
+                            if c == null_char.unwrap() && !c.is_whitespace() {
+                                break;
+                            }
                         }
+                        plaintext.push(c);
                     }
                 } else {
                     return Err("Could not find column during decryption.");
@@ -226,8 +221,11 @@ mod tests {
     #[test]
     fn simple() {
         let message = "wearediscovered";
+
+        let key_word = String::from("zebras");
+        let null_char = Some('\u{0}');
         let ct =
-            ColumnarTransposition::new((String::from("zebras"), String::from("\u{0}"))).unwrap();
+            ColumnarTransposition::new((key_word, null_char)).unwrap();
 
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
@@ -235,47 +233,63 @@ mod tests {
     #[test]
     fn simple_no_nulls() {
         let message = "wearediscovered";
-        let ct = ColumnarTransposition::new((String::from("zebras"), String::from(""))).unwrap();
+
+        let key_word = String::from("zebras");
+        let null_char = None;
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
 
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
     #[test]
     fn with_utf8() {
-        let c =
-            ColumnarTransposition::new((String::from("zebras"), String::from("\u{0}"))).unwrap();
         let message = "Peace, Freedom 🗡️ and Liberty!";
-        let encrypted = c.encrypt(message).unwrap();
-        assert_eq!(c.decrypt(&encrypted).unwrap(), message);
+
+        let key_word = String::from("zebras");
+        let null_char = Some('\u{0}');
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let encrypted = ct.encrypt(message).unwrap();
+        assert_eq!(ct.decrypt(&encrypted).unwrap(), message);
     }
 
     #[test]
     fn with_utf8_no_nulls() {
-        let c = ColumnarTransposition::new((String::from("zebras"), String::from(""))).unwrap();
         let message = "Peace, Freedom 🗡️ and Liberty!";
-        let encrypted = c.encrypt(message).unwrap();
-        assert_eq!(c.decrypt(&encrypted).unwrap(), message);
+
+        let key_word = String::from("zebras");
+        let null_char = None;
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let encrypted = ct.encrypt(message).unwrap();
+        assert_eq!(ct.decrypt(&encrypted).unwrap(), message);
     }
 
     #[test]
     fn single_column() {
         let message = "we are discovered";
-        let ct = ColumnarTransposition::new((String::from("z"), String::from("\u{0}"))).unwrap();
+
+        let key_word = String::from("z");
+        let null_char = Some('\u{0}');
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
     #[test]
     fn single_column_no_nulls() {
         let message = "we are discovered";
-        let ct = ColumnarTransposition::new((String::from("z"), String::from(""))).unwrap();
+
+        let key_word = String::from("z");
+        let null_char = None;
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
     #[test]
     fn trailing_spaces() {
         let message = "we are discovered  "; //The trailing spaces will be stripped
-        let ct =
-            ColumnarTransposition::new((String::from("zebras"), String::from("\u{0}"))).unwrap();
+
+        let key_word = String::from("z");
+        let null_char = None;
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
 
         assert_eq!(
             ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
@@ -286,7 +300,10 @@ mod tests {
     #[test]
     fn null_as_space() {
         let message = "we are discovered  "; //The trailing spaces will be stripped
-        let ct = ColumnarTransposition::new((String::from("z"), String::from(" "))).unwrap();
+
+        let key_word = String::from("z");
+        let null_char = Some(' ');
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
 
         assert_eq!(
             ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
@@ -297,7 +314,10 @@ mod tests {
     #[test]
     fn trailing_spaces_no_nulls() {
         let message = "we are discovered  "; //The trailing spaces will be stripped
-        let ct = ColumnarTransposition::new((String::from("z"), String::from(""))).unwrap();
+
+        let key_word = String::from("z");
+        let null_char = None;
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
 
         assert_eq!(
             ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
@@ -306,12 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn null_too_big() {
-        ColumnarTransposition::new((String::from("zebras"), String::from("QW"))).is_err();
-    }
-
-    #[test]
     fn null_in_key() {
-        ColumnarTransposition::new((String::from("zebras"), String::from("z"))).is_err();
+        ColumnarTransposition::new((String::from("zebras"), Some('z'))).is_err();
     }
 }
