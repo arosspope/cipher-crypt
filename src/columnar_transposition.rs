@@ -34,7 +34,10 @@ impl Cipher for ColumnarTransposition {
     fn new(key: (String, Option<char>)) -> Result<ColumnarTransposition, &'static str> {
         keygen::columnar_key(&key.0)?;
 
-        let use_nulls = match key.1 { None => false, Some(_c) => true, };
+        let use_nulls = match key.1 {
+            None => false,
+            Some(_c) => true,
+        };
         let null_char = Some(key.1).unwrap();
 
         if use_nulls && key.0.contains(null_char.unwrap()) {
@@ -224,8 +227,7 @@ mod tests {
 
         let key_word = String::from("zebras");
         let null_char = Some('\u{0}');
-        let ct =
-            ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
 
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }

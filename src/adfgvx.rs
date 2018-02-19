@@ -16,11 +16,11 @@ const ADFGVX_CHARS: [char; 6] = ['A', 'D', 'F', 'G', 'V', 'X'];
 pub struct ADFGVX {
     key: String,
     keyword: String,
-    null_char: String,
+    null_char: Option<char>,
 }
 
 impl Cipher for ADFGVX {
-    type Key = (String, String, String);
+    type Key = (String, String, Option<char>);
     type Algorithm = ADFGVX;
 
     /// Initialise a ADFGVX cipher.
@@ -29,14 +29,14 @@ impl Cipher for ADFGVX {
     ///  - The keyword that will be used to transpose the output of the Polybius square function
     ///  - An optional `null_char` that will be used for the `ColumnarTransposition`
     ///
-    fn new(key: (String, String, String)) -> Result<ADFGVX, &'static str> {
+    fn new(key: (String, String, Option<char>)) -> Result<ADFGVX, &'static str> {
         // Check the validity of the key
         keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
 
         Ok(ADFGVX {
             key: key.0,
             keyword: key.1,
-            null_char: key.2,
+            null_char: Some(key.2).unwrap(),
         })
     }
 
@@ -50,7 +50,7 @@ impl Cipher for ADFGVX {
     ///
     /// let key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
     /// let key_word = String::from("GERMAN");
-    /// let null_char = String::from("");
+    /// let null_char = None;
     ///
     /// let a = ADFGVX::new((
     ///     key,
@@ -74,7 +74,6 @@ impl Cipher for ADFGVX {
         // Can't get around the borrowing here...
         let key = self.key.clone();
         let keyword = self.keyword.clone();
-        let null_char = self.null_char.clone();
 
         // Two steps to encrypt
         //  1. Create a polybius square
@@ -82,7 +81,7 @@ impl Cipher for ADFGVX {
         // Encrypt with this
         let initial_ciphertext = p.encrypt(message).unwrap();
         //  2. Columnar transposition
-        let ct = ColumnarTransposition::new((keyword, None)).unwrap();
+        let ct = ColumnarTransposition::new((keyword, self.null_char)).unwrap();
         // Encrypt with this
         let ciphertext = ct.encrypt(&initial_ciphertext).unwrap();
 
@@ -99,7 +98,7 @@ impl Cipher for ADFGVX {
     ///
     /// let key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
     /// let key_word = String::from("GERMAN");
-    /// let null_char = String::from("");
+    /// let null_char = None;
     ///
     /// let a = ADFGVX::new((
     ///     key,
@@ -121,10 +120,10 @@ impl Cipher for ADFGVX {
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         let key = self.key.clone();
         let keyword = self.keyword.clone();
-        let null_char = self.null_char.clone();
+
         // Two steps to decrypt:
         // 1. Create a ColumnarTransposition and decrypt
-        let ct = ColumnarTransposition::new((keyword, None)).unwrap();
+        let ct = ColumnarTransposition::new((keyword, self.null_char)).unwrap();
         let round_one = ct.decrypt(ciphertext).unwrap();
         // 2. Create a Polybius square and decrypt
         let p = Polybius::new((key.to_string(), ADFGVX_CHARS, ADFGVX_CHARS)).unwrap();
@@ -143,7 +142,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
-            String::from(""),
+            None,
         )).unwrap();
 
         let cipher_text = concat!(
@@ -157,12 +156,12 @@ mod tests {
         );
     }
 
-    // #[test]
+    #[test]
     fn encrypt_message_with_whitespace_nulls() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
-            String::from(" "),
+            Some(' '),
         )).unwrap();
 
         // Note: this works as per crate version 0.11.0 - and leaves a trailing
@@ -183,7 +182,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
-            String::from(""),
+            None,
         )).unwrap();
 
         let cipher_text = concat!(
@@ -201,7 +200,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
-            String::from(" "),
+            Some(' '),
         )).unwrap();
 
         // Note: this works as per crate version 0.11.0 - and leaves a trailing
@@ -221,7 +220,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
-            String::from(""),
+            None,
         )).unwrap();
 
         let plain_text = concat!(
@@ -239,7 +238,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
-            String::from("\u{0}"),
+            Some('\u{0}'),
         )).unwrap();
 
         let plain_text = concat!(
@@ -257,7 +256,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
-            String::from(" "),
+            Some(' '),
         )).unwrap();
 
         let plain_text = concat!(
@@ -276,7 +275,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
-            String::from(""),
+            None,
         )).unwrap();
 
         assert_eq!(
@@ -291,7 +290,7 @@ mod tests {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
-            String::from("\u{0}"),
+            Some('\u{0}'),
         )).unwrap();
 
         assert_eq!(
@@ -302,13 +301,7 @@ mod tests {
 
     #[test]
     fn invalid_key_phrase() {
-        assert!(
-            ADFGVX::new((
-                String::from("F@il"),
-                String::from("GERMAN"),
-                String::from("")
-            )).is_err()
-        );
+        assert!(ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None)).is_err());
     }
 
 }
