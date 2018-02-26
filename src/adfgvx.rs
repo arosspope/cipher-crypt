@@ -1,5 +1,4 @@
-//! The ADFGVX cipher was a field cipher used by the German Army on the Western Front during World
-//! War I.
+//! The ADFGVX cipher was a field cipher used by the German Army on the Western Front during World War I.
 //!
 //! ADFGVX was an extension of an earlier cipher called ADFGX. It uses a polybius square and a
 //! columnar transposition cipher.
@@ -14,25 +13,34 @@ const ADFGVX_CHARS: [char; 6] = ['A', 'D', 'F', 'G', 'V', 'X'];
 
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct ADFGVX {
-    key: String,
-    keyword: String,
+    polybius_cipher: Polybius,
+    columnar_cipher: ColumnarTransposition,
 }
 
 impl Cipher for ADFGVX {
-    type Key = (String, String);
+    type Key = (String, String, Option<char>);
     type Algorithm = ADFGVX;
 
     /// Initialise a ADFGVX cipher.
-    /// All we are interested in is:
-    ///  - The 36 character key that will be stored in the Polybius square
-    ///  - The keyword that will be used to transpose the output of the Polybius square function
     ///
-    fn new(key: (String, String)) -> Result<ADFGVX, &'static str> {
-        // Check the validity of the key
-        keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
+    /// The `key` tuple maps to the following `(String, String, Option<char>) = (polybius_key,
+    /// columnar_key, null_char)`. Where ...
+    ///
+    /// * The `polybius_key` is used to init a polybius cipher. See it's documentation for more
+    /// information.
+    /// * The `columnar_key` is used to init a columnar transposition cipher. See it's
+    /// documentation for more information.
+    /// * The `null_char` is an optional character that will be used to pad uneven messages
+    /// during the columnar transposition stage. See the `columnar_transposition` documentation
+    /// for more information.
+    ///
+    fn new(key: (String, String, Option<char>)) -> Result<ADFGVX, &'static str> {
+        // Generate the keyed alphabet key for the polybius square
+        let p_key = keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
+
         Ok(ADFGVX {
-            key: key.0,
-            keyword: key.1,
+            polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS))?,
+            columnar_cipher: ColumnarTransposition::new((key.1, key.2))?,
         })
     }
 
@@ -44,14 +52,19 @@ impl Cipher for ADFGVX {
     /// ```
     /// use cipher_crypt::{Cipher, ADFGVX};
     ///
+    /// let polybius_key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
+    /// let columnar_key = String::from("GERMAN");
+    /// let null_char = None;
+    ///
     /// let a = ADFGVX::new((
-    ///     "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
-    ///     "GERMAN".to_string(),
+    ///     polybius_key,
+    ///     columnar_key,
+    ///     null_char
     /// )).unwrap();
     ///
     /// let cipher_text = concat!(
-    ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
-    ///     "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+    ///     "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAXVVxfdd",
+    ///     "fgggfVVVAGFFAvvvagffaGXVADAAXXvdagfaxvvGFXFFGXG"
     /// );
     ///
     /// assert_eq!(
@@ -62,22 +75,10 @@ impl Cipher for ADFGVX {
     /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        // Can't get around the borrowing here...
-        let key = self.key.clone();
-        let keyword = self.keyword.clone();
-
-        // Two steps to encrypt
-        //  1. Create a polybius square
-        let p = Polybius::new((key.to_string(), ADFGVX_CHARS, ADFGVX_CHARS)).unwrap();
-        // Encrypt with this
-        let initial_ciphertext = p.encrypt(message).unwrap();
-        //  2. Columnar transposition
-        let ct = ColumnarTransposition::new(keyword).unwrap();
-        // Encrypt with this
-        // TODO: Issue is that it is adding in spurious ' ' white space chars...
-        let ciphertext = ct.encrypt(&initial_ciphertext).unwrap();
-
-        Ok(ciphertext)
+        //Step 1: encrypt using polybius
+        let step_one = self.polybius_cipher.encrypt(message)?;
+        //Step 2: encrypt with columnar and return
+        self.columnar_cipher.encrypt(&step_one)
     }
 
     /// Decrypt a message using a ADFGVX cipher.
@@ -88,9 +89,14 @@ impl Cipher for ADFGVX {
     /// ```
     /// use cipher_crypt::{Cipher, ADFGVX};
     ///
+    /// let polybius_key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
+    /// let columnar_key = String::from("GERMAN");
+    /// let null_char = None;
+    ///
     /// let a = ADFGVX::new((
-    ///     "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
-    ///     "GERMAN".to_string(),
+    ///     polybius_key,
+    ///     columnar_key,
+    ///     null_char
     /// )).unwrap();
     ///
     /// let cipher_text = concat!(
@@ -105,18 +111,10 @@ impl Cipher for ADFGVX {
     /// ```
     ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        let key = self.key.clone();
-        let keyword = self.keyword.clone();
-
-        // Two steps to decrypt:
-        // 1. Create a ColumnarTransposition and decrypt
-        let ct = ColumnarTransposition::new(keyword).unwrap();
-        let round_one = ct.decrypt(ciphertext).unwrap();
-        // 2. Create a Polybius square and decrypt
-        let p = Polybius::new((key.to_string(), ADFGVX_CHARS, ADFGVX_CHARS)).unwrap();
-        let message = p.decrypt(&round_one).unwrap();
-
-        Ok(message)
+        //Step 1: decrypt using columnar
+        let step_one = self.columnar_cipher.decrypt(ciphertext)?;
+        //Step 2: decrypt using polybius
+        self.polybius_cipher.decrypt(&step_one)
     }
 }
 
@@ -125,22 +123,37 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encrypt_message() {
-        //     A D F G V X
-        //  A| p h 0 q g 6
-        //  D| 4 m e a 1 y
-        //  F| l 2 n o f d
-        //  G| x k r 3 c v
-        //  V| s 5 z w 7 b
-        //  X| j 9 u t i 8
+    fn encrypt_simple() {
         let a = ADFGVX::new((
-            "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
-            "GERMAN".to_string(),
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("GERMAN"),
+            None,
         )).unwrap();
 
         let cipher_text = concat!(
-            "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
-            "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+            "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
+            "VVxfddfgggfVVVAGFFAvvvagffaGXVADAAXXvdagfaxvvGFXFFGXG"
+        );
+        assert_eq!(
+            cipher_text,
+            a.encrypt("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn encrypt_with_space_padding() {
+        let a = ADFGVX::new((
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("GERMAN"),
+            Some(' '),
+        )).unwrap();
+
+        // Note: this works as per crate version 0.11.0 - and leaves a trailing
+        //       ' ' in the ciphertext.
+        let cipher_text = concat!(
+            "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
+            "VVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
         );
         assert_eq!(
             cipher_text,
@@ -152,13 +165,14 @@ mod tests {
     #[test]
     fn decrypt_message() {
         let a = ADFGVX::new((
-            "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
-            "GERMAN".to_string(),
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("GERMAN"),
+            None,
         )).unwrap();
 
         let cipher_text = concat!(
-            "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
-            "gdVDAGFAXVVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+            "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
+            "VVxfddfgggfVVVAGFFAvvvagffaGXVADAAXXvdagfaxvvGFXFFGXG"
         );
         assert_eq!(
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -167,19 +181,106 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8() {
-        let m = "Attack 🗡️ the east wall";
+    fn decrypt_with_space_padding() {
         let a = ADFGVX::new((
-            "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8".to_string(),
-            "GERMAN".to_string(),
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("GERMAN"),
+            Some(' '),
         )).unwrap();
 
-        assert_eq!(m, a.decrypt(&a.encrypt(m).unwrap()).unwrap());
+        // Note: this works as per crate version 0.11.0 - and leaves a trailing
+        //       ' ' in the ciphertext.
+        let cipher_text = concat!(
+            "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
+            "VVxfddfgggfVVVAGFFA vvvagffaGXVADAAXX vdagfaxvvGFXFFGXG "
+        );
+        assert_eq!(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            a.decrypt(cipher_text).unwrap()
+        );
+    }
+
+    #[test]
+    fn simple() {
+        let a = ADFGVX::new((
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("VICTORY"),
+            None,
+        )).unwrap();
+
+        let plain_text = concat!(
+            "We attack at dawn, not later when it is light, ",
+            "or at some strange time of the clock. Only at dawn."
+        );
+        assert_eq!(
+            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap(),
+            plain_text
+        );
+    }
+
+    #[test]
+    fn simple_with_padding() {
+        let a = ADFGVX::new((
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("VICTORY"),
+            Some('\u{0}'),
+        )).unwrap();
+
+        let plain_text = concat!(
+            "We attack at dawn, not later when it is light, ",
+            "or at some strange time of the clock. Only at dawn."
+        );
+        assert_eq!(
+            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap(),
+            plain_text
+        );
+    }
+
+    #[test]
+    fn plaintext_with_padding() {
+        let a = ADFGVX::new((
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("VICTORY"),
+            Some(' '),
+        )).unwrap();
+
+        let plain_text = "This will fail because of spaces.";
+        assert!(a.encrypt(plain_text).is_err());
+    }
+
+    #[test]
+    fn with_utf8() {
+        let plain_text = "Attack 🗡️ the east wall";
+        let a = ADFGVX::new((
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("GERMAN"),
+            None,
+        )).unwrap();
+
+        assert_eq!(
+            plain_text,
+            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap()
+        );
+    }
+
+    #[test]
+    fn with_utf8_with_padding() {
+        let plain_text = "Attack 🗡️ the east wall";
+        let a = ADFGVX::new((
+            String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
+            String::from("GERMAN"),
+            Some('\u{0}'),
+        )).unwrap();
+
+        assert_eq!(
+            plain_text,
+            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap()
+        );
     }
 
     #[test]
     fn invalid_key_phrase() {
-        assert!(ADFGVX::new(("F@il".to_string(), "GERMAN".to_string())).is_err());
+        assert!(ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None)).is_err());
     }
 
 }
