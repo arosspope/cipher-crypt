@@ -14,48 +14,48 @@ use common::alphabet::Alphabet;
 pub struct ColumnarTransposition {
     key: String,
     null_char: Option<char>,
-    use_nulls: bool,
 }
 
 impl Cipher for ColumnarTransposition {
     type Key = (String, Option<char>);
     type Algorithm = ColumnarTransposition;
 
-    /// Initialize a Columnar Transposition cipher given:
-    /// * a specific `key`, and
-    /// * an optional `null` - a character that will pad the columns
+    /// Initialize a Columnar Transposition cipher.
+    ///
+    /// Where...
+    ///
+    /// * Elements of `key` are used as the column identifiers.
+    /// * The optional `null_char` is used to pad messages of uneven length.
     ///
     /// Will return `Err` if one of the following conditions is detected:
     ///
     /// * The `key` length is 0.
     /// * The `key` contains non-alphanumeric symbols.
     /// * The `key` contains duplicate characters.
-    /// * The `null` contains a character in the `key`
+    /// * The `null_char` is a character within the `key`
+    ///
     fn new(key: (String, Option<char>)) -> Result<ColumnarTransposition, &'static str> {
         keygen::columnar_key(&key.0)?;
 
-        let use_nulls = match key.1 {
-            None => false,
-            Some(_c) => true,
-        };
-        let null_char = Some(key.1).unwrap();
-
-        if use_nulls && key.0.contains(null_char.unwrap()) {
-            return Err("The `null_char` cannot be be in the keyword.");
+        if let Some(null_char) = key.1 {
+            if key.0.contains(null_char) {
+                return Err("The `null_char` cannot be be in the keyword.");
+            }
         }
 
         Ok(ColumnarTransposition {
             key: key.0,
-            null_char: null_char,
-            use_nulls: use_nulls,
+            null_char: key.1,
         })
     }
 
     /// Encrypt a message with a Columnar Transposition cipher.
     ///
-    /// All characters (including utf8) can be encrypted during the transposition process,
-    /// however if the message includes character that are also used as nulls
-    /// to pad the columns, `null_char`, then there may be issues with decryption.
+    /// All characters (including utf8) can be encrypted during the transposition process.
+    /// However, it is important to note that if padding characters are being used (`null_char`),
+    /// the user must ensure that the message does not contain these padding characters, otherwise
+    /// problems will occur during decryption. For this reason, the function will `Err` if it
+    /// detects padding characters in the message to be encrypted.
     ///
     /// # Examples
     /// Basic usage:
@@ -72,18 +72,25 @@ impl Cipher for ColumnarTransposition {
     /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
+        if let Some(null_char) = self.null_char {
+            if message.contains(null_char) {
+                return Err("Message contains padding characters.");
+            }
+        }
+
         let mut key = keygen::columnar_key(&self.key)?;
+
 
         //Construct the column
         let mut i = 0;
-        //  Any trailing spaces will be stripped
-        let mut chars = message.trim_right().chars();
+        let mut chars = message.trim_right().chars(); //Any trailing spaces will be stripped
         loop {
             if let Some(c) = chars.next() {
                 key[i].1.push(c);
-            } else if self.use_nulls && i > 0 {
-                let null_char = Some(self.null_char).unwrap();
-                key[i].1.push(null_char.unwrap());
+            } else if i > 0 {
+                if let Some(null_char) = self.null_char {
+                    key[i].1.push(null_char)
+                }
             } else {
                 break;
             }
@@ -142,17 +149,16 @@ impl Cipher for ColumnarTransposition {
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         let mut key = keygen::columnar_key(&self.key)?;
 
-        //Transcribe the ciphertext along each column
+        // Transcribe the ciphertext along each column
         let mut chars = ciphertext.chars();
         // We only know the maximum length, as there may be null spaces
         let max_col_size: usize =
             (ciphertext.chars().count() as f32 / self.key.len() as f32).ceil() as usize;
 
-        // Once we know the max col size, we need to fill the columns
-        // according to order of the keyword
-        // So, if the keyword is 'zebras' then the largest column is 'z'
-        //  according to offset size
-        // So, if keyword_length is 6 and cipher_text is 31 there are 5 columns that are offset
+        // Once we know the max col size, we need to fill the columns according to order of the
+        // keyword. So, if the keyword is 'zebras' then the largest column is 'z' according to
+        // offset size. If keyword_length is 6 and cipher_text is 31 there are 5 columns that are
+        // offset.
         let offset = key.len() - (ciphertext.chars().count() % key.len());
         // Now we need to know which columns are offset
         // Create a set of columns that are offset
@@ -160,7 +166,7 @@ impl Cipher for ColumnarTransposition {
         let mut offset_cols = String::from("");
 
         // Only do this if we are not using nulls
-        if !self.use_nulls && offset != key.len() {
+        if self.null_char.is_none() && offset != key.len() {
             for c in key.clone() {
                 offset_cols.push(c.0);
             }
@@ -198,9 +204,8 @@ impl Cipher for ColumnarTransposition {
                     if i < column.1.len() {
                         let c = column.1[i];
                         // Special case for whitespace as the nulls can be trimmed
-                        if self.use_nulls {
-                            let null_char = Some(self.null_char).unwrap();
-                            if c == null_char.unwrap() && !c.is_whitespace() {
+                        if let Some(null_char) = self.null_char {
+                            if c == null_char && !c.is_whitespace() {
                                 break;
                             }
                         }
@@ -232,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn simple_no_nulls() {
+    fn simple_no_padding() {
         let message = "wearediscovered";
 
         let key_word = String::from("zebras");
@@ -254,7 +259,7 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8_no_nulls() {
+    fn with_utf8_no_padding() {
         let message = "Peace, Freedom 🗡️ and Liberty!";
 
         let key_word = String::from("zebras");
@@ -275,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn single_column_no_nulls() {
+    fn single_column_no_padding() {
         let message = "we are discovered";
 
         let key_word = String::from("z");
@@ -299,21 +304,17 @@ mod tests {
     }
 
     #[test]
-    fn null_as_space() {
-        let message = "we are discovered  "; //The trailing spaces will be stripped
-
-        let key_word = String::from("z");
+    fn plaintext_containing_padding(){
+        let key_word = String::from("zebras");
         let null_char = Some(' ');
         let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
 
-        assert_eq!(
-            ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
-            "we are discovered"
-        );
+        let plain_text = "This will fail because of spaces.";
+        assert!(ct.encrypt(plain_text).is_err());
     }
 
     #[test]
-    fn trailing_spaces_no_nulls() {
+    fn trailing_spaces_no_padding() {
         let message = "we are discovered  "; //The trailing spaces will be stripped
 
         let key_word = String::from("z");
@@ -327,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    fn null_in_key() {
+    fn padding_in_key() {
         ColumnarTransposition::new((String::from("zebras"), Some('z'))).is_err();
     }
 }

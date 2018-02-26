@@ -14,9 +14,8 @@ const ADFGVX_CHARS: [char; 6] = ['A', 'D', 'F', 'G', 'V', 'X'];
 
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct ADFGVX {
-    key: String,
-    keyword: String,
-    null_char: Option<char>,
+    polybius_cipher: Polybius,
+    columnar_cipher: ColumnarTransposition,
 }
 
 impl Cipher for ADFGVX {
@@ -24,19 +23,25 @@ impl Cipher for ADFGVX {
     type Algorithm = ADFGVX;
 
     /// Initialise a ADFGVX cipher.
-    /// All we are interested in is:
-    ///  - The 36 character key that will be stored in the Polybius square
-    ///  - The keyword that will be used to transpose the output of the Polybius square function
-    ///  - An optional `null_char` that will be used for the `ColumnarTransposition`
+    ///
+    /// The `key` tuple maps to the following `(String, String, Option<char>) = (polybius_key,
+    /// columnar_key, null_char)`. Where ...
+    ///
+    /// * The `polybius_key` is used to init a polybius cipher. See it's documentation for more
+    /// information.
+    /// * The `columnar_key` is used to init a columnar transposition cipher. See it's
+    /// documentation for more information.
+    /// * The `null_char` is an optional character that will be used to pad uneven messages
+    /// during the columnar transposition stage. See the `columnar_transposition` documentation
+    /// for more information.
     ///
     fn new(key: (String, String, Option<char>)) -> Result<ADFGVX, &'static str> {
-        // Check the validity of the key
-        keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
+        // Generate the keyed alphabet key for the polybius square
+        let p_key = keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
 
         Ok(ADFGVX {
-            key: key.0,
-            keyword: key.1,
-            null_char: Some(key.2).unwrap(),
+            polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS))?,
+            columnar_cipher: ColumnarTransposition::new((key.1, key.2))?,
         })
     }
 
@@ -48,13 +53,13 @@ impl Cipher for ADFGVX {
     /// ```
     /// use cipher_crypt::{Cipher, ADFGVX};
     ///
-    /// let key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
-    /// let key_word = String::from("GERMAN");
+    /// let polybius_key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
+    /// let columnar_key = String::from("GERMAN");
     /// let null_char = None;
     ///
     /// let a = ADFGVX::new((
-    ///     key,
-    ///     key_word,
+    ///     polybius_key,
+    ///     columnar_key,
     ///     null_char
     /// )).unwrap();
     ///
@@ -71,21 +76,10 @@ impl Cipher for ADFGVX {
     /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        // Can't get around the borrowing here...
-        let key = self.key.clone();
-        let keyword = self.keyword.clone();
-
-        // Two steps to encrypt
-        //  1. Create a polybius square
-        let p = Polybius::new((key.to_string(), ADFGVX_CHARS, ADFGVX_CHARS)).unwrap();
-        // Encrypt with this
-        let initial_ciphertext = p.encrypt(message).unwrap();
-        //  2. Columnar transposition
-        let ct = ColumnarTransposition::new((keyword, self.null_char)).unwrap();
-        // Encrypt with this
-        let ciphertext = ct.encrypt(&initial_ciphertext).unwrap();
-
-        Ok(ciphertext)
+        //Step 1: encrypt using polybius
+        let round_one = self.polybius_cipher.encrypt(message)?;
+        //Step 2: encrypt with columnar and return
+        self.columnar_cipher.encrypt(&round_one)
     }
 
     /// Decrypt a message using a ADFGVX cipher.
@@ -96,13 +90,13 @@ impl Cipher for ADFGVX {
     /// ```
     /// use cipher_crypt::{Cipher, ADFGVX};
     ///
-    /// let key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
-    /// let key_word = String::from("GERMAN");
+    /// let polybius_key = String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8");
+    /// let columnar_key = String::from("GERMAN");
     /// let null_char = None;
     ///
     /// let a = ADFGVX::new((
-    ///     key,
-    ///     key_word,
+    ///     polybius_key,
+    ///     columnar_key,
     ///     null_char
     /// )).unwrap();
     ///
@@ -118,18 +112,10 @@ impl Cipher for ADFGVX {
     /// ```
     ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        let key = self.key.clone();
-        let keyword = self.keyword.clone();
-
-        // Two steps to decrypt:
-        // 1. Create a ColumnarTransposition and decrypt
-        let ct = ColumnarTransposition::new((keyword, self.null_char)).unwrap();
-        let round_one = ct.decrypt(ciphertext).unwrap();
-        // 2. Create a Polybius square and decrypt
-        let p = Polybius::new((key.to_string(), ADFGVX_CHARS, ADFGVX_CHARS)).unwrap();
-        let message = p.decrypt(&round_one).unwrap();
-
-        Ok(message)
+        //Step 1: decrypt using columnar
+        let round_one = self.columnar_cipher.decrypt(ciphertext)?;
+        //Step 2: decrypt using polybius
+        self.polybius_cipher.decrypt(&round_one)
     }
 }
 
@@ -138,7 +124,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encrypt_message() {
+    fn encrypt_simple() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
@@ -157,7 +143,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_message_with_whitespace_nulls() {
+    fn encrypt_with_space_padding() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
@@ -196,7 +182,7 @@ mod tests {
     }
 
     #[test]
-    fn decrypt_message_with_whitespace_nulls() {
+    fn decrypt_with_space_padding() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
@@ -216,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_decrypt_message() {
+    fn simple() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
@@ -234,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_decrypt_message_with_nulls() {
+    fn simple_with_padding() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
@@ -252,21 +238,15 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_decrypt_message_null_space() {
+    fn plaintext_with_padding(){
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
             Some(' '),
         )).unwrap();
 
-        let plain_text = concat!(
-            "We attack at dawn, not later when it is light, ",
-            "or at some strange time of the clock. Only at dawn."
-        );
-        assert_eq!(
-            a.decrypt(&a.encrypt(plain_text).unwrap()).unwrap(),
-            plain_text
-        );
+        let plain_text = "This will fail because of spaces.";
+        assert!(a.encrypt(plain_text).is_err());
     }
 
     #[test]
@@ -285,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    fn with_utf8_with_nulls() {
+    fn with_utf8_with_padding() {
         let plain_text = "Attack 🗡️ the east wall";
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
