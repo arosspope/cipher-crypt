@@ -1,5 +1,4 @@
-//! The ADFGVX cipher was a field cipher used by the German Army on the Western Front during World
-//! War I.
+//! The ADFGVX cipher was a field cipher used by the German Army on the Western Front during World War I.
 //!
 //! ADFGVX was an extension of an earlier cipher called ADFGX. It uses a polybius square and a
 //! columnar transposition cipher.
@@ -77,9 +76,9 @@ impl Cipher for ADFGVX {
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         //Step 1: encrypt using polybius
-        let round_one = self.polybius_cipher.encrypt(message)?;
+        let step_one = self.polybius_cipher.encrypt(message)?;
         //Step 2: encrypt with columnar and return
-        self.columnar_cipher.encrypt(&round_one)
+        self.columnar_cipher.encrypt(&step_one)
     }
 
     /// Decrypt a message using a ADFGVX cipher.
@@ -113,9 +112,9 @@ impl Cipher for ADFGVX {
     ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         //Step 1: decrypt using columnar
-        let round_one = self.columnar_cipher.decrypt(ciphertext)?;
+        let step_one = self.columnar_cipher.decrypt(ciphertext)?;
         //Step 2: decrypt using polybius
-        self.polybius_cipher.decrypt(&round_one)
+        self.polybius_cipher.decrypt(&step_one)
     }
 }
 
@@ -238,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn plaintext_with_padding(){
+    fn plaintext_with_padding() {
         let a = ADFGVX::new((
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),

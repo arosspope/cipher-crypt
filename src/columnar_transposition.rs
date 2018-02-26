@@ -80,7 +80,6 @@ impl Cipher for ColumnarTransposition {
 
         let mut key = keygen::columnar_key(&self.key)?;
 
-
         //Construct the column
         let mut i = 0;
         let mut chars = message.trim_right().chars(); //Any trailing spaces will be stripped
@@ -304,7 +303,7 @@ mod tests {
     }
 
     #[test]
-    fn plaintext_containing_padding(){
+    fn plaintext_containing_padding() {
         let key_word = String::from("zebras");
         let null_char = Some(' ');
         let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
