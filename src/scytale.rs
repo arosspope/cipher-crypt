@@ -76,8 +76,8 @@ impl Cipher for Scytale {
                 ciphertext.push(table[col][row]);
             }
         }
-
-        Ok(ciphertext)
+        // Trim off any trailing whitespace added
+        Ok(ciphertext.trim_right().to_string())
     }
 
     /// Decrypt a message using a Scytale cipher.
@@ -172,6 +172,19 @@ mod tests {
     fn longer_height() {
         let s = Scytale::new(20).unwrap();
         let m = "attackatdawn";
+        assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
+    }
+
+    #[test]
+    fn longer_msg() {
+        let s = Scytale::new(7).unwrap();
+        let m = concat!(
+            "We attack at dawn, not later when it is light, ",
+            "or at some strange time of the clock. Only at dawn. ",
+            "Why do we like to attack at dawn, actually, I don\'t ",
+            "get it. I hate getting up that early, it puts me in ",
+            "a bad mood. Can\'t we do it a bit later, say nine-thirty?"
+        );
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 }
