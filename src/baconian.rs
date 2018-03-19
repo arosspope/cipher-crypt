@@ -22,14 +22,15 @@ use std::string::String;
 use common::cipher::Cipher;
 
 /// Default decoy plaintext
-const DEFAULT_DECOY: &'static str =
+const DEFAULT_DECOY: &str =
     "Lorem ipsum dolor sit amet, ne tamquam eruditi splendide vix. \
      Mea vitae latine philosophia in, et qui gubergren definiebas. \
      Est et debet aliquam. Ei velit augue quo, quod veniam definitionem nam ut.";
 /// The default code length
 const CODE_LEN: usize = 5;
 
-/// A traditional code set that makes 'J' = 'I' and 'V' = 'U' as they had equivalent value in Bacon's day
+/// A traditional code set that makes 'J' = 'I' and 'V' = 'U'
+///     - as they had equivalent value in Bacon's day
 lazy_static! {
     static ref TRAD_CODES: HashMap<&'static str, &'static str> = hashmap!{
         "A" => "AAAAA",
@@ -154,26 +155,28 @@ lazy_static! {
 }
 
 /// Get the code for a given key (source character)
-fn get_code(distinct: bool, key: String) -> String {
+fn get_code(distinct: bool, key: &str) -> String {
     let mut code = String::new();
     if distinct {
         if DISTINCT_CODES.contains_key(key.to_uppercase().as_str()) {
             code.push_str(DISTINCT_CODES.get(key.to_uppercase().as_str()).unwrap());
         }
-    } else {
-        if TRAD_CODES.contains_key(key.to_uppercase().as_str()) {
-            code.push_str(TRAD_CODES.get(key.to_uppercase().as_str()).unwrap());
-        }
+    } else if TRAD_CODES.contains_key(key.to_uppercase().as_str()) {
+        code.push_str(TRAD_CODES.get(key.to_uppercase().as_str()).unwrap());
     }
 
     code
 }
 
 /// Gets the key (the source character) for a given cipher text code
-fn get_key(distinct: bool, code: &String) -> String {
+fn get_key(distinct: bool, code: &str) -> String {
     let mut key = String::new();
 
-    let codes = if distinct { DISTINCT_CODES.iter() } else { TRAD_CODES.iter() };
+    let codes = if distinct {
+        DISTINCT_CODES.iter()
+    } else {
+        TRAD_CODES.iter()
+    };
     for (_key, val) in codes {
         if val == &code {
             key.push_str(_key);
@@ -200,7 +203,7 @@ impl Cipher for Baconian {
     ///
     /// Where ...
     ///
-    /// * whether the encoding will be distinct for all alphabetical characters, or classical
+    /// * The encoding will be distinct for all alphabetical characters, or classical
     ///     where I, J, U and V are mapped to the same value pairs
     /// * An optional decoy message that will will be used to hide the message -
     ///     default is boilerplate "Lorem ipsum" text.
@@ -208,31 +211,42 @@ impl Cipher for Baconian {
     fn new(key: (bool, Option<String>)) -> Result<Baconian, &'static str> {
         Ok(Baconian {
             distinct: key.0,
-            decoy_text: key.1.unwrap_or(String::from(DEFAULT_DECOY)),
+            decoy_text: key.1.unwrap_or_else(|| String::from(DEFAULT_DECOY)),
         })
     }
 
     /// Encrypt a message using the Baconian cipher
     ///
-    /// send in the message to be encrypted,
-    ///  - check that against the length of the decoy_text, the decoy_text
-    ///  must be at least 4-times as long (each character of message is encoded by
-    ///  4 characters)
-    /// - slice the decoy_text to right length and make an Vec<String> of four chars
-    /// - each character of plaintext is then encoded (aaaa, aaab etc.)
-    /// - italicise each occurrance of the binary char, so for 'b' in the decoy_text,
-    ///     the final letter of the sequence is italicised.
+    /// * The message to be encrypted can only be ~18% of the decoy_text as each character
+    ///     of message is encoded by 5 encoding characters `AAAAA`, `AAAAB`, etc.
+    /// * The italicised ciphertext is then hidden in a decoy text, where, for each 'B'
+    ///     in the ciphertext, the character is italicised in the decoy_text.
+    ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Baconian};
+    ///
+    /// let b = Baconian::new((false, None)).unwrap();
+    /// let message = "Hello";
+    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰r s𝘪t 𝘢me𝘵, 𝘯e 𝘵";
+    ///
+    /// assert_eq!(cipher_text, b.encrypt(message).unwrap());
+    /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         let mut non_alphas = 0; // A counter for non_alphas
 
         for c in self.decoy_text.chars() {
-            if !c.is_alphabetic() { non_alphas += 1; }
+            if !c.is_alphabetic() {
+                non_alphas += 1;
+            }
         }
         // Check whether the message fits in the decoy
         // Note: that non-alphabetical characters will be skipped.
         if (message.len() * CODE_LEN) > self.decoy_text.len() - non_alphas {
-                return Err("Message too long for supplied decoy text.");
+            return Err("Message too long for supplied decoy text.");
         }
 
         let mut secret = String::new();
@@ -242,20 +256,24 @@ impl Cipher for Baconian {
             // get code and add to secret
             let mut key = String::new();
             key.push(c);
-            secret += &get_code(self.distinct, key);
+            secret += &get_code(self.distinct, &key);
         }
-        println!("Encoded message: {} of length: {}", secret, secret.len());
 
         // Complex: decoy_slice needs to = secret.len + num_non_alphabetical_chars
         let mut decoy_slice = self.decoy_text.clone();
         let mut alphas = 0;
         non_alphas = 0;
         for c in self.decoy_text.chars() {
-            if c.is_alphabetic() { alphas += 1; } else { non_alphas += 1; }
-            if alphas == secret.len() { break; }
+            if c.is_alphabetic() {
+                alphas += 1;
+            } else {
+                non_alphas += 1;
+            }
+            if alphas == secret.len() {
+                break;
+            }
         }
         decoy_slice.truncate(alphas + non_alphas);
-        println! ("Decoy text used: {} of length: {}", decoy_slice, decoy_slice.len());
 
         let mut decoy_msg = String::new();
         for c in decoy_slice.chars() {
@@ -277,6 +295,17 @@ impl Cipher for Baconian {
 
     /// Decrypt a message that was encrypted with the Baconian cipher
     ///
+    /// # Examples
+    /// Basic usage:
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Baconian};
+    ///
+    /// let b = Baconian::new((false, None)).unwrap();
+    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰r s𝘪t 𝘢me𝘵, 𝘯e 𝘵";
+    ///
+    /// assert_eq!("HELLO", b.decrypt(cipher_text).unwrap());
+    /// ```
     ///
     fn decrypt(&self, message: &str) -> Result<String, &'static str> {
         println!("Baconian decrypt");
@@ -306,13 +335,7 @@ impl Cipher for Baconian {
             code.push(c);
             // If we have the right length code
             if code.len() == CODE_LEN {
-                // Look up the key from value
-                // Now check the state of the encoding
-                // if the character is a 'B' then we italicise the output char
-                // pop the decoy
-                // push into msg
                 plaintext += &get_key(self.distinct, &code);
-                // Reset
                 code.clear();
             }
         }
@@ -325,8 +348,79 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create_new() {
-        let b = Baconian::new((None, false, None)).unwrap();
-        println!("Created new Baconian");
+    fn encrypt_simple() {
+        let b = Baconian::new((false, None)).unwrap();
+        let message = "Hello";
+        let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰r s𝘪t 𝘢me𝘵, 𝘯e 𝘵";
+        assert_eq!(cipher_text, b.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn encrypt_message_spaced() {
+        let decoy_text = String::from(
+            // The Life of Man, verse 1
+            "The world's a bubble; and the life of man less than a span. \
+             In his conception wretched; from the womb so to the tomb: \
+             Curst from the cradle, and brought up to years, with cares and fears. \
+             Who then to frail mortality shall trust, \
+             But limns the water, or but writes in dust. \
+             Yet, since with sorrow here we live oppress'd, what life is best? \
+             Courts are but only superficial schools to dandle fools: \
+             The rural parts are turn'd into a den of savage men: \
+             And where's a city from all vice so free, \
+             But may be term'd the worst of all the three?",
+        );
+        let b = Baconian::new((false, Some(decoy_text))).unwrap();
+        let message = "Peace, Freedom 🗡️ and Liberty!";
+        let cipher_text =
+            "T𝘩𝘦 𝘸orl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 less th𝘢n a sp𝘢n. \
+            In hi𝘴 𝘤o𝘯𝘤e𝘱t𝘪o𝘯 𝘸retche𝘥; 𝘧rom th𝘦 𝘸o𝘮b 𝘴o t𝘰 the tomb: \
+            𝐶ur𝘴t f𝘳om th𝘦 cr𝘢d𝘭e, 𝘢𝘯d";
+        assert_eq!(cipher_text, b.encrypt(message).unwrap());
+    }
+    // distinct lexicon
+    #[test]
+    #[should_panic(expected = r#"Message too long for supplied decoy text."#)]
+    fn encrypt_decoy_too_short() {
+        let b = Baconian::new((false, None)).unwrap();
+        let message = "This is a long message that will be too long to encode using \
+                       the default decoy text. In order to have a long message encoded you need a \
+                       decoy text that is at least five times as long, plus the non-alphabeticals.";
+
+        b.encrypt(message).unwrap();
+    }
+
+    #[test]
+    fn encrypt_with_distinct_codeset() {
+        let message = "Peace, Freedom 🗡️ and Liberty!";
+        let decoy_text = String::from(
+            // The Life of Man, verse 1
+            "The world's a bubble; and the life of man less than a span. \
+             In his conception wretched; from the womb so to the tomb: \
+             Curst from the cradle, and brought up to years, with cares and fears. \
+             Who then to frail mortality shall trust, \
+             But limns the water, or but writes in dust. \
+             Yet, since with sorrow here we live oppress'd, what life is best? \
+             Courts are but only superficial schools to dandle fools: \
+             The rural parts are turn'd into a den of savage men: \
+             And where's a city from all vice so free, \
+             But may be term'd the worst of all the three?",
+        );
+        let cipher_text =
+            "T𝘩𝘦 𝘸𝘰rl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
+            In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
+            𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
+        let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        assert_eq!(cipher_text, b.encrypt(message).unwrap());
+    }
+
+    #[test]
+    fn decrypt_a_classic() {
+        let cipher_text =
+            String::from("Let's c𝘰mp𝘳𝘰𝘮is𝘦. 𝐻old off th𝘦 at𝘵a𝘤k");
+        let message = "ATTACK";
+        let decoy_text = String::from("Let's compromise. Hold off the attack");
+        let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        assert_eq!(message, b.decrypt(&cipher_text).unwrap());
     }
 }
