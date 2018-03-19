@@ -25,6 +25,11 @@
 extern crate num;
 extern crate rulinalg;
 
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate maplit;
+
 mod common;
 pub mod caesar;
 pub mod vigenere;
@@ -52,5 +57,5 @@ pub use affine::Affine;
 pub use polybius::Polybius;
 pub use scytale::Scytale;
 pub use columnar_transposition::ColumnarTransposition;
-pub use adfgvx::AADFGVX;
+pub use adfgvx::ADFGVX;
 pub use baconian::Baconian;

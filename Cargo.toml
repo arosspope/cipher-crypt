@@ -1,6 +1,6 @@
 [package]
 name = "cipher-crypt"
-version = "0.13"
+version = "0.13.0"
 authors = ["arosspope <andrew.pope456@gmail.com>"]
 license = "MIT/Apache-2.0"
 homepage = "https://github.com/arosspope/cipher-crypt.git"
@@ -15,5 +15,7 @@ documentation = "https://docs.rs/cipher-crypt/"
 name = "cipher_crypt"
 
 [dependencies]
+lazy_static = "*"
+maplit = "*"
 num = "^0.1"
 rulinalg = "^0.4"
