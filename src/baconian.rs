@@ -8,7 +8,8 @@
 //! This cipher is very easy to crack, once the method of hiding is known, therefore this
 //! implementation includes the options to set whether the substitution is distinct for the whole
 //! alphabet, or whether it follows the classical method of treating 'I' and 'J', and 'U' and 'V'
-//! as interchangeable characters, as would have been the case in Bacon's time.
+//! as interchangeable characters, as would have been the case in Bacon's time, though 'I' and 'V'
+//! were more common in text.
 //!
 //! Also, it allows the user to change the underlying binary
 //! character choice, this is traditionally 'a' and 'b', but optionally the user can choose any
@@ -29,8 +30,13 @@ const DEFAULT_DECOY: &str =
 /// The default code length
 const CODE_LEN: usize = 5;
 
-/// A traditional code set that makes 'J' = 'I' and 'V' = 'U'
+/// Code mappings:
+///  * note: that str is preferred over char as it cannot be guaranteed that
+///     there will be a single codepoint for a given character.
+
+/// A traditional code set that makes 'I' = 'J' and 'V' = 'U'
 ///     - as they had equivalent value in Bacon's day
+///     - generally, 'I' and 'V' were more common and used here
 lazy_static! {
     static ref TRAD_CODES: HashMap<&'static str, &'static str> = hashmap!{
         "A" => "AAAAA",
@@ -42,7 +48,6 @@ lazy_static! {
         "G" => "AABBA",
         "H" => "AABBB",
         "I" => "ABAAA",
-        "J" => "ABAAA",
         "K" => "ABAAB",
         "L" => "ABABA",
         "M" => "ABABB",
@@ -53,7 +58,6 @@ lazy_static! {
         "R" => "BAAAA",
         "S" => "BAAAB",
         "T" => "BAABA",
-        "U" => "BAABB",
         "V" => "BAABB",
         "W" => "BABAA",
         "X" => "BABAB",
@@ -96,61 +100,61 @@ lazy_static! {
 
 /// A mapping of alphabet to italic UTF-8 italic codes
 lazy_static! {
-    static ref ITALIC_CODES: HashMap<&'static str, &'static str> = hashmap!{
+    static ref ITALIC_CODES: HashMap<&'static str, char> = hashmap!{
         // Using Mathematical Italic
-        "A" => "\u{1D434}",
-        "B" => "\u{1D435}",
-        "C" => "\u{1D436}",
-        "D" => "\u{1D437}",
-        "E" => "\u{1D438}",
-        "F" => "\u{1D439}",
-        "G" => "\u{1D43a}",
-        "H" => "\u{1D43b}",
-        "I" => "\u{1D43c}",
-        "J" => "\u{1D43d}",
-        "K" => "\u{1D43e}",
-        "L" => "\u{1D43f}",
-        "M" => "\u{1D440}",
-        "N" => "\u{1D441}",
-        "O" => "\u{1D442}",
-        "P" => "\u{1D443}",
-        "Q" => "\u{1D444}",
-        "R" => "\u{1D445}",
-        "S" => "\u{1D446}",
-        "T" => "\u{1D447}",
-        "U" => "\u{1D448}",
-        "V" => "\u{1D449}",
-        "W" => "\u{1D44a}",
-        "X" => "\u{1D44b}",
-        "Y" => "\u{1D44c}",
-        "Z" => "\u{1D44d}",
+        "A" => '\u{1D434}',
+        "B" => '\u{1D435}',
+        "C" => '\u{1D436}',
+        "D" => '\u{1D437}',
+        "E" => '\u{1D438}',
+        "F" => '\u{1D439}',
+        "G" => '\u{1D43a}',
+        "H" => '\u{1D43b}',
+        "I" => '\u{1D43c}',
+        "J" => '\u{1D43d}',
+        "K" => '\u{1D43e}',
+        "L" => '\u{1D43f}',
+        "M" => '\u{1D440}',
+        "N" => '\u{1D441}',
+        "O" => '\u{1D442}',
+        "P" => '\u{1D443}',
+        "Q" => '\u{1D444}',
+        "R" => '\u{1D445}',
+        "S" => '\u{1D446}',
+        "T" => '\u{1D447}',
+        "U" => '\u{1D448}',
+        "V" => '\u{1D449}',
+        "W" => '\u{1D44a}',
+        "X" => '\u{1D44b}',
+        "Y" => '\u{1D44c}',
+        "Z" => '\u{1D44d}',
         // Using Mathematical Sans-Serif Italic
-        "a" => "\u{1D622}",
-        "b" => "\u{1D623}",
-        "c" => "\u{1D624}",
-        "d" => "\u{1D625}",
-        "e" => "\u{1D626}",
-        "f" => "\u{1D627}",
-        "g" => "\u{1D628}",
-        "h" => "\u{1D629}",
-        "i" => "\u{1D62a}",
-        "j" => "\u{1D62b}",
-        "k" => "\u{1D62c}",
-        "l" => "\u{1D62d}",
-        "m" => "\u{1D62e}",
-        "n" => "\u{1D62f}",
-        "o" => "\u{1D630}",
-        "p" => "\u{1D631}",
-        "q" => "\u{1D632}",
-        "r" => "\u{1D633}",
-        "s" => "\u{1D634}",
-        "t" => "\u{1D635}",
-        "u" => "\u{1D636}",
-        "v" => "\u{1D637}",
-        "w" => "\u{1D638}",
-        "x" => "\u{1D639}",
-        "y" => "\u{1D63a}",
-        "z" => "\u{1D63b}"
+        "a" => '\u{1D622}',
+        "b" => '\u{1D623}',
+        "c" => '\u{1D624}',
+        "d" => '\u{1D625}',
+        "e" => '\u{1D626}',
+        "f" => '\u{1D627}',
+        "g" => '\u{1D628}',
+        "h" => '\u{1D629}',
+        "i" => '\u{1D62a}',
+        "j" => '\u{1D62b}',
+        "k" => '\u{1D62c}',
+        "l" => '\u{1D62d}',
+        "m" => '\u{1D62e}',
+        "n" => '\u{1D62f}',
+        "o" => '\u{1D630}',
+        "p" => '\u{1D631}',
+        "q" => '\u{1D632}',
+        "r" => '\u{1D633}',
+        "s" => '\u{1D634}',
+        "t" => '\u{1D635}',
+        "u" => '\u{1D636}',
+        "v" => '\u{1D637}',
+        "w" => '\u{1D638}',
+        "x" => '\u{1D639}',
+        "y" => '\u{1D63a}',
+        "z" => '\u{1D63b}'
     };
 }
 
@@ -161,8 +165,18 @@ fn get_code(distinct: bool, key: &str) -> String {
         if DISTINCT_CODES.contains_key(key.to_uppercase().as_str()) {
             code.push_str(DISTINCT_CODES.get(key.to_uppercase().as_str()).unwrap());
         }
-    } else if TRAD_CODES.contains_key(key.to_uppercase().as_str()) {
-        code.push_str(TRAD_CODES.get(key.to_uppercase().as_str()).unwrap());
+    } else {
+        // Need to handle 'I'/'J' and 'U'/'V'
+        let mut key_upper = key.to_uppercase();
+
+        match key_upper.as_str() {
+            "J" => key_upper = "I".to_string(),
+            "U" => key_upper = "V".to_string(),
+            _ => {}
+        }
+        if TRAD_CODES.contains_key(key_upper.as_str()) {
+            code.push_str(TRAD_CODES.get(key_upper.as_str()).unwrap());
+        }
     }
 
     code
@@ -278,12 +292,12 @@ impl Cipher for Baconian {
         let mut decoy_msg = String::new();
         for c in decoy_slice.chars() {
             if c.is_alphabetic() {
-                let code = secret.remove(0); // reduce the secret
-                if code == 'B' {
-                    let italic = ITALIC_CODES.get(c.to_string().as_str());
-                    decoy_msg.push_str(italic.unwrap());
-                } else {
-                    decoy_msg.push(c);
+                match secret.remove(0) {
+                    'B' => {
+                        let italic = ITALIC_CODES.get(c.to_string().as_str());
+                        decoy_msg.push(*italic.unwrap());
+                    }
+                    _ => decoy_msg.push(c),
                 }
             } else {
                 decoy_msg.push(c);
@@ -319,7 +333,7 @@ impl Cipher for Baconian {
             if c.is_alphabetic() {
                 let mut is_code = false;
                 for (_key, val) in ITALIC_CODES.iter() {
-                    if *val == c.to_string().as_str() {
+                    if *val == c {
                         is_code = true;
                         break;
                     }
@@ -421,6 +435,33 @@ mod tests {
         let message = "ATTACK";
         let decoy_text = String::from("Let's compromise. Hold off the attack");
         let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        assert_eq!(message, b.decrypt(&cipher_text).unwrap());
+    }
+
+    #[test]
+    fn decrypt_traditional() {
+        let cipher_text =
+            String::from(
+                "T𝘩e wor𝘭d's a bubble; an𝘥 𝘵he 𝘭if𝘦 o𝘧 𝘮an 𝘭𝘦s𝘴 𝘵ha𝘯 𝘢 𝘴pa𝘯. \
+                𝐼n h𝘪s c𝘰ncep𝘵io𝘯 𝘸re𝘵che𝘥; 𝘧ro𝘮 th𝘦 w𝘰mb 𝘴𝘰 t𝘰 𝘵he t𝘰mb: \
+                Curs𝘵 fr𝘰𝘮 t𝘩𝘦 cradl𝘦, 𝘢nd"
+            );
+        // Note: the substitution for 'I'/'J' and 'U'/'V'
+        let message = "IIADEYOVVERVENTVNICORN";
+        let decoy_text = String::from(
+            // The Life of Man, verse 1
+            "The world's a bubble; and the life of man less than a span. \
+             In his conception wretched; from the womb so to the tomb: \
+             Curst from the cradle, and brought up to years, with cares and fears. \
+             Who then to frail mortality shall trust, \
+             But limns the water, or but writes in dust. \
+             Yet, since with sorrow here we live oppress'd, what life is best? \
+             Courts are but only superficial schools to dandle fools: \
+             The rural parts are turn'd into a den of savage men: \
+             And where's a city from all vice so free, \
+             But may be term'd the worst of all the three?",
+        );
+        let b = Baconian::new((false, Some(decoy_text))).unwrap();
         assert_eq!(message, b.decrypt(&cipher_text).unwrap());
     }
 }
