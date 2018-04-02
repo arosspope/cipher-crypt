@@ -131,7 +131,6 @@ fn get_code(distinct: bool, key: &str) -> String {
             _ => {}
         }
     }
-    print!("{}", key_upper);
     if CODE_MAP.contains_key(key_upper.as_str()) {
         code.push_str(CODE_MAP.get(key_upper.as_str()).unwrap());
     }
@@ -144,8 +143,6 @@ fn get_key(code: &str) -> String {
 
     for (_key, val) in CODE_MAP.iter() {
         if val == &code {
-            print!("{}", _key);
-
             key.push_str(_key);
         }
     }
@@ -197,7 +194,7 @@ impl Cipher for Baconian {
     ///
     /// let b = Baconian::new((false, None)).unwrap();
     /// let message = "Hello";
-    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰r s𝘪t 𝘢me𝘵, 𝘯e 𝘵";
+    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
     ///
     /// assert_eq!(cipher_text, b.encrypt(message).unwrap());
     /// ```
@@ -274,7 +271,7 @@ impl Cipher for Baconian {
     /// use cipher_crypt::{Cipher, Baconian};
     ///
     /// let b = Baconian::new((false, None)).unwrap();
-    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰r s𝘪t 𝘢me𝘵, 𝘯e 𝘵";
+    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
     ///
     /// assert_eq!("HELLO", b.decrypt(cipher_text).unwrap());
     /// ```
@@ -323,8 +320,20 @@ mod tests {
     fn encrypt_simple() {
         let b = Baconian::new((false, None)).unwrap();
         let message = "Hello";
-        let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰r s𝘪t 𝘢me𝘵, 𝘯e 𝘵";
+        let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
+    }
+    // Need to test that the traditional and distinct codes give different results
+    #[test]
+    fn encrypt_trad_v_dist() {
+        let b_trad = Baconian::new((false, None)).unwrap();
+        let b_dist = Baconian::new((true, None)).unwrap();
+        let message = "I JADE YOU VERVENT UNICORN";
+
+        assert_ne!(
+            b_dist.encrypt(&message).unwrap(),
+            b_trad.encrypt(message).unwrap()
+        );
     }
 
     #[test]
@@ -345,9 +354,9 @@ mod tests {
         let b = Baconian::new((false, Some(decoy_text))).unwrap();
         let message = "Peace, Freedom 🗡️ and Liberty!";
         let cipher_text =
-            "T𝘩𝘦 𝘸orl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 less th𝘢n a sp𝘢n. \
-            In hi𝘴 𝘤o𝘯𝘤e𝘱t𝘪o𝘯 𝘸retche𝘥; 𝘧rom th𝘦 𝘸o𝘮b 𝘴o t𝘰 the tomb: \
-            𝐶ur𝘴t f𝘳om th𝘦 cr𝘢d𝘭e, 𝘢𝘯d";
+            "T𝘩𝘦 𝘸𝘰rl𝘥\'s a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
+            In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
+            𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
     // distinct lexicon
@@ -400,9 +409,9 @@ mod tests {
     fn decrypt_traditional() {
         let cipher_text =
             String::from(
-                "T𝘩e wor𝘭d's a bubble; an𝘥 𝘵he 𝘭if𝘦 o𝘧 𝘮an 𝘭𝘦s𝘴 𝘵ha𝘯 𝘢 𝘴pa𝘯. \
-                𝐼n h𝘪s c𝘰ncep𝘵io𝘯 𝘸re𝘵che𝘥; 𝘧ro𝘮 th𝘦 w𝘰mb 𝘴𝘰 t𝘰 𝘵he t𝘰mb: \
-                Curs𝘵 fr𝘰𝘮 t𝘩𝘦 cradl𝘦, 𝘢nd"
+                "T𝘩e wor𝘭d's a bubble; an𝘥 𝘵he 𝘭if𝘦 𝘰f man 𝘭𝘦𝘴s 𝘵h𝘢n 𝘢 𝘴p𝘢n. \
+                𝐼n h𝘪s c𝘰nce𝘱𝘵i𝘰n 𝘸re𝘵che𝘥; 𝘧r𝘰𝘮 th𝘦 𝘸𝘰m𝘣 s𝘰 t𝘰 𝘵h𝘦 t𝘰mb: \
+                Curs𝘵 fr𝘰𝘮 𝘵h𝘦 cra𝘥l𝘦, 𝘢n𝘥"
             );
         // Note: the substitution for 'I'/'J' and 'U'/'V'
         let message = "IIADEYOVVERVENTVNICORN";
