@@ -230,7 +230,6 @@ impl Cipher for Playfair {
         for (k, r) in vtable.chunks(5).enumerate() {
             rows[k] = r.iter().collect();
         }
-        println!("Rows: {:?}", rows); // DEBUG
 
         let mut cols: [String; 5] = Default::default();
         for i in 0..5 {
@@ -238,7 +237,6 @@ impl Cipher for Playfair {
                 cols[i].push(r[i]);
             }
         }
-        println!("Cols: {:?}", cols); // DEBUG
 
         Ok(Playfair {
             table: KeyTable {
