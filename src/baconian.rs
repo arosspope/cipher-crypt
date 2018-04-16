@@ -5,22 +5,18 @@
 //! Each character of the plaintext message is encoded as a 5-bit binary character.
 //! These characters are then "hidden" in a decoy message through the use of font variation.
 //! This cipher is very easy to crack once the method of hiding is known. As such, this implementation includes
-//! the option to set whether the substitution is distinct for the whole alphabet,
+//! the option to set whether the substitution is use_distinct_alphabet for the whole alphabet,
 //! or whether it follows the classical method of treating 'I' and 'J', and 'U' and 'V' as
 //! interchangeable characters - as would have been the case in Bacon's time.
 //!
 //! If no concealing text is given and the boilerplate of "Lorem ipsum..." is used,
-//! a plaintext message of up to 50 characters may be hidden.
+//! a plaintext message of up to ~50 characters may be hidden.
 //!
 use std::collections::HashMap;
 use std::string::String;
 use common::cipher::Cipher;
+use lipsum::lipsum;
 
-/// Default decoy plaintext
-const DEFAULT_DECOY: &str =
-    "Lorem ipsum dolor sit amet, ne tamquam eruditi splendide vix. \
-     Mea vitae latine philosophia in, et qui gubergren definiebas. \
-     Est et debet aliquam. Ei velit augue quo, quod veniam definitionem nam ut.";
 /// The default code length
 const CODE_LEN: usize = 5;
 
@@ -119,12 +115,12 @@ lazy_static! {
 }
 
 /// Get the code for a given key (source character)
-fn get_code(distinct: bool, key: &str) -> String {
+fn get_code(use_distinct_alphabet: bool, key: &str) -> String {
     let mut code = String::new();
     // Need to handle 'I'/'J' and 'U'/'V'
     //  for traditional usage.
     let mut key_upper = key.to_uppercase();
-    if !distinct {
+    if !use_distinct_alphabet {
         match key_upper.as_str() {
             "J" => key_upper = "I".to_string(),
             "U" => key_upper = "V".to_string(),
@@ -151,7 +147,7 @@ fn get_key(code: &str) -> String {
 
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct Baconian {
-    distinct: bool,
+    use_distinct_alphabet: bool,
     decoy_text: String,
 }
 
@@ -163,19 +159,19 @@ impl Cipher for Baconian {
     ///
     /// The `key` tuple maps to the following:
     ///     `(bool, Option<str>) =
-    ///         (distinct, decoy_text)`.
+    ///         (use_distinct_alphabet, decoy_text)`.
     ///
     /// Where ...
     ///
-    /// * The encoding will be distinct for all alphabetical characters, or classical
+    /// * The encoding will be use_distinct_alphabet for all alphabetical characters, or classical
     ///     where I, J, U and V are mapped to the same value pairs
     /// * An optional decoy message that will will be used to hide the message -
     ///     default is boilerplate "Lorem ipsum" text.
     ///
     fn new(key: (bool, Option<String>)) -> Result<Baconian, &'static str> {
         Ok(Baconian {
-            distinct: key.0,
-            decoy_text: key.1.unwrap_or_else(|| String::from(DEFAULT_DECOY)),
+            use_distinct_alphabet: key.0,
+            decoy_text: key.1.unwrap_or_else(|| lipsum(160)),
         })
     }
 
@@ -194,7 +190,7 @@ impl Cipher for Baconian {
     ///
     /// let b = Baconian::new((false, None)).unwrap();
     /// let message = "Hello";
-    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
+    /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘤𝘰n";
     ///
     /// assert_eq!(cipher_text, b.encrypt(message).unwrap());
     /// ```
@@ -213,18 +209,17 @@ impl Cipher for Baconian {
             return Err("Message too long for supplied decoy text.");
         }
 
+        // Complex: decoy_slice needs to = secret.len + num_non_alphabetical_chars
+        let mut decoy_slice = self.decoy_text.clone();
         let mut secret = String::new();
         // Iterate through the message encoding each char
         // Ignore non-alphabetical chars
         for c in message.chars() {
             // get code and add to secret
-            let mut key = String::new();
-            key.push(c);
-            secret += &get_code(self.distinct, &key);
+            let key = String::from(c.to_string());
+            secret += &get_code(self.use_distinct_alphabet, &key);
         }
 
-        // Complex: decoy_slice needs to = secret.len + num_non_alphabetical_chars
-        let mut decoy_slice = self.decoy_text.clone();
         let mut alphas = 0;
         non_alphas = 0;
         for c in self.decoy_text.chars() {
@@ -249,8 +244,8 @@ impl Cipher for Baconian {
                 match secret.remove(0) {
                     'B' => {
                         // match the binary 'B' and swap for italic
-                        let italic = ITALIC_CODES.get(c.to_string().as_str());
-                        decoy_msg.push(*italic.unwrap());
+                        let italic = *ITALIC_CODES.get(c.to_string().as_str()).unwrap();
+                        decoy_msg.push(italic);
                     }
                     _ => decoy_msg.push(c),
                 }
@@ -320,10 +315,10 @@ mod tests {
     fn encrypt_simple() {
         let b = Baconian::new((false, None)).unwrap();
         let message = "Hello";
-        let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
+        let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘤𝘰n";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
-    // Need to test that the traditional and distinct codes give different results
+    // Need to test that the traditional and use_distinct_alphabet codes give different results
     #[test]
     fn encrypt_trad_v_dist() {
         let b_trad = Baconian::new((false, None)).unwrap();
@@ -359,7 +354,7 @@ mod tests {
             𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
-    // distinct lexicon
+    // use_distinct_alphabet lexicon
     #[test]
     #[should_panic(expected = r#"Message too long for supplied decoy text."#)]
     fn encrypt_decoy_too_short() {
@@ -372,7 +367,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_with_distinct_codeset() {
+    fn encrypt_with_use_distinct_alphabet_codeset() {
         let message = "Peace, Freedom 🗡️ and Liberty!";
         let decoy_text = String::from(
             // The Life of Man, verse 1

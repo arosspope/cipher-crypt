@@ -17,5 +17,6 @@ name = "cipher_crypt"
 [dependencies]
 lazy_static = "*"
 maplit = "*"
+lipsum = "0.4"
 num = "^0.1"
 rulinalg = "^0.4"

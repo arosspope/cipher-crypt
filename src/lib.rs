@@ -27,6 +27,7 @@ extern crate rulinalg;
 
 #[macro_use]
 extern crate lazy_static;
+extern crate lipsum;
 #[macro_use]
 extern crate maplit;
 
