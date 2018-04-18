@@ -2,6 +2,6 @@ language: rust
 rust:
   - stable
 script:
-  - rustup component add rustfmt-preview 
+  - rustup component add rustfmt-preview
   - cargo fmt -- --write-mode=diff
   - cargo test --release --verbose

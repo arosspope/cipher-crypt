@@ -15,5 +15,8 @@ documentation = "https://docs.rs/cipher-crypt/"
 name = "cipher_crypt"
 
 [dependencies]
+lazy_static = "^1"
+maplit = "^1.0.1"
+lipsum = "^0.4"
 num = "^0.1"
 rulinalg = "^0.4"
