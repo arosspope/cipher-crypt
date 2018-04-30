@@ -4,8 +4,6 @@
 //!
 //! [Reference](https://en.wikipedia.org/wiki/Playfair_cipher)
 //!
-//! # Key Table Generation
-//!
 //! The Playfair cipher operates on a 5x5 table. The key, omitting repeated
 //! characters, is written from left to right starting on the first row
 //! of the table. Other key layout patterns in the table can be used
@@ -13,18 +11,113 @@
 //! (typically 'Q') or two letters can occupy the same space (I=J).
 //! This implementation uses the *latter* design, replacing all
 //! encountered 'J' characters with 'I'.
+//!
+use common::{alphabet, alphabet::Alphabet, cipher::Cipher, keygen::PlayfairTable};
 
-use common::{alphabet, alphabet::Alphabet, cipher::Cipher};
-
-const PLAYFAIR_ALPHABET: &'static str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+/// The character inserted to avoid repeated characters or
+/// to complete an odd-length bigram
 const PLAYFAIR_FIX_CHAR: char = 'X';
 
-// Playfair Cipher Modes
-enum CipherMode {
-    // Encrypt Mode
-    ENCRYPT,
-    // Decrypt Mode
-    DECRYPT,
+/// A Playfair cipher.
+///
+/// This struct is created by the `new()` method. See its documentation for more.
+pub struct Playfair {
+    /// The Playfair key table (5x5)
+    table: PlayfairTable,
+}
+
+impl Cipher for Playfair {
+    type Key = String;
+    type Algorithm = Playfair;
+
+    /// Initialize a Playfair cipher.
+    ///
+    /// # Warning
+    /// The 5x5 key table requires any 'J' characters in the key
+    /// to be substituted with 'I' characters (I = J).
+    fn new(key: Self::Key) -> Result<Playfair, &'static str> {
+        let key_table = PlayfairTable::new(&key)?;
+        
+        Ok(Playfair {
+            table: key_table
+        })
+    }
+
+    /// Encrypt a message with the Playfair cipher.
+    ///
+    /// Accepts messages consisting only of alpha characters and whitespace.
+    /// The resulting plaintext will be fully uppercase with no spaces.
+    ///
+    /// # Examples
+    ///
+    /// Basic Usage:
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Playfair};
+    ///
+    /// let c = Playfair::new("playfair example".to_string()).unwrap();
+    /// assert_eq!(
+    ///     c.encrypt("Hide the gold in the tree stump").unwrap(),
+    ///     "BMODZBXDNABEKUDMUIXMMOUVIF"
+    /// );
+    /// ```
+    ///
+    /// # Warning
+    ///
+    /// * The 5x5 key table requires any 'J' characters in the message
+    /// to be substituted with 'I' characters (i.e. I = J).
+    /// * The resulting ciphertext will be fully uppercase with no whitespace.
+    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
+        let message: String = message.split_whitespace().collect();
+        if !alphabet::STANDARD.is_valid(message.as_str()) {
+            return Err("Message must only consist of alphabetic characters");
+        }
+
+        // Handles Rule 1
+        let bmsg = bigram(message.to_uppercase())?;
+
+        apply_rules(bmsg, &self.table, |v, first, second| {
+            (v[(first + 1) % 5], v[(second + 1) % 5])
+        })
+    }
+
+    /// Decrypt a message with the Playfair cipher.
+    ///
+    /// Accepts messages consisting only of alpha characters and whitespace.
+    ///
+    /// # Examples
+    ///
+    /// Basic Usage:
+    ///
+    /// ```
+    /// use cipher_crypt::{Cipher, Playfair};
+    /// 
+    /// let c = Playfair::new("playfair example".to_string()).unwrap();
+    /// assert_eq!(
+    ///     c.decrypt("BMODZBXDNABEKUDMUIXMMOUVIF").unwrap(),
+    ///     "HIDETHEGOLDINTHETREXESTUMP"
+    /// );
+    /// 
+    /// ```
+    ///
+    /// # Warning
+    ///
+    /// * The 5x5 key table requires any 'J' characters in the message
+    /// to be substituted with 'I' characters (i.e. I = J).
+    /// * The resulting plaintext will be fully uppercase with no whitespace.
+    /// * The resulting plaintext may contain added 'X' characters
+    fn decrypt(&self, message: &str) -> Result<String, &'static str> {
+        let message: String = message.split_whitespace().collect();
+        if !alphabet::STANDARD.is_valid(message.as_str()) {
+            return Err("Message must only consist of alphabetic characters");
+        }
+        // Handles Rule 1
+        let bmsg = bigram(message.to_uppercase())?;
+
+        apply_rules(bmsg, &self.table, |v, first, second| {
+            (v[(first - 1) % 5], v[(second - 1) % 5])
+        })
+    }
 }
 
 // PLayfair Bigram
@@ -44,10 +137,10 @@ type Bigram = (char, char);
 /// Panics if message contain non-alpha characters.
 fn bigram<S: AsRef<str>>(message: S) -> Result<Vec<Bigram>, &'static str> {
     if message.as_ref().contains(char::is_whitespace) {
-        panic!("Message contains whitespace");
+        return Err("Message contains whitespace");
     }
     if !alphabet::STANDARD.is_valid(message.as_ref()) {
-        panic!("Message must only consist of alphabetic characters");
+        return Err("Message must only consist of alphabetic characters");
     }
 
     let mut iter = message.as_ref().chars().peekable();
@@ -92,15 +185,15 @@ fn bigram<S: AsRef<str>>(message: S) -> Result<Vec<Bigram>, &'static str> {
 /// bottom side of the column)."
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
-fn apply_row_col(b: &Bigram, row_col: &[String; 5], mode: &CipherMode) -> Option<Bigram> {
+fn apply_row_col<F>(b: &Bigram, row_col: &[String; 5], shift: &F) -> Option<Bigram>
+where
+    F: Fn(Vec<char>, usize, usize) -> Bigram,
+{
     for rc in row_col.iter() {
         if let Some(first) = rc.find(b.0) {
             if let Some(second) = rc.find(b.1) {
                 let v: Vec<char> = rc.chars().collect();
-                match *mode {
-                    CipherMode::ENCRYPT => return Some((v[(first + 1) % 5], v[(second + 1) % 5])),
-                    CipherMode::DECRYPT => return Some((v[(first - 1) % 5], v[(second - 1) % 5])),
-                }
+                return Some(shift(v, first, second));
             }
         }
     }
@@ -132,7 +225,7 @@ fn find_separate(b: &Bigram, table: &[String; 5]) -> (usize, usize) {
 /// lies on the same row as the first letter of the plaintext pair."
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
-fn apply_rectangle(b: &Bigram, table: &KeyTable) -> Bigram {
+fn apply_rectangle(b: &Bigram, table: &PlayfairTable) -> Bigram {
     let rows = find_separate(&b, &table.cols);
     let cols = find_separate(&b, &table.rows);
 
@@ -146,22 +239,21 @@ fn apply_rectangle(b: &Bigram, table: &KeyTable) -> Bigram {
 ///
 /// The operations for encrypt and decrypt are identical
 /// except for the "direction" of the substitution choice.
-fn apply_rules(
-    bigrams: Vec<Bigram>,
-    table: &KeyTable,
-    mode: CipherMode,
-) -> Result<String, &'static str> {
+fn apply_rules<F>(bigrams: Vec<Bigram>, table: &PlayfairTable, shift: F) -> Result<String, &'static str>
+where
+    F: Fn(Vec<char>, usize, usize) -> Bigram,
+{
     let mut text = String::new();
     for b in bigrams {
         // Rule 2 (Row)
-        if let Some(bigram) = apply_row_col(&b, &table.rows, &mode) {
+        if let Some(bigram) = apply_row_col(&b, &table.rows, &shift) {
             text.push(bigram.0);
             text.push(bigram.1);
             continue;
         }
 
         // Rule 3 (Column)
-        if let Some(bigram) = apply_row_col(&b, &table.cols, &mode) {
+        if let Some(bigram) = apply_row_col(&b, &table.cols, &shift) {
             text.push(bigram.0);
             text.push(bigram.1);
             continue;
@@ -173,121 +265,6 @@ fn apply_rules(
         text.push(bigram.1);
     }
     Ok(text)
-}
-
-/// A 5x5 Playfair key table
-struct KeyTable {
-    /// Table rows
-    rows: [String; 5],
-    /// Table columns
-    cols: [String; 5],
-}
-
-/// A Playfair cipher.
-pub struct Playfair {
-    /// The Playfair key table (5x5)
-    table: KeyTable,
-}
-
-impl Cipher for Playfair {
-    type Key = String;
-    type Algorithm = Playfair;
-
-    /// Initialize a Playfair cipher.
-    ///
-    /// # Warning
-    /// The 5x5 key table requires any 'J' characters in the key
-    /// to be substituted with 'I' characters (I = J).
-    fn new(key: Self::Key) -> Result<Playfair, &'static str> {
-        let mut key: String = key.split_whitespace().collect();
-        if !alphabet::STANDARD.is_valid(key.as_str()) {
-            return Err("Key must only consist of alphabetic characters");
-        }
-
-        // Conform key to 25-character, uppercase alphabet
-        key = key.to_uppercase();
-        key.replace("J", "I");
-
-        // Remove repeated characters from key
-        let mut ukey = String::new();
-        for c in key.chars() {
-            if !ukey.contains(c) {
-                ukey.push(c);
-            }
-        }
-
-        let mut vtable: Vec<char> = ukey.chars().collect();
-        for c in PLAYFAIR_ALPHABET.chars() {
-            if !vtable.contains(&c) {
-                vtable.push(c);
-            }
-        }
-
-        vtable.shrink_to_fit();
-        assert_eq!(vtable.len(), PLAYFAIR_ALPHABET.len());
-
-        let mut rows: [String; 5] = Default::default();
-        for (k, r) in vtable.chunks(5).enumerate() {
-            rows[k] = r.iter().collect();
-        }
-
-        let mut cols: [String; 5] = Default::default();
-        for i in 0..5 {
-            for r in vtable.chunks(5) {
-                cols[i].push(r[i]);
-            }
-        }
-
-        Ok(Playfair {
-            table: KeyTable {
-                rows: rows,
-                cols: cols,
-            },
-        })
-    }
-
-    /// Encrypt a message with the Playfair cipher.
-    ///
-    /// Accepts messages consisting only of alpha characters and whitespace.
-    /// The resulting plaintext will be fully uppercase with no spaces.
-    ///
-    /// # Warning
-    ///
-    /// * The 5x5 key table requires any 'J' characters in the message
-    /// to be substituted with 'I' characters (i.e. I = J).
-    /// * The resulting ciphertext will be fully uppercase with no whitespace.
-    fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let message: String = message.split_whitespace().collect();
-        if !alphabet::STANDARD.is_valid(message.as_str()) {
-            return Err("Message must only consist of alphabetic characters");
-        }
-
-        // Handles Rule 1
-        let bmsg = bigram(message.to_uppercase())?;
-
-        apply_rules(bmsg, &self.table, CipherMode::ENCRYPT)
-    }
-
-    /// Decrypt a message with the Playfair cipher.
-    ///
-    /// Accepts messages consisting only of alpha characters and whitespace.
-    ///
-    /// # Warning
-    ///
-    /// * The 5x5 key table requires any 'J' characters in the message
-    /// to be substituted with 'I' characters (i.e. I = J).
-    /// * The resulting plaintext will be fully uppercase with no whitespace.
-    /// * The resulting plaintext may contain added 'X' characters
-    fn decrypt(&self, message: &str) -> Result<String, &'static str> {
-        let message: String = message.split_whitespace().collect();
-        if !alphabet::STANDARD.is_valid(message.as_str()) {
-            return Err("Message must only consist of alphabetic characters");
-        }
-        // Handles Rule 1
-        let bmsg = bigram(message.to_uppercase())?;
-
-        apply_rules(bmsg, &self.table, CipherMode::DECRYPT)
-    }
 }
 
 #[cfg(test)]
@@ -323,15 +300,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Message contains whitespace")]
-    fn bigram_panics_on_spaces() {
-        bigram("Has Spaces").unwrap();
+    fn bigram_errors_on_spaces() {
+        assert!(bigram("Has Spaces").is_err());
     }
 
     #[test]
-    #[should_panic(expected = "Message must only consist of alphabetic characters")]
-    fn bigram_panics_on_nonalpha() {
-        bigram("Bad123").unwrap();
+    fn bigram_errors_on_nonalpha() {
+        assert!(bigram("Bad123").is_err());
     }
 
     #[test]
