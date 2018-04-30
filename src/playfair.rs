@@ -37,10 +37,8 @@ impl Cipher for Playfair {
     /// to be substituted with 'I' characters (I = J).
     fn new(key: Self::Key) -> Result<Playfair, &'static str> {
         let key_table = PlayfairTable::new(&key)?;
-        
-        Ok(Playfair {
-            table: key_table
-        })
+
+        Ok(Playfair { table: key_table })
     }
 
     /// Encrypt a message with the Playfair cipher.
@@ -91,13 +89,13 @@ impl Cipher for Playfair {
     ///
     /// ```
     /// use cipher_crypt::{Cipher, Playfair};
-    /// 
+    ///
     /// let c = Playfair::new("playfair example".to_string()).unwrap();
     /// assert_eq!(
     ///     c.decrypt("BMODZBXDNABEKUDMUIXMMOUVIF").unwrap(),
     ///     "HIDETHEGOLDINTHETREXESTUMP"
     /// );
-    /// 
+    ///
     /// ```
     ///
     /// # Warning
@@ -239,7 +237,11 @@ fn apply_rectangle(b: &Bigram, table: &PlayfairTable) -> Bigram {
 ///
 /// The operations for encrypt and decrypt are identical
 /// except for the "direction" of the substitution choice.
-fn apply_rules<F>(bigrams: Vec<Bigram>, table: &PlayfairTable, shift: F) -> Result<String, &'static str>
+fn apply_rules<F>(
+    bigrams: Vec<Bigram>,
+    table: &PlayfairTable,
+    shift: F,
+) -> Result<String, &'static str>
 where
     F: Fn(Vec<char>, usize, usize) -> Bigram,
 {

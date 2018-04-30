@@ -174,7 +174,6 @@ pub struct PlayfairTable {
 }
 
 impl PlayfairTable {
-
     /// Create a new Playfair key table
     ///
     /// The table is a 5x5 (I=J) matrix. Any repeated characters are removed
@@ -194,7 +193,6 @@ impl PlayfairTable {
     /// T U V W Z
     ///
     pub fn new<K: AsRef<str>>(key: K) -> Result<PlayfairTable, &'static str> {
-        
         // 25 Character Alphabet (I=J)
         const PLAYFAIR_ALPHABET: &'static str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
 
@@ -420,7 +418,7 @@ mod tests {
     fn playfairtable_new_rejects_unicode_key() {
         assert!(PlayfairTable::new("Bad☢").is_err());
     }
-    
+
     #[test]
     fn playfairtable_new_rejects_empty_key() {
         assert!(PlayfairTable::new("").is_err());
