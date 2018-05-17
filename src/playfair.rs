@@ -1,5 +1,5 @@
 //! The Playfair cipher is the first bigram substitution cipher.
-//! Invented in 1854 by Charles Wheatstone, its name honors "Lord"
+//! Invented in 1854 by Charles Wheatstone, its name honors Lord
 //! Lyon Playfair for promoting its use.
 //!
 //! [Reference](https://en.wikipedia.org/wiki/Playfair_cipher)
@@ -43,9 +43,6 @@ impl Cipher for Playfair {
 
     /// Encrypt a message with the Playfair cipher.
     ///
-    /// Accepts messages consisting only of alpha characters and whitespace.
-    /// The resulting plaintext will be fully uppercase with no spaces.
-    ///
     /// # Examples
     ///
     /// Basic Usage:
@@ -65,13 +62,16 @@ impl Cipher for Playfair {
     /// * The 5x5 key table requires any 'J' characters in the message
     /// to be substituted with 'I' characters (i.e. I = J).
     /// * The resulting ciphertext will be fully uppercase with no whitespace.
+    ///
+    /// # Errors
+    /// * Messages must contain alphabetic characters only.
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         let message: String = message.split_whitespace().collect();
         if !alphabet::STANDARD.is_valid(message.as_str()) {
             return Err("Message must only consist of alphabetic characters");
         }
 
-        // Handles Rule 1
+        // Handles Rule 1 (Bigrams)
         let bmsg = bigram(message.to_uppercase())?;
 
         apply_rules(bmsg, &self.table, |v, first, second| {
@@ -80,8 +80,6 @@ impl Cipher for Playfair {
     }
 
     /// Decrypt a message with the Playfair cipher.
-    ///
-    /// Accepts messages consisting only of alpha characters and whitespace.
     ///
     /// # Examples
     ///
@@ -103,7 +101,10 @@ impl Cipher for Playfair {
     /// * The 5x5 key table requires any 'J' characters in the message
     /// to be substituted with 'I' characters (i.e. I = J).
     /// * The resulting plaintext will be fully uppercase with no whitespace.
-    /// * The resulting plaintext may contain added 'X' characters
+    /// * The resulting plaintext may contain added 'X' pad characters.
+    ///
+    /// # Errors
+    /// * Messages must contain only alphabetic characters.
     fn decrypt(&self, message: &str) -> Result<String, &'static str> {
         let message: String = message.split_whitespace().collect();
         if !alphabet::STANDARD.is_valid(message.as_str()) {
@@ -123,16 +124,18 @@ type Bigram = (char, char);
 
 /// Apply rule 1 (bigrams).
 ///
-/// "If both letters are the same (or only one letter is left), add an 'X'
+/// # Rule 1
+///
+/// If both letters are the same (or only one letter is left), add an 'X'
 /// after the first letter. Encrypt the new pair and continue. Some variants
 /// of Playfair use 'Q' instead of 'X', but any letter, itself uncommon as a
-/// repeated pair, will do."
+/// repeated pair, will do.
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if message contain non-alpha characters.
+/// Returns an error if the message contains non-alpha characters.
 fn bigram<S: AsRef<str>>(message: S) -> Result<Vec<Bigram>, &'static str> {
     if message.as_ref().contains(char::is_whitespace) {
         return Err("Message contains whitespace");
@@ -172,15 +175,19 @@ fn bigram<S: AsRef<str>>(message: S) -> Result<Vec<Bigram>, &'static str> {
 
 /// Apply rule 2 (Row) or rule 3 (Column).
 ///
-/// "If the letters appear on the same row of your table, replace them
+/// # Rule 2
+///
+/// If the letters appear on the same row of your table, replace them
 /// with the letters to their immediate right respectively (wrapping
 /// around to the left side of the row if a letter in the original pair
-/// was on the right side of the row)."
+/// was on the right side of the row).
 ///
-/// "If the letters appear on the same column of your table, replace them
+/// # Rule 3
+///
+/// If the letters appear on the same column of your table, replace them
 /// with the letters immediately below respectively (wrapping around to the
 /// top side of the column if a letter in the original pair was on the
-/// bottom side of the column)."
+/// bottom side of the column).
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
 fn apply_row_col<F>(b: &Bigram, row_col: &[String; 5], shift: &F) -> Option<Bigram>
@@ -216,11 +223,13 @@ fn find_separate(b: &Bigram, table: &[String; 5]) -> (usize, usize) {
 
 /// Apply rule 4 (Rectangle).
 ///
-/// "If the letters are not on the same row or column, replace them with
+/// # Rule 4
+/// 
+/// If the letters are not on the same row or column, replace them with
 /// the letters on the same row respectively but at the other pair of
 /// corners of the rectangle defined by the original pair. The order is
 /// important – the first letter of the encrypted pair is the one that
-/// lies on the same row as the first letter of the plaintext pair."
+/// lies on the same row as the first letter of the plaintext pair.
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
 fn apply_rectangle(b: &Bigram, table: &PlayfairTable) -> Bigram {
@@ -236,7 +245,7 @@ fn apply_rectangle(b: &Bigram, table: &PlayfairTable) -> Bigram {
 /// Apply the PlayFair cipher algorithm.
 ///
 /// The operations for encrypt and decrypt are identical
-/// except for the "direction" of the substitution choice.
+/// except for the direction of the substitution choice.
 fn apply_rules<F>(
     bigrams: Vec<Bigram>,
     table: &PlayfairTable,
