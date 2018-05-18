@@ -224,7 +224,7 @@ fn find_separate(b: &Bigram, table: &[String; 5]) -> (usize, usize) {
 /// Apply rule 4 (Rectangle).
 ///
 /// # Rule 4
-/// 
+///
 /// If the letters are not on the same row or column, replace them with
 /// the letters on the same row respectively but at the other pair of
 /// corners of the rectangle defined by the original pair. The order is

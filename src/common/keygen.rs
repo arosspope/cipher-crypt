@@ -1,8 +1,8 @@
 //! This module contains functions for the generation of keys.
 //!
-use std::collections::HashMap;
 use super::alphabet;
 use super::alphabet::{Alphabet, ALPHANUMERIC, STANDARD};
+use std::collections::HashMap;
 
 /// Generates a scrambled alphabet using a key phrase for a given alphabet type.
 /// Lets consider the key `or0an3ge` for an alphanumeric alphabet. The resulting keyed alphabet

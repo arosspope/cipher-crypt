@@ -12,10 +12,10 @@
 //! If no concealing text is given and the boilerplate of "Lorem ipsum..." is used,
 //! a plaintext message of up to ~50 characters may be hidden.
 //!
-use std::collections::HashMap;
-use std::string::String;
 use common::cipher::Cipher;
 use lipsum::lipsum;
+use std::collections::HashMap;
+use std::string::String;
 
 /// The default code length
 const CODE_LEN: usize = 5;

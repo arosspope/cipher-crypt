@@ -6,9 +6,9 @@
 //! In addition to this, it allows many non-alphabetic symbols to be encoded.
 //!
 //!
+use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 use common::{alphabet, keygen, morse};
-use common::alphabet::Alphabet;
 
 // The fractionated morse trigraph 'alphabet'. Each sequence represents a letter of the alphabet.
 const TRIGRAPH_ALPHABET: [&str; 26] = [

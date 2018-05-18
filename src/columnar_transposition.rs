@@ -5,9 +5,9 @@
 //! Columnar transposition continued to be used as a component of more complex ciphers up
 //! until the 1950s.
 //!
+use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 use common::{alphabet, keygen};
-use common::alphabet::Alphabet;
 
 /// A Columnar Transposition cipher.
 /// This struct is created by the `new()` method. See its documentation for more.
