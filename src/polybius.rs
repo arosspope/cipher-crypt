@@ -2,10 +2,10 @@
 //! Ancient Greek historian and scholar Polybius, for fractionating plaintext characters so that
 //! they can be represented by a smaller set of symbols.
 //!
-use std::collections::HashMap;
-use common::cipher::Cipher;
 use common::alphabet::Alphabet;
+use common::cipher::Cipher;
 use common::{alphabet, keygen};
+use std::collections::HashMap;
 
 /// A Polybius square cipher.
 ///

@@ -4,9 +4,9 @@
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
 //! and in modern practice offers essentially no communication security.
 //!
-use common::{alphabet, substitute};
-use common::cipher::Cipher;
 use common::alphabet::Alphabet;
+use common::cipher::Cipher;
+use common::{alphabet, substitute};
 
 /// A Caesar cipher.
 ///

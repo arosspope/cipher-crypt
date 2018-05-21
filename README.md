@@ -37,10 +37,10 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Columnar Transposition
 - [x] ADFGVX
 - [x] Baconian
+- [X] Playfair
 - [ ] Porta
 - [ ] Homophonic
 - [ ] Four-Square
-- [ ] Playfair
 - [ ] Bifid
 - [ ] Straddle Checkerboard
 - [ ] Trifid

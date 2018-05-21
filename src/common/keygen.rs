@@ -1,8 +1,8 @@
 //! This module contains functions for the generation of keys.
 //!
-use std::collections::HashMap;
 use super::alphabet;
 use super::alphabet::{Alphabet, ALPHANUMERIC, STANDARD};
+use std::collections::HashMap;
 
 /// Generates a scrambled alphabet using a key phrase for a given alphabet type.
 /// Lets consider the key `or0an3ge` for an alphanumeric alphabet. The resulting keyed alphabet
@@ -164,6 +164,92 @@ pub fn polybius_square(
     Ok(polybius_square)
 }
 
+/// A 5x5 Playfair key table
+#[derive(Debug)]
+pub struct PlayfairTable {
+    /// Table rows
+    pub rows: [String; 5],
+    /// Table columns
+    pub cols: [String; 5],
+}
+
+impl PlayfairTable {
+    /// Create a new Playfair key table
+    ///
+    /// The table is a 5x5 (I=J) matrix. Any repeated characters are removed
+    /// and the key fills in the table from left to right starting on the
+    /// first row. The remaining, unused characters in the alphabet are then
+    /// appended to complete the table. Keys should not exceed 25 characters
+    /// in length.
+    ///
+    /// # Examples
+    ///
+    /// Given the key "PLAYFAIR EXAMPLE", the following table is generated:
+    ///
+    /// P L A Y F
+    /// I R E X M
+    /// B C D G H
+    /// K N O Q S
+    /// T U V W Z
+    ///
+    pub fn new<K: AsRef<str>>(key: K) -> Result<PlayfairTable, &'static str> {
+        // 25 Character Alphabet (I=J)
+        const PLAYFAIR_ALPHABET: &'static str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+
+        if key.as_ref().is_empty() {
+            return Err("Key must not be empty");
+        }
+
+        if key.as_ref().len() > PLAYFAIR_ALPHABET.len() {
+            return Err("Key length must not exceed 25 characters");
+        }
+
+        let mut key: String = key.as_ref().split_whitespace().collect();
+        if !alphabet::STANDARD.is_valid(key.as_str()) {
+            return Err("Key must only consist of alphabetic characters");
+        }
+
+        // Conform key to 25-character, uppercase alphabet
+        key = key.to_uppercase();
+        key.replace("J", "I");
+
+        // Remove repeated characters from key
+        let mut ukey = String::new();
+        for c in key.chars() {
+            if !ukey.contains(c) {
+                ukey.push(c);
+            }
+        }
+
+        let mut vtable: Vec<char> = ukey.chars().collect();
+        for c in PLAYFAIR_ALPHABET.chars() {
+            if !vtable.contains(&c) {
+                vtable.push(c);
+            }
+        }
+
+        vtable.shrink_to_fit();
+        assert_eq!(vtable.len(), PLAYFAIR_ALPHABET.len());
+
+        let mut rows: [String; 5] = Default::default();
+        for (k, r) in vtable.chunks(5).enumerate() {
+            rows[k] = r.iter().collect();
+        }
+
+        let mut cols: [String; 5] = Default::default();
+        for i in 0..5 {
+            for r in vtable.chunks(5) {
+                cols[i].push(r[i]);
+            }
+        }
+
+        Ok(PlayfairTable {
+            rows: rows,
+            cols: cols,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -305,5 +391,41 @@ mod tests {
     #[test]
     fn generate_columnar_invalid_key() {
         assert!(columnar_key("Fx !@#$").is_err());
+    }
+
+    // PlayfairTable Tests
+    #[test]
+    fn playfairtable_new_accepts_alpha_key() {
+        assert!(PlayfairTable::new("Foo").is_ok());
+    }
+
+    #[test]
+    fn playfairtable_new_accepts_spaced_key() {
+        assert!(PlayfairTable::new("Foo Bar").is_ok());
+    }
+
+    #[test]
+    fn playfairtable_new_accepts_alphanumeric_key() {
+        assert!(PlayfairTable::new("Bad123").is_err());
+    }
+
+    #[test]
+    fn playfairtable_new_rejects_symbolic_key() {
+        assert!(PlayfairTable::new("Bad?").is_err());
+    }
+
+    #[test]
+    fn playfairtable_new_rejects_unicode_key() {
+        assert!(PlayfairTable::new("Bad☢").is_err());
+    }
+
+    #[test]
+    fn playfairtable_new_rejects_empty_key() {
+        assert!(PlayfairTable::new("").is_err());
+    }
+
+    #[test]
+    fn playfairtable_new_rejects_long_key() {
+        assert!(PlayfairTable::new("ABCDEFGHIJKLMNOPQRSTUVWXYZA").is_err());
     }
 }
