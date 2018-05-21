@@ -33,7 +33,7 @@ impl Cipher for Playfair {
     /// Initialize a Playfair cipher.
     ///
     /// # Warning
-    /// The 5x5 key table requires any 'J' characters in the key
+    /// * The 5x5 key table requires any 'J' characters in the key
     /// to be substituted with 'I' characters (I = J).
     fn new(key: Self::Key) -> Result<Playfair, &'static str> {
         let key_table = PlayfairTable::new(&key)?;
@@ -58,7 +58,6 @@ impl Cipher for Playfair {
     /// ```
     ///
     /// # Warning
-    ///
     /// * The 5x5 key table requires any 'J' characters in the message
     /// to be substituted with 'I' characters (i.e. I = J).
     /// * The resulting ciphertext will be fully uppercase with no whitespace.
@@ -97,7 +96,6 @@ impl Cipher for Playfair {
     /// ```
     ///
     /// # Warning
-    ///
     /// * The 5x5 key table requires any 'J' characters in the message
     /// to be substituted with 'I' characters (i.e. I = J).
     /// * The resulting plaintext will be fully uppercase with no whitespace.
@@ -134,8 +132,7 @@ type Bigram = (char, char);
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
 ///
 /// # Errors
-///
-/// Returns an error if the message contains non-alpha characters.
+/// * Returns an error if the message contains non-alpha characters.
 fn bigram<S: AsRef<str>>(message: S) -> Result<Vec<Bigram>, &'static str> {
     if message.as_ref().contains(char::is_whitespace) {
         return Err("Message contains whitespace");

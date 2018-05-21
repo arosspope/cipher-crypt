@@ -13,7 +13,7 @@ adding the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.13"
+cipher-crypt = "^0.14"
 ```
 
 Using the crate as such:
@@ -24,24 +24,24 @@ Using the crate as such:
 
 The crypt only contains a few ciphers, but with time (and your help) it will have even more! A list of what is planned for the future and what is currently implemented is as follows.
 
-- [x] ROT13
-- [x] Caesar
-- [x] Affine
-- [x] Rail-fence
-- [x] Polybius Square
-- [x] Scytale
-- [x] Autokey
-- [x] Vigenère
-- [x] Hill
-- [x] Fractionated Morse
-- [x] Columnar Transposition
 - [x] ADFGVX
+- [x] Affine
+- [x] Autokey
 - [x] Baconian
-- [X] Playfair
-- [ ] Porta
-- [ ] Homophonic
-- [ ] Four-Square
+- [x] Caesar
+- [x] Columnar Transposition
+- [x] Fractionated Morse
+- [x] Hill
+- [x] Playfair
+- [x] Polybius Square
+- [x] Rail-fence
+- [x] ROT13
+- [x] Scytale
+- [x] Vigenère
 - [ ] Bifid
+- [ ] Four-Square
+- [ ] Homophonic
+- [ ] Porta
 - [ ] Straddle Checkerboard
 - [ ] Trifid
 

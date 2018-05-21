@@ -1,6 +1,5 @@
-//! Bacon's cipher or the Baconian cipher is a method of _steganography_
-//! - a method of hiding a secret message in plain sight rather generating ciphertext.
-//! It was devised by Sir Francis Bacon in 1605.
+//! Bacon's cipher, or the Baconian cipher, hides a secret message in plain sight rather than
+//! generating ciphertext (steganography). It was devised by Sir Francis Bacon in 1605.
 //!
 //! Each character of the plaintext message is encoded as a 5-bit binary character.
 //! These characters are then "hidden" in a decoy message through the use of font variation.
