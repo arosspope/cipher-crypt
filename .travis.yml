@@ -3,5 +3,5 @@ rust:
   - stable
 script:
   - rustup component add rustfmt-preview
-  - cargo fmt -- --write-mode=diff
+  - cargo fmt -- --check
   - cargo test --release --verbose
