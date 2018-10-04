@@ -61,7 +61,8 @@ impl Cipher for Hill {
 
         //We want to restrict the caller to supplying matrices of type isize
         //However, the majority of the matrix operations will be done with type f64
-        let m: Matrix<f64> = key.clone()
+        let m: Matrix<f64> = key
+            .clone()
             .try_into()
             .expect("Could not convert Matrix of type `isize` to `f64`.");
 
@@ -277,10 +278,12 @@ impl Hill {
         //e.g. ['A', 'T', 'T'] -> [0, 19, 19]
         let mut index_representation: Vec<f64> = Vec::new();
         for c in chunk.chars() {
-            index_representation.push(alphabet::STANDARD
-                .find_position(c)
-                .expect("Attempted transformation of non-alphabetic symbol")
-                as f64);
+            index_representation.push(
+                alphabet::STANDARD
+                    .find_position(c)
+                    .expect("Attempted transformation of non-alphabetic symbol")
+                    as f64,
+            );
         }
 
         //Perform the transformation `k * [0, 19, 19] mod 26`

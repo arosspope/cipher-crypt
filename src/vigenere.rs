@@ -144,9 +144,7 @@ mod tests {
         let v = Vigenere::new(String::from("lemon")).unwrap(); //key length of 5
 
         assert_eq!(
-            vec![
-                'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n'
-            ],
+            vec!['l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n'],
             v.keystream(message)
         );
     }
