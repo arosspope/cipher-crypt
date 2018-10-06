@@ -34,6 +34,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Hill
 - [x] Playfair
 - [x] Polybius Square
+- [x] Porta
 - [x] Rail-fence
 - [x] ROT13
 - [x] Scytale
@@ -41,7 +42,6 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [ ] Bifid
 - [ ] Four-Square
 - [ ] Homophonic
-- [ ] Porta
 - [ ] Straddle Checkerboard
 - [ ] Trifid
 
