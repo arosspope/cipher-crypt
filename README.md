@@ -13,7 +13,7 @@ adding the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.14"
+cipher-crypt = "^0.15"
 ```
 
 Using the crate as such:
