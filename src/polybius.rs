@@ -59,10 +59,10 @@ impl Cipher for Polybius {
     ///    p.encrypt("10 Oranges and 2 Apples!").unwrap());
     /// ```
     fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
-        let alphabet_key = keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
+        let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false)?;
         let square = keygen::polybius_square(&alphabet_key, key.1, key.2)?;
 
-        Ok(Polybius { square: square })
+        Ok(Polybius { square })
     }
 
     /// Encrypt a message using a Polybius square cipher.

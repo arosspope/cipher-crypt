@@ -215,7 +215,7 @@ impl Cipher for Baconian {
         // Ignore non-alphabetical chars
         for c in message.chars() {
             // get code and add to secret
-            let key = String::from(c.to_string());
+            let key = c.to_string();
             secret += &get_code(self.use_distinct_alphabet, &key);
         }
 

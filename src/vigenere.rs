@@ -24,13 +24,13 @@ impl Cipher for Vigenere {
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols.
     fn new(key: String) -> Result<Vigenere, &'static str> {
-        if key.len() < 1 {
+        if key.is_empty() {
             return Err("Invalid key. It must have at least one character.");
         } else if !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Vigenère keys cannot contain non-alphabetic symbols.");
         }
 
-        Ok(Vigenere { key: key })
+        Ok(Vigenere { key })
     }
 
     /// Encrypt a message using a Vigenère cipher.
@@ -144,7 +144,7 @@ mod tests {
         let v = Vigenere::new(String::from("lemon")).unwrap(); //key length of 5
 
         assert_eq!(
-            vec!['l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n'],
+            vec!['l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n',],
             v.keystream(message)
         );
     }

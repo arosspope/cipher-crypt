@@ -187,7 +187,7 @@ fn bigram<S: AsRef<str>>(message: S) -> Result<Vec<Bigram>, &'static str> {
 /// bottom side of the column).
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
-fn apply_row_col<F>(b: &Bigram, row_col: &[String; 5], shift: &F) -> Option<Bigram>
+fn apply_row_col<F>(b: Bigram, row_col: &[String; 5], shift: &F) -> Option<Bigram>
 where
     F: Fn(Vec<char>, usize, usize) -> Bigram,
 {
@@ -203,7 +203,7 @@ where
 }
 
 /// Identifies 2 corners of the rectangle.
-fn find_separate(b: &Bigram, table: &[String; 5]) -> (usize, usize) {
+fn find_separate(b: Bigram, table: &[String; 5]) -> (usize, usize) {
     let mut result = (0, 0);
     for rc in table.iter() {
         if let Some(pos) = rc.find(b.0) {
@@ -229,9 +229,9 @@ fn find_separate(b: &Bigram, table: &[String; 5]) -> (usize, usize) {
 /// lies on the same row as the first letter of the plaintext pair.
 ///
 /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
-fn apply_rectangle(b: &Bigram, table: &PlayfairTable) -> Bigram {
-    let rows = find_separate(&b, &table.cols);
-    let cols = find_separate(&b, &table.rows);
+fn apply_rectangle(b: Bigram, table: &PlayfairTable) -> Bigram {
+    let rows = find_separate(b, &table.cols);
+    let cols = find_separate(b, &table.rows);
 
     let row0: Vec<char> = table.rows[rows.0].chars().collect();
     let row1: Vec<char> = table.rows[rows.1].chars().collect();
@@ -254,21 +254,21 @@ where
     let mut text = String::new();
     for b in bigrams {
         // Rule 2 (Row)
-        if let Some(bigram) = apply_row_col(&b, &table.rows, &shift) {
+        if let Some(bigram) = apply_row_col(b, &table.rows, &shift) {
             text.push(bigram.0);
             text.push(bigram.1);
             continue;
         }
 
         // Rule 3 (Column)
-        if let Some(bigram) = apply_row_col(&b, &table.cols, &shift) {
+        if let Some(bigram) = apply_row_col(b, &table.cols, &shift) {
             text.push(bigram.0);
             text.push(bigram.1);
             continue;
         }
 
         // Rule 4 (Rectangle)
-        let bigram = apply_rectangle(&b, &table);
+        let bigram = apply_rectangle(b, &table);
         text.push(bigram.0);
         text.push(bigram.1);
     }

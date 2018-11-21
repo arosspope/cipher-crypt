@@ -74,7 +74,7 @@ impl Cipher for Hill {
             return Err("The inverse determinant of the key cannot be calculated.");
         }
 
-        Ok(Hill { key: key })
+        Ok(Hill { key })
     }
 
     /// Encrypt a message using a Hill cipher.

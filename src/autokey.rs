@@ -23,13 +23,13 @@ impl Cipher for Autokey {
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols.
     fn new(key: String) -> Result<Autokey, &'static str> {
-        if key.len() < 1 {
+        if key.is_empty() {
             return Err("Invalid key. It must have at least one character.");
         } else if !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Autokey keys cannot contain non-alphabetic symbols.");
         }
 
-        Ok(Autokey { key: key })
+        Ok(Autokey { key })
     }
 
     /// Encrypt a message using an Autokey cipher.
@@ -92,9 +92,9 @@ impl Autokey {
             match pos {
                 Some(ci) => {
                     //Get the next key character in the stream (we always read from position 0)
-                    if keystream.len() < 1 {
+                    if keystream.is_empty() {
                         return Err(
-                            "Keystream is not large enough for full substitution of message",
+                            "Keystream is not large enough for full substitution of message.",
                         );
                     }
 
@@ -187,7 +187,7 @@ mod tests {
         let v = Autokey::new(String::from("lemon")).unwrap();
 
         assert_eq!(
-            vec!['l', 'e', 'm', 'o', 'n', 'W', 'e', 'a', 'r', 'e', 'u', 'n', 'd', 'e', 'r'],
+            vec!['l', 'e', 'm', 'o', 'n', 'W', 'e', 'a', 'r', 'e', 'u', 'n', 'd', 'e', 'r',],
             v.encrypt_keystream(message)
         );
     }

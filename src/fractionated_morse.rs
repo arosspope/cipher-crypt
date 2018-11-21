@@ -31,14 +31,12 @@ impl Cipher for FractionatedMorse {
     ///
     /// Will return `Err` if the key contains non-alphabetic symbols or is empty.
     fn new(key: String) -> Result<FractionatedMorse, &'static str> {
-        if key.len() < 1 || !alphabet::STANDARD.is_valid(&key) {
+        if key.is_empty() || !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Keys cannot contain non-alphabetic symbols.");
         }
 
-        let keyed_alphabet = keygen::keyed_alphabet(&key, alphabet::STANDARD, true)?;
-        Ok(FractionatedMorse {
-            keyed_alphabet: keyed_alphabet,
-        })
+        let keyed_alphabet = keygen::keyed_alphabet(&key, &alphabet::STANDARD, true)?;
+        Ok(FractionatedMorse { keyed_alphabet })
     }
 
     /// Encrypt a message using a Fractionated Morse cipher.
@@ -79,11 +77,11 @@ impl Cipher for FractionatedMorse {
         //   (4) The alphabet `alphbetcdfgijkmnoqrsuvwxyz` is produced.
         //   (5) 0(a), 6(t), 19(s), 2(p)
         //   (6) The ciphertext `atsphcmr` is produced.
-        let mut morse = FractionatedMorse::to_morse(message)?;
+        let mut morse = FractionatedMorse::encode_to_morse(message)?;
 
         //Pad the morse so that it can be interpreted properly as a fractionated message
         FractionatedMorse::pad(&mut morse);
-        FractionatedMorse::encrypt_sequence(&self.keyed_alphabet, &morse)
+        FractionatedMorse::encrypt_morse(&self.keyed_alphabet, &morse)
     }
 
     /// Decrypt a message using a Fractionated Morse cipher.
@@ -122,8 +120,8 @@ impl Cipher for FractionatedMorse {
         //       and so on.
         //   (4) The Morse message `....|.|.-..|.-..|---||..` is produced.
         //   (5) The plaintext `hello i` is recovered.
-        let seq = FractionatedMorse::to_trigraphs(&self.keyed_alphabet, cipher_text)?;
-        FractionatedMorse::decrypt_sequence(&seq)
+        let seq = FractionatedMorse::decrypt_morse(&self.keyed_alphabet, cipher_text)?;
+        FractionatedMorse::decode_morse(&seq)
     }
 }
 
@@ -132,7 +130,7 @@ impl FractionatedMorse {
     /// The transposed sequence is ended with two separators `||`. This function returns `Err`
     /// if an unsupported symbol is present. The support characters are `a-z`, `A-Z`, `0-9` and
     /// the special characters `@ ( ) . , : ' " ! ? - ; =`.
-    fn to_morse(message: &str) -> Result<String, &'static str> {
+    fn encode_to_morse(message: &str) -> Result<String, &'static str> {
         let mut morse = String::new();
 
         // Attempt to convert each letter in message to the corresponding morse sequence.
@@ -154,7 +152,7 @@ impl FractionatedMorse {
     /// morse method.
     ///
     /// This function returns `Err` if an invalid fractionated morse trigraph is encountered.
-    fn encrypt_sequence(key: &str, morse: &str) -> Result<String, &'static str> {
+    fn encrypt_morse(key: &str, morse: &str) -> Result<String, &'static str> {
         let mut ciphertext = String::new();
 
         // Loop over each trigraph and decode it to an alphabetic character
@@ -174,7 +172,7 @@ impl FractionatedMorse {
     /// Takes ciphertext and converts it to a sequence of trigraph symbols.
     ///
     /// return `Err` if a non-alphabetic symbol is present in the message.
-    fn to_trigraphs(key: &str, ciphertext: &str) -> Result<String, &'static str> {
+    fn decrypt_morse(key: &str, ciphertext: &str) -> Result<String, &'static str> {
         let mut sequence = String::new();
 
         // We are using an uppercase keyed alphabet, so the message must be also
@@ -192,7 +190,7 @@ impl FractionatedMorse {
     /// Takes a sequence of trigraphs, which is then interpreted as morse code so that it may be
     /// converted back to plaintext.This function returns `Err` if an invalid morse character is
     /// encountered.
-    fn decrypt_sequence(sequence: &str) -> Result<String, &'static str> {
+    fn decode_morse(sequence: &str) -> Result<String, &'static str> {
         let mut plaintext = String::new();
         let mut trigraphs = String::from(sequence);
 
