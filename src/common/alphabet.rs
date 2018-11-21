@@ -34,7 +34,11 @@ pub trait Alphabet {
 
     /// Will check if the text contains valid alphabetic symbols only.
     ///
-    fn is_valid(&self, text: &str) -> bool;
+    fn is_valid(&self, text: &str) -> bool {
+        text.chars()
+            .filter(|&c| self.find_position(c).is_none())
+            .count() == 0
+    }
 
     /// Will scrub non-alphabetic characters from the text and return the scrubed version.
     ///
@@ -84,16 +88,6 @@ impl Alphabet for Standard {
         }
     }
 
-    fn is_valid(&self, text: &str) -> bool {
-        for c in text.chars() {
-            if self.find_position(c).is_none() {
-                return false;
-            }
-        }
-
-        true
-    }
-
     fn length(&self) -> usize {
         26
     }
@@ -129,16 +123,6 @@ impl Alphabet for Alphanumeric {
         }
     }
 
-    fn is_valid(&self, text: &str) -> bool {
-        for c in text.chars() {
-            if self.find_position(c).is_none() {
-                return false;
-            }
-        }
-
-        true
-    }
-
     fn length(&self) -> usize {
         36
     }
@@ -150,4 +134,41 @@ pub fn is_numeric(c: char) -> bool {
     NUMERIC.iter().any(|&n| n == c)
 }
 
-//TODO: Some tests would be nice
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_standard_char() {
+        let valid_iter = ALPHABET_LOWER.iter().chain(ALPHABET_UPPER.iter());
+        for c in valid_iter {
+            assert!(STANDARD.is_valid(&c.to_string()))
+        }
+    }
+
+    #[test]
+    fn invalid_standard_char() {
+        let invalid_iter = "!🗡️@#$%^&*()!~-+=`':;.,<>?/}{][|]}0123456789".chars();
+        for c in invalid_iter {
+            assert!(!STANDARD.is_valid(&c.to_string()))
+        }
+    }
+
+    #[test]
+    fn valid_alphanumeric_char() {
+        let valid_iter = ALPHABET_LOWER.iter()
+            .chain(ALPHABET_UPPER.iter())
+            .chain(NUMERIC.iter());
+        for c in valid_iter {
+            assert!(ALPHANUMERIC.is_valid(&c.to_string()))
+        }
+    }
+
+    #[test]
+    fn invalid_alphanumeric_char() {
+        let invalid_iter = "!🗡️@#$%^&*()!~-+=`':;.,<>?/}{][|]}".chars();
+        for c in invalid_iter {
+            assert!(!ALPHANUMERIC.is_valid(&c.to_string()))
+        }
+    }
+}
