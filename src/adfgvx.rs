@@ -36,7 +36,7 @@ impl Cipher for ADFGVX {
     ///
     fn new(key: (String, String, Option<char>)) -> Result<ADFGVX, &'static str> {
         // Generate the keyed alphabet key for the polybius square
-        let p_key = keygen::keyed_alphabet(&key.0, alphabet::ALPHANUMERIC, false)?;
+        let p_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false)?;
 
         Ok(ADFGVX {
             polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS))?,

@@ -69,13 +69,12 @@ impl Cipher for Scytale {
             table[col][row] = element;
         }
 
-        // Traverse each column and construct ciphertext
+        // Construct the ciphertext out of each row
         let mut ciphertext = String::new();
-        for col in 0..self.height {
-            for row in 0..width {
-                ciphertext.push(table[col][row]);
-            }
+        for row in table.iter() {
+            ciphertext.push_str(row.into_iter().collect::<String>().as_str());
         }
+
         // Trim off any trailing whitespace added
         Ok(ciphertext.trim_right().to_string())
     }
@@ -109,11 +108,12 @@ impl Cipher for Scytale {
             table[col][row] = element;
         }
 
-        // Traverse each row and construct plaintext
+        // Traverse each column and construct the plaintext
         let mut plaintext = String::new();
-        for row in 0..width {
-            for col in 0..self.height {
-                plaintext.push(table[col][row]);
+        while table.iter().filter(|v| !v.is_empty()).count() > 0 {
+            // Continously pop from the top of each column until all are empty
+            for column in table.iter_mut() {
+                plaintext.push(column.remove(0));
             }
         }
 

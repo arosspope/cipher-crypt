@@ -11,7 +11,7 @@ use std::collections::HashMap;
 /// Will return Err if invalid alphabetic symbols are within the key.
 pub fn keyed_alphabet<T: Alphabet>(
     key: &str,
-    alpha_type: T,
+    alpha_type: &T,
     to_uppercase: bool,
 ) -> Result<String, &'static str> {
     if !alpha_type.is_valid(key) {
@@ -57,7 +57,7 @@ pub fn keyed_alphabet<T: Alphabet>(
 /// * The `key` contains non-alphanumeric symbols.
 /// * The `key` contains duplicate characters.
 pub fn columnar_key(key: &str) -> Result<Vec<(char, Vec<char>)>, &'static str> {
-    let unique_chars: HashMap<_, _> = key.chars().into_iter().map(|c| (c, c)).collect();
+    let unique_chars: HashMap<_, _> = key.chars().map(|c| (c, c)).collect();
 
     //Validate key
     if key.is_empty() {
@@ -107,7 +107,7 @@ pub fn polybius_square(
     column_ids: [char; 6],
     row_ids: [char; 6],
 ) -> Result<HashMap<String, char>, &'static str> {
-    let unique_chars: HashMap<_, _> = key.chars().into_iter().map(|c| (c, c)).collect();
+    let unique_chars: HashMap<_, _> = key.chars().map(|c| (c, c)).collect();
 
     //Validate the key
     if key.len() != 36 {
@@ -143,11 +143,11 @@ pub fn polybius_square(
     }
 
     let mut polybius_square = HashMap::new();
-    let mut values = key.chars().into_iter();
+    let mut values = key.chars();
 
-    for r in 0..6 {
-        for c in 0..6 {
-            let k = row_ids[r].to_string() + &column_ids[c].to_string();
+    for row in row_ids.iter().take(6) {
+        for column in column_ids.iter().take(6) {
+            let k = row.to_string() + &column.to_string();
             let v = values.next().expect("alphabet square is invalid");
 
             if alphabet::is_numeric(v) {
@@ -194,7 +194,7 @@ impl PlayfairTable {
     ///
     pub fn new<K: AsRef<str>>(key: K) -> Result<PlayfairTable, &'static str> {
         // 25 Character Alphabet (I=J)
-        const PLAYFAIR_ALPHABET: &'static str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+        const PLAYFAIR_ALPHABET: &str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
 
         if key.as_ref().is_empty() {
             return Err("Key must not be empty");
@@ -211,7 +211,7 @@ impl PlayfairTable {
 
         // Conform key to 25-character, uppercase alphabet
         key = key.to_uppercase();
-        key.replace("J", "I");
+        key = key.replace("J", "I");
 
         // Remove repeated characters from key
         let mut ukey = String::new();
@@ -243,10 +243,7 @@ impl PlayfairTable {
             }
         }
 
-        Ok(PlayfairTable {
-            rows: rows,
-            cols: cols,
-        })
+        Ok(PlayfairTable { rows, cols })
     }
 }
 
@@ -263,11 +260,11 @@ mod tests {
             ['a', 'b', 'c', 'd', 'e', 'f'],
         ).unwrap();
 
-        assert_eq!(&'a', p.get("aa").unwrap());
-        assert_eq!(&'c', p.get("ac").unwrap());
-        assert_eq!(&'e', p.get("ae").unwrap());
-        assert_eq!(&'h', p.get("bb").unwrap());
-        assert_eq!(&'z', p.get("eb").unwrap());
+        assert_eq!(&'a', &p["aa"]);
+        assert_eq!(&'c', &p["ac"]);
+        assert_eq!(&'e', &p["ae"]);
+        assert_eq!(&'h', &p["bb"]);
+        assert_eq!(&'z', &p["eb"]);
     }
 
     #[test]
@@ -328,43 +325,43 @@ mod tests {
     //Keyed alphabet tests
     #[test]
     fn generate_numeric_alphabet() {
-        let keyed_alphabet = keyed_alphabet("or0ange", ALPHANUMERIC, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("or0ange", &ALPHANUMERIC, false).unwrap();
         assert_eq!(keyed_alphabet, "or0angebcdfhijklmpqstuvwxyz123456789");
     }
 
     #[test]
     fn generate_standard_alphabet() {
-        let keyed_alphabet = keyed_alphabet("test", STANDARD, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("test", &STANDARD, false).unwrap();
         assert_eq!(keyed_alphabet, "tesabcdfghijklmnopqruvwxyz");
     }
 
     #[test]
     fn generate_alphabet_mixed_key() {
-        let keyed_alphabet = keyed_alphabet("ALphaBEt", STANDARD, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("ALphaBEt", &STANDARD, false).unwrap();
         assert_eq!(keyed_alphabet, "alphbetcdfgijkmnoqrsuvwxyz");
     }
 
     #[test]
     fn generate_uppercase_alphabet() {
-        let keyed_alphabet = keyed_alphabet("OranGE", STANDARD, true).unwrap();
+        let keyed_alphabet = keyed_alphabet("OranGE", &STANDARD, true).unwrap();
         assert_eq!(keyed_alphabet, "ORANGEBCDFHIJKLMPQSTUVWXYZ");
     }
 
     #[test]
     fn generate_alphabet_bad_key() {
-        assert!(keyed_alphabet("bad key", STANDARD, false).is_err());
+        assert!(keyed_alphabet("bad key", &STANDARD, false).is_err());
     }
 
     #[test]
     fn generate_alphabet_no_key() {
-        let keyed_alphabet = keyed_alphabet("", STANDARD, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("", &STANDARD, false).unwrap();
         assert_eq!(keyed_alphabet, "abcdefghijklmnopqrstuvwxyz");
     }
 
     #[test]
     fn generate_alphabet_long_key() {
         let keyed_alphabet =
-            keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", STANDARD, true).unwrap();
+            keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", &STANDARD, true).unwrap();
         assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
     }
 

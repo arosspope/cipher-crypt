@@ -24,7 +24,7 @@ impl Cipher for Caesar {
     /// Will return `Err` if the shift value is outside the range `1-26`.
     fn new(shift: usize) -> Result<Caesar, &'static str> {
         if shift >= 1 && shift <= 26 {
-            return Ok(Caesar { shift: shift });
+            return Ok(Caesar { shift });
         }
 
         Err("Invalid shift factor. Must be in the range 1-26")

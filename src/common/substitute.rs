@@ -58,8 +58,8 @@ where
         match tpos {
             Some(ti) => {
                 //Get the next key character in the stream (we always read from position 0)
-                if keystream.len() < 1 {
-                    return Err("Keystream is not large enough for full substitution of message");
+                if keystream.is_empty() {
+                    return Err("Keystream is not large enough for full substitution of message.");
                 }
 
                 let kc = keystream[0];

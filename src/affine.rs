@@ -40,7 +40,7 @@ impl Cipher for Affine {
             return Err("The key 'a' cannot share a common factor with 26.");
         }
 
-        Ok(Affine { a_b: a_b })
+        Ok(Affine { a_b })
     }
 
     /// Encrypt a message using an Affine cipher.
