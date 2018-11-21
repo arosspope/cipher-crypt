@@ -8,14 +8,15 @@ use std::collections::HashMap;
 /// Lets consider the key `or0an3ge` for an alphanumeric alphabet. The resulting keyed alphabet
 /// would be `or0an3gebcdfhijklmpqstuvwxyz12456789`.
 ///
-/// Will return Err if invalid alphabetic symbols are within the key.
+/// # Panics
+/// Will panic if a non-alphabet symbol is part of the key.
 pub fn keyed_alphabet<T: Alphabet>(
     key: &str,
     alpha_type: &T,
     to_uppercase: bool,
-) -> Result<String, &'static str> {
+) -> String {
     if !alpha_type.is_valid(key) {
-        return Err("Invalid key. Key cannot contain non-alphabetic symbols.");
+        panic!("Invalid key. Key cannot contain non-alphabet symbols.");
     }
 
     //Loop through each value in the key and add to our keyed alphabet if it isn't already there
@@ -46,7 +47,7 @@ pub fn keyed_alphabet<T: Alphabet>(
         }
     }
 
-    Ok(keyed_alphabet)
+    keyed_alphabet
 }
 
 /// Validate a Columnar Transposition key given a specific key.
@@ -325,43 +326,44 @@ mod tests {
     //Keyed alphabet tests
     #[test]
     fn generate_numeric_alphabet() {
-        let keyed_alphabet = keyed_alphabet("or0ange", &ALPHANUMERIC, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("or0ange", &ALPHANUMERIC, false);
         assert_eq!(keyed_alphabet, "or0angebcdfhijklmpqstuvwxyz123456789");
     }
 
     #[test]
     fn generate_standard_alphabet() {
-        let keyed_alphabet = keyed_alphabet("test", &STANDARD, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("test", &STANDARD, false);
         assert_eq!(keyed_alphabet, "tesabcdfghijklmnopqruvwxyz");
     }
 
     #[test]
     fn generate_alphabet_mixed_key() {
-        let keyed_alphabet = keyed_alphabet("ALphaBEt", &STANDARD, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("ALphaBEt", &STANDARD, false);
         assert_eq!(keyed_alphabet, "alphbetcdfgijkmnoqrsuvwxyz");
     }
 
     #[test]
     fn generate_uppercase_alphabet() {
-        let keyed_alphabet = keyed_alphabet("OranGE", &STANDARD, true).unwrap();
+        let keyed_alphabet = keyed_alphabet("OranGE", &STANDARD, true);
         assert_eq!(keyed_alphabet, "ORANGEBCDFHIJKLMPQSTUVWXYZ");
     }
 
     #[test]
+    #[should_panic]
     fn generate_alphabet_bad_key() {
-        assert!(keyed_alphabet("bad key", &STANDARD, false).is_err());
+        keyed_alphabet("bad@key", &STANDARD, false);
     }
 
     #[test]
     fn generate_alphabet_no_key() {
-        let keyed_alphabet = keyed_alphabet("", &STANDARD, false).unwrap();
+        let keyed_alphabet = keyed_alphabet("", &STANDARD, false);
         assert_eq!(keyed_alphabet, "abcdefghijklmnopqrstuvwxyz");
     }
 
     #[test]
     fn generate_alphabet_long_key() {
         let keyed_alphabet =
-            keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", &STANDARD, true).unwrap();
+            keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", &STANDARD, true);
         assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
     }
 

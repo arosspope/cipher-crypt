@@ -34,9 +34,11 @@ impl Cipher for ADFGVX {
     /// during the columnar transposition stage. See the `columnar_transposition` documentation
     /// for more information.
     ///
+    /// # Panics
+    /// * If a non-alphanumeric symbol is part of the key.
     fn new(key: (String, String, Option<char>)) -> Result<ADFGVX, &'static str> {
         // Generate the keyed alphabet key for the polybius square
-        let p_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false)?;
+        let p_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
 
         Ok(ADFGVX {
             polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS))?,
@@ -279,8 +281,9 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn invalid_key_phrase() {
-        assert!(ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None)).is_err());
+        ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None));
     }
 
 }

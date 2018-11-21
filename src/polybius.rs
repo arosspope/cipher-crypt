@@ -33,6 +33,9 @@ impl Cipher for Polybius {
     /// * `row_ids` are unique identifiers used for each row of the polybius square. Valid
     /// characters can be alphabetic only (`a-z`).
     ///
+    /// # Panics
+    /// * If a non-alphanumeric symbol is part of the key.
+    ///
     /// # Example
     /// Lets say the phrase was `or0an3ge` the column_ids were `['A','Z','C','D','E','F']`
     /// and the row_ids were `['A','B','G','D','E','F']`. Then the polybius square would look like
@@ -59,7 +62,7 @@ impl Cipher for Polybius {
     ///    p.encrypt("10 Oranges and 2 Apples!").unwrap());
     /// ```
     fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
-        let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false)?;
+        let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
         let square = keygen::polybius_square(&alphabet_key, key.1, key.2)?;
 
         Ok(Polybius { square })
@@ -212,14 +215,13 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn invalid_key_phrase() {
-        assert!(
-            Polybius::new((
-                "F@IL".to_string(),
-                ['A', 'B', 'C', 'D', 'E', 'F'],
-                ['A', 'B', 'C', 'D', 'E', 'F']
-            )).is_err()
-        );
+        Polybius::new((
+            "F@IL".to_string(),
+            ['A', 'B', 'C', 'D', 'E', 'F'],
+            ['A', 'B', 'C', 'D', 'E', 'F']
+        ));
     }
 
     #[test]

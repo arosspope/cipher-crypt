@@ -29,13 +29,14 @@ impl Cipher for FractionatedMorse {
 
     /// Initialise a Fractionated Morse cipher given a specific key.
     ///
-    /// Will return `Err` if the key contains non-alphabetic symbols or is empty.
+    /// # Panics
+    /// * If a non-alphabetic symbol is part of the key.
     fn new(key: String) -> Result<FractionatedMorse, &'static str> {
         if key.is_empty() || !alphabet::STANDARD.is_valid(&key) {
             return Err("Invalid key. Keys cannot contain non-alphabetic symbols.");
         }
 
-        let keyed_alphabet = keygen::keyed_alphabet(&key, &alphabet::STANDARD, true)?;
+        let keyed_alphabet = keygen::keyed_alphabet(&key, &alphabet::STANDARD, true);
         Ok(FractionatedMorse { keyed_alphabet })
     }
 
