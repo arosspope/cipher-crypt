@@ -187,7 +187,9 @@ mod tests {
         let v = Autokey::new(String::from("lemon")).unwrap();
 
         assert_eq!(
-            vec!['l', 'e', 'm', 'o', 'n', 'W', 'e', 'a', 'r', 'e', 'u', 'n', 'd', 'e', 'r'],
+            vec![
+                'l', 'e', 'm', 'o', 'n', 'W', 'e', 'a', 'r', 'e', 'u', 'n', 'd', 'e', 'r',
+            ],
             v.encrypt_keystream(message)
         );
     }
