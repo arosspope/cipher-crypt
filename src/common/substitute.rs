@@ -21,12 +21,7 @@ where
         match pos {
             Some(pos) => {
                 let si = calc_index(pos); //Calculate substitution index
-
-                if let Some(s) = alphabet::STANDARD.get_letter(si, c.is_uppercase()) {
-                    s_text.push(s);
-                } else {
-                    return Err("Calculated an index outside of the known alphabet.");
-                }
+                s_text.push(alphabet::STANDARD.get_letter(si, c.is_uppercase()));
             }
             None => s_text.push(c), //Push non-alphabetic chars 'as-is'
         }
@@ -66,13 +61,7 @@ where
                 if let Some(ki) = alphabet::STANDARD.find_position(kc) {
                     //Calculate the index and retrieve the letter to substitute
                     let si = calc_index(ti, ki);
-                    if let Some(s) = alphabet::STANDARD.get_letter(si, tc.is_uppercase()) {
-                        s_text.push(s);
-                    } else {
-                        return Err(
-                            "Calculated a substitution index outside of the known alphabet.",
-                        );
-                    }
+                    s_text.push(alphabet::STANDARD.get_letter(si, tc.is_uppercase()));
 
                     //This character in the keystream has been consumed, shuffle the stream to
                     //the left.

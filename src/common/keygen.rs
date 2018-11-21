@@ -36,7 +36,7 @@ pub fn keyed_alphabet<T: Alphabet>(
 
     // Add remaining letters to the end of the keyed alphabet.
     for index in 0..alpha_type.length() {
-        let c = alpha_type.get_letter(index, to_uppercase).unwrap();
+        let c = alpha_type.get_letter(index, to_uppercase);
         if keyed_alphabet
             .chars()
             .find(|a| a.eq_ignore_ascii_case(&c))

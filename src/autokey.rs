@@ -103,10 +103,7 @@ impl Autokey {
                         //Calculate the index and retrieve the letter to substitute
                         let si = alphabet::STANDARD.modulo(ci as isize - ki as isize);
 
-                        //We can safely unwrap as we know the index will be within the alphabet
-                        let s = alphabet::STANDARD
-                            .get_letter(si, cc.is_uppercase())
-                            .unwrap();
+                        let s = alphabet::STANDARD.get_letter(si, cc.is_uppercase());
 
                         //Push to the decrypted text AND the keystream
                         plaintext.push(s);

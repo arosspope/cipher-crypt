@@ -22,8 +22,9 @@ pub trait Alphabet {
 
     /// Returns a letter from within the alphabet at a specific index.
     ///
-    /// Will return None if the index is out of bounds
-    fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char>;
+    /// # Panics
+    /// Will panic if the index is out of the alphabet's bounds.
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> char;
 
     /// Performs a modulo on an index so that its value references a position within the alphabet.
     /// This function handles negative wrap around modulo as rust does not natievly support it.
@@ -76,15 +77,15 @@ impl Alphabet for Standard {
             .or_else(|| ALPHABET_UPPER.iter().position(|&a| a == c))
     }
 
-    fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char> {
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> char {
         if index > self.length() {
-            return None;
+            panic!("Invalid index to the alphabet: {}.", index);
         }
 
         if is_uppercase {
-            Some(ALPHABET_UPPER[index])
+            ALPHABET_UPPER[index]
         } else {
-            Some(ALPHABET_LOWER[index])
+            ALPHABET_LOWER[index]
         }
     }
 
@@ -107,19 +108,17 @@ impl Alphabet for Alphanumeric {
         None
     }
 
-    fn get_letter(&self, index: usize, is_uppercase: bool) -> Option<char> {
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> char {
         if index > self.length() {
-            return None;
+            panic!("Invalid index to the alphabet: {}.", index);
         }
 
         if index > 25 {
-            return Some(NUMERIC[index - 26]);
-        }
-
-        if is_uppercase {
-            Some(ALPHABET_UPPER[index])
+            NUMERIC[index - 26]
+        } else if is_uppercase {
+            ALPHABET_UPPER[index]
         } else {
-            Some(ALPHABET_LOWER[index])
+            ALPHABET_LOWER[index]
         }
     }
 
