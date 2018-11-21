@@ -12,8 +12,9 @@ use common::{alphabet, keygen};
 /// A Columnar Transposition cipher.
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct ColumnarTransposition {
-    key: String,
+    keystream: String,
     null_char: Option<char>,
+    derived_key: Vec<(char, Vec<char>)>,
 }
 
 impl Cipher for ColumnarTransposition {
@@ -24,19 +25,17 @@ impl Cipher for ColumnarTransposition {
     ///
     /// Where...
     ///
-    /// * Elements of `key` are used as the column identifiers.
+    /// * Elements of `keystream` are used as the column identifiers.
     /// * The optional `null_char` is used to pad messages of uneven length.
+    /// * The `derived_key` is used to initialise the column structures in the cipher.
     ///
-    /// Will return `Err` if one of the following conditions is detected:
-    ///
-    /// * The `key` length is 0.
-    /// * The `key` contains non-alphanumeric symbols.
-    /// * The `key` contains duplicate characters.
-    /// * The `null_char` is a character within the `key`
+    /// # Panics
+    /// * The `keystream` length is 0.
+    /// * The `keystream` contains non-alphanumeric symbols.
+    /// * The `keystream` contains duplicate characters.
+    /// * The `null_char` is a character within the `keystream`
     ///
     fn new(key: (String, Option<char>)) -> Result<ColumnarTransposition, &'static str> {
-        keygen::columnar_key(&key.0)?;
-
         if let Some(null_char) = key.1 {
             if key.0.contains(null_char) {
                 return Err("The `null_char` cannot be be in the keyword.");
@@ -44,7 +43,8 @@ impl Cipher for ColumnarTransposition {
         }
 
         Ok(ColumnarTransposition {
-            key: key.0,
+            derived_key: keygen::columnar_key(&key.0),
+            keystream: key.0,
             null_char: key.1,
         })
     }
@@ -78,7 +78,7 @@ impl Cipher for ColumnarTransposition {
             }
         }
 
-        let mut key = keygen::columnar_key(&self.key)?;
+        let mut key = self.derived_key.clone();
 
         //Construct the column
         let mut i = 0;
@@ -107,7 +107,7 @@ impl Cipher for ColumnarTransposition {
 
         //Construct the cipher text
         let mut ciphertext = String::new();
-        for column in &key {
+        for column in key {
             for chr in &column.1 {
                 ciphertext.push(*chr);
             }
@@ -146,13 +146,13 @@ impl Cipher for ColumnarTransposition {
     /// ```
     ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
-        let mut key = keygen::columnar_key(&self.key)?;
+        let mut key = self.derived_key.clone();
 
         // Transcribe the ciphertext along each column
         let mut chars = ciphertext.chars();
         // We only know the maximum length, as there may be null spaces
         let max_col_size: usize =
-            (ciphertext.chars().count() as f32 / self.key.len() as f32).ceil() as usize;
+            (ciphertext.chars().count() as f32 / self.keystream.len() as f32).ceil() as usize;
 
         // Once we know the max col size, we need to fill the columns according to order of the
         // keyword. So, if the keyword is 'zebras' then the largest column is 'z' according to
@@ -197,7 +197,7 @@ impl Cipher for ColumnarTransposition {
 
         let mut plaintext = String::new();
         for i in 0..max_col_size {
-            for chr in self.key.chars() {
+            for chr in self.keystream.chars() {
                 // Outer getting the key char
                 if let Some(column) = key.iter().find(|x| x.0 == chr) {
                     if i < column.1.len() {

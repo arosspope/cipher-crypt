@@ -27,11 +27,12 @@ pub fn keyed_alphabet<T: Alphabet>(
             .find(|a| a.eq_ignore_ascii_case(&c))
             .is_none()
         {
-            if to_uppercase {
-                keyed_alphabet.push_str(&c.to_uppercase().to_string())
+            let add = if to_uppercase {
+                c.to_uppercase().to_string()
             } else {
-                keyed_alphabet.push_str(&c.to_lowercase().to_string())
-            }
+                c.to_lowercase().to_string()
+            };
+            keyed_alphabet.push_str(&add);
         }
     }
 
@@ -50,31 +51,25 @@ pub fn keyed_alphabet<T: Alphabet>(
     keyed_alphabet
 }
 
-/// Validate a Columnar Transposition key given a specific key.
+/// Validate and return a Columnar Transposition key given a specific keystream.
 ///
-/// Will return `Err` if one of the following conditions is detected:
-///
-/// * The `key` length is = 0.
-/// * The `key` contains non-alphanumeric symbols.
-/// * The `key` contains duplicate characters.
-pub fn columnar_key(key: &str) -> Result<Vec<(char, Vec<char>)>, &'static str> {
-    let unique_chars: HashMap<_, _> = key.chars().map(|c| (c, c)).collect();
+/// # Panics
+/// * The `keystream` length is 0.
+/// * The `keystream` contains non-alphanumeric symbols.
+/// * The `keystream` contains duplicate characters.
+pub fn columnar_key(keystream: &str) -> Vec<(char, Vec<char>)> {
+    let unique_chars: HashMap<_, _> = keystream.chars().map(|c| (c, c)).collect();
 
     //Validate key
-    if key.is_empty() {
-        return Err("The key cannot be zero length.");
-    } else if key.len() - unique_chars.len() > 0 {
-        return Err("The key cannot contain duplicate alphanumeric characters.");
-    } else if !ALPHANUMERIC.is_valid(key) {
-        return Err("The key cannot contain non-alphanumeric symbols.");
+    if keystream.is_empty() {
+        panic!("The key cannot be zero length.");
+    } else if keystream.len() - unique_chars.len() > 0 {
+        panic!("The key cannot contain duplicate alphanumeric characters.");
+    } else if !ALPHANUMERIC.is_valid(keystream) {
+        panic!("The key cannot contain non-alphanumeric symbols.");
     }
 
-    let mut c_key: Vec<(char, Vec<char>)> = Vec::new();
-    for chr in key.chars() {
-        c_key.push((chr, Vec::new()));
-    }
-
-    Ok(c_key)
+    keystream.chars().map(|c| (c, Vec::new())).collect::<Vec<(char, Vec<char>)>>()
 }
 
 /// Generate a 6x6 polybius square hashmap from an alphanumeric key.
@@ -378,18 +373,20 @@ mod tests {
                 ('a', vec![]),
                 ('s', vec![]),
             ],
-            columnar_key("zebras").unwrap()
+            columnar_key("zebras")
         );
     }
 
     #[test]
+    #[should_panic]
     fn generate_columnar_empty_key() {
-        assert!(columnar_key("").is_err());
+        columnar_key("");
     }
 
     #[test]
+    #[should_panic]
     fn generate_columnar_invalid_key() {
-        assert!(columnar_key("Fx !@#$").is_err());
+        columnar_key("Fx !@#$");
     }
 
     // PlayfairTable Tests

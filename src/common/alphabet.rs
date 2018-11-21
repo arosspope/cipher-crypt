@@ -37,8 +37,8 @@ pub trait Alphabet {
     ///
     fn is_valid(&self, text: &str) -> bool {
         text.chars()
-            .filter(|&c| self.find_position(c).is_none())
-            .count() == 0
+            .find(|&c| self.find_position(c).is_none())
+            .is_none()
     }
 
     /// Will scrub non-alphabetic characters from the text and return the scrubed version.
