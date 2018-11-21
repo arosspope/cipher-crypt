@@ -34,7 +34,11 @@ impl Cipher for Polybius {
     /// characters can be alphabetic only (`a-z`).
     ///
     /// # Panics
-    /// * If a non-alphanumeric symbol is part of the key.
+    /// * If a non-alphanumeric symbol is part of the `key`.
+    /// * The `key` must have a length of 36.
+    /// * The `key` must contain each character of the alphanumeric alphabet `a-z`, `0-9`.
+    /// * The `column` and `row_ids` must contain alphabetic characters only.
+    /// * The `column` or `row_ids` contain repeated characters.
     ///
     /// # Example
     /// Lets say the phrase was `or0an3ge` the column_ids were `['A','Z','C','D','E','F']`
@@ -63,7 +67,7 @@ impl Cipher for Polybius {
     /// ```
     fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
         let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
-        let square = keygen::polybius_square(&alphabet_key, key.1, key.2)?;
+        let square = keygen::polybius_square(&alphabet_key, &key.1, &key.2);
 
         Ok(Polybius { square })
     }
@@ -225,24 +229,22 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn invalid_ids() {
-        assert!(
-            Polybius::new((
-                "oranges".to_string(),
-                ['A', '!', 'C', 'D', 'E', 'F'],
-                ['A', 'B', '@', 'D', 'E', 'F']
-            )).is_err()
-        );
+        Polybius::new((
+            "oranges".to_string(),
+            ['A', '!', 'C', 'D', 'E', 'F'],
+            ['A', 'B', '@', 'D', 'E', 'F']
+        ));
     }
 
     #[test]
+    #[should_panic]
     fn repeated_ids() {
-        assert!(
-            Polybius::new((
-                "oranges".to_string(),
-                ['A', 'A', 'C', 'D', 'E', 'F'],
-                ['A', 'C', 'C', 'D', 'E', 'F']
-            )).is_err()
-        );
+        Polybius::new((
+            "oranges".to_string(),
+            ['A', 'A', 'C', 'D', 'E', 'F'],
+            ['A', 'C', 'C', 'D', 'E', 'F']
+        ));
     }
 }

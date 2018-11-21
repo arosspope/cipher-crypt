@@ -75,10 +75,12 @@ pub fn columnar_key(keystream: &str) -> Vec<(char, Vec<char>)> {
 /// Generate a 6x6 polybius square hashmap from an alphanumeric key.
 /// For successfull generation, the following must be met:
 ///
+/// # Panics
 /// * The `key` must have a length of 36.
 /// * The `key` must contain each character of the alphanumeric alphabet `a-z`, `0-9`.
 /// * The `key` must contain alphanumeric characters only.
-/// * The `column_ids` and `row_ids` must contain alphabetic characters only.
+/// * The `column` and `row_ids` must contain alphabetic characters only.
+/// * The `column` or `row_ids` contain repeated characters.
 ///
 /// # Example
 /// Lets say the key was `or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z` and the ids were
@@ -97,45 +99,42 @@ pub fn columnar_key(keystream: &str) -> Vec<(char, Vec<char>)> {
 ///     ['A','B','C','D','E', 'F'], ['A','B','C','D','E', 'F']).unwrap();`
 ///
 /// `assert_eq!(&'c', square.get("bd").unwrap());`
-
 pub fn polybius_square(
     key: &str,
-    column_ids: [char; 6],
-    row_ids: [char; 6],
-) -> Result<HashMap<String, char>, &'static str> {
+    column_ids: &[char; 6],
+    row_ids: &[char; 6],
+) -> HashMap<String, char> {
     let unique_chars: HashMap<_, _> = key.chars().map(|c| (c, c)).collect();
 
     //Validate the key
     if key.len() != 36 {
-        return Err("The key must contain each character of the alphanumeric alphabet a-z 0-9.");
+        panic!("The key must contain each character of the alphanumeric alphabet a-z 0-9.");
     } else if key.len() - unique_chars.len() > 0 {
-        return Err("The key cannot contain duplicate alphanumeric characters.");
+        panic!("The key cannot contain duplicate alphanumeric characters.");
     } else if !ALPHANUMERIC.is_valid(key) {
-        return Err("The key cannot contain non-alphanumeric symbols.");
+        panic!("The key cannot contain non-alphanumeric symbols.");
     }
 
     //Check that the column and row ids are valid
-    if !STANDARD.is_valid(&column_ids.iter().cloned().collect::<String>())
-        || !STANDARD.is_valid(&row_ids.iter().cloned().collect::<String>())
+    if !STANDARD.is_valid(&column_ids.iter().collect::<String>())
+        || !STANDARD.is_valid(&row_ids.iter().collect::<String>())
     {
-        return Err("The column and row ids cannot contain non-alphabetic symbols.");
+        panic!("The column and row ids cannot contain non-alphabetic symbols.");
     }
 
     //We need to check that each character within the row or column is unique
     let unique_cols: HashMap<_, _> = column_ids
         .iter()
-        .cloned()
         .map(|c| (c.to_ascii_lowercase(), c))
         .collect();
 
     let unique_rows: HashMap<_, _> = row_ids
         .iter()
-        .cloned()
         .map(|c| (c.to_ascii_lowercase(), c))
         .collect();
 
     if column_ids.len() - unique_cols.len() > 0 || row_ids.len() - unique_rows.len() > 0 {
-        return Err("The column or row ids cannot contain repeated characters.");
+        panic!("The column or row ids cannot contain repeated characters.");
     }
 
     let mut polybius_square = HashMap::new();
@@ -144,7 +143,7 @@ pub fn polybius_square(
     for row in row_ids.iter().take(6) {
         for column in column_ids.iter().take(6) {
             let k = row.to_string() + &column.to_string();
-            let v = values.next().expect("alphabet square is invalid");
+            let v = values.next().expect("Alphabet square is invalid.");
 
             if alphabet::is_numeric(v) {
                 //Numbers dont have case, so we just insert one entry
@@ -157,7 +156,7 @@ pub fn polybius_square(
         }
     }
 
-    Ok(polybius_square)
+    polybius_square
 }
 
 /// A 5x5 Playfair key table
@@ -252,9 +251,9 @@ mod tests {
     fn polybius_hashmap_order() {
         let p = polybius_square(
             "abcdefghijklmnopqrstuvwxyz0123456789",
-            ['a', 'b', 'c', 'd', 'e', 'f'],
-            ['a', 'b', 'c', 'd', 'e', 'f'],
-        ).unwrap();
+            &['a', 'b', 'c', 'd', 'e', 'f'],
+            &['a', 'b', 'c', 'd', 'e', 'f'],
+        );
 
         assert_eq!(&'a', &p["aa"]);
         assert_eq!(&'c', &p["ac"]);
@@ -264,57 +263,52 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn polybius_duplicate_characters() {
-        assert!(
-            polybius_square(
-                "abcdefghijklnnopqrstuvwxyz0123456789",
-                ['a', 'b', 'c', 'd', 'e', 'f'],
-                ['a', 'b', 'c', 'd', 'e', 'f']
-            ).is_err()
+        polybius_square(
+            "abcdefghijklnnopqrstuvwxyz0123456789",
+            &['a', 'b', 'c', 'd', 'e', 'f'],
+            &['a', 'b', 'c', 'd', 'e', 'f']
         );
     }
 
     #[test]
+    #[should_panic]
     fn polybius_missing_characters() {
-        assert!(
-            polybius_square(
-                "adefghiklnnopqrstuvwxyz",
-                ['a', 'b', 'c', 'd', 'e', 'f'],
-                ['a', 'b', 'c', 'd', 'e', 'f']
-            ).is_err()
+        polybius_square(
+            "adefghiklnnopqrstuvwxyz",
+            &['a', 'b', 'c', 'd', 'e', 'f'],
+            &['a', 'b', 'c', 'd', 'e', 'f']
         );
     }
 
     #[test]
+    #[should_panic]
     fn polybius_non_alpha_characters() {
-        assert!(
-            polybius_square(
-                "abcd@#!ghiklnnopqrstuvwxyz0123456789",
-                ['a', 'b', 'c', 'd', 'e', 'f'],
-                ['a', 'b', 'c', 'd', 'e', 'f']
-            ).is_err()
+        polybius_square(
+            "abcd@#!ghiklnnopqrstuvwxyz0123456789",
+            &['a', 'b', 'c', 'd', 'e', 'f'],
+            &['a', 'b', 'c', 'd', 'e', 'f']
         );
     }
 
     #[test]
+    #[should_panic]
     fn polybius_repeated_column_ids() {
-        assert!(
-            polybius_square(
-                "abcdefghijklmnopqrstuvwxyz0123456789",
-                ['a', 'a', 'c', 'd', 'e', 'f'],
-                ['a', 'b', 'c', 'd', 'e', 'f']
-            ).is_err()
+        polybius_square(
+            "abcdefghijklmnopqrstuvwxyz0123456789",
+            &['a', 'a', 'c', 'd', 'e', 'f'],
+            &['a', 'b', 'c', 'd', 'e', 'f']
         );
     }
 
     #[test]
+    #[should_panic]
     fn polybius_repeated_row_ids() {
-        assert!(
-            polybius_square(
-                "abcdefghijklmnopqrstuvwxyz0123456789",
-                ['a', 'b', 'c', 'd', 'e', 'f'],
-                ['a', 'b', 'c', 'c', 'e', 'f']
-            ).is_err()
+        polybius_square(
+            "abcdefghijklmnopqrstuvwxyz0123456789",
+            &['a', 'b', 'c', 'd', 'e', 'f'],
+            &['a', 'b', 'c', 'c', 'e', 'f']
         );
     }
 
