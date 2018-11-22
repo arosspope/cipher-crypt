@@ -14,6 +14,7 @@ const NUMERIC: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 pub const STANDARD: Standard = Standard;
 pub const ALPHANUMERIC: Alphanumeric = Alphanumeric;
+pub const PLAYFAIR: Playfair = Playfair;
 
 pub trait Alphabet {
     /// Attempts to find the position of the character in the alphabet.
@@ -127,6 +128,46 @@ impl Alphabet for Alphanumeric {
     }
 }
 
+pub struct Playfair;
+impl Alphabet for Playfair {
+    fn find_position(&self, c: char) -> Option<usize> {
+        if c == 'J' || c == 'j' {
+            return None;
+        }
+
+        if let Some(pos) = STANDARD.find_position(c) {
+            if pos > 8 {
+                return Some(pos - 1); //The J is missing from the alphabet
+            }
+            return Some(pos);
+        }
+
+        None
+    }
+
+    fn get_letter(&self, index: usize, is_uppercase: bool) -> char {
+        if index > self.length() {
+            panic!("Invalid index to the alphabet: {}.", index);
+        }
+
+        if is_uppercase {
+            if index <= 8 {
+                return ALPHABET_UPPER[index];
+            }
+            ALPHABET_UPPER[index + 1]
+        } else {
+            if index <= 8 {
+                return ALPHABET_LOWER[index];
+            }
+            ALPHABET_LOWER[index + 1]
+        }
+    }
+
+    fn length(&self) -> usize {
+        25
+    }
+}
+
 /// Determines if the char is a number.
 ///
 pub fn is_numeric(c: char) -> bool {
@@ -168,6 +209,35 @@ mod tests {
         let invalid_iter = "!🗡️@#$%^&*()!~-+=`':;.,<>?/}{][|]}".chars();
         for c in invalid_iter {
             assert!(!ALPHANUMERIC.is_valid(&c.to_string()))
+        }
+    }
+
+    #[test]
+    fn find_j_in_playfiar() {
+        assert!(PLAYFAIR.find_position('j').is_none());
+    }
+
+    #[test]
+    fn check_playfair_positions() {
+        for (i, former) in "abcdefghi".chars().enumerate() {
+            assert_eq!(PLAYFAIR.find_position(former).unwrap(), i);
+        }
+
+        for (i, latter) in "klmnopqrstuvwxyz".chars().enumerate() {
+            assert_eq!(PLAYFAIR.find_position(latter).unwrap(), 9 + i);
+        }
+    }
+
+    #[test]
+    fn check_playfair_retrieval() {
+        for (i, former) in "abcdefghi".chars().enumerate() {
+            assert_eq!(PLAYFAIR.get_letter(i, false), former);
+            assert_eq!(PLAYFAIR.get_letter(i, true), former.to_ascii_uppercase());
+        }
+
+        for (i, latter) in "klmnopqrstuvwxyz".chars().enumerate() {
+            assert_eq!(PLAYFAIR.get_letter(9+i, false), latter);
+            assert_eq!(PLAYFAIR.get_letter(9+i, true), latter.to_ascii_uppercase());
         }
     }
 }
