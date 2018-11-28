@@ -9,10 +9,10 @@ use std::collections::HashMap;
 /// would be `or0an3gebcdfhijklmpqstuvwxyz12456789`.
 ///
 /// # Panics
-/// Will panic if a non-alphabet symbol is part of the key.
+/// * The `key` contains a non-alphabetic symbol.
 pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: &T, to_uppercase: bool) -> String {
     if !alpha_type.is_valid(key) {
-        panic!("Invalid key. Key cannot contain non-alphabet symbols.");
+        panic!("Key contains a non-alphabetic symbol.");
     }
 
     //Loop through each value in the key and add to our keyed alphabet if it isn't already there
@@ -58,11 +58,11 @@ pub fn columnar_key(keystream: &str) -> Vec<(char, Vec<char>)> {
 
     //Validate key
     if keystream.is_empty() {
-        panic!("The key cannot be zero length.");
+        panic!("The keystream is empty.");
     } else if keystream.len() - unique_chars.len() > 0 {
-        panic!("The key cannot contain duplicate alphanumeric characters.");
+        panic!("The keystream cannot contain duplicate alphanumeric characters.");
     } else if !ALPHANUMERIC.is_valid(keystream) {
-        panic!("The key cannot contain non-alphanumeric symbols.");
+        panic!("The keystream cannot contain non-alphanumeric symbols.");
     }
 
     keystream

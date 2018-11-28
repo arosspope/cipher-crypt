@@ -44,12 +44,9 @@ impl Cipher for Playfair {
     /// * The `keystream` must not exceed the length of the playfair alphabet (25 characters).
     /// * The `keystream` must not contain non-alphabetic symbols or the letter 'J'.
     fn new(key: (String, Option<char>)) -> Result<Playfair, &'static str> {
-        let mut null_char = 'X';
-        if let Some(temp) = key.1 {
-            null_char = temp.to_ascii_uppercase();
-        }
-
+        let null_char = key.1.unwrap_or_else(|| 'X').to_ascii_uppercase();
         let (rows, cols) = playfair_table(&key.0);
+
         Ok(Playfair {
             rows,
             cols,
@@ -270,11 +267,8 @@ fn find_corners(b: Bigram, slices: &[String; 5]) -> (usize, usize) {
     for slice in slices.iter() {
         if let Some(pos) = slice.find(b.0) {
             indices.0 = pos;
-            continue;
-        }
-        if let Some(pos) = slice.find(b.1) {
+        } else if let Some(pos) = slice.find(b.1) {
             indices.1 = pos;
-            continue;
         }
     }
     indices

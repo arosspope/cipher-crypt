@@ -22,12 +22,16 @@ impl Cipher for Vigenere {
 
     /// Initialise a Vigenère cipher given a specific key.
     ///
-    /// Will return `Err` if the key contains non-alphabetic symbols.
+    /// # Panics
+    /// * The `key` is empty.
+    /// * The `key` contains a non-alphabetic symbol.
+    ///
     fn new(key: String) -> Result<Vigenere, &'static str> {
         if key.is_empty() {
-            return Err("Invalid key. It must have at least one character.");
-        } else if !alphabet::STANDARD.is_valid(&key) {
-            return Err("Invalid key. Vigenère keys cannot contain non-alphabetic symbols.");
+            panic!("The key is empty.");
+        }
+        if !alphabet::STANDARD.is_valid(&key) {
+            panic!("The key contains a non-alphabetic symbol.");
         }
 
         Ok(Vigenere { key })
@@ -125,11 +129,13 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn key_with_symbols() {
         assert!(Vigenere::new(String::from("!em@n")).is_err());
     }
 
     #[test]
+    #[should_panic]
     fn key_with_whitespace() {
         assert!(Vigenere::new(String::from("wow this key is a real lemon")).is_err());
     }

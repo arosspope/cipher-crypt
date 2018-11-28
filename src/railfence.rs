@@ -19,10 +19,12 @@ impl Cipher for Railfence {
 
     /// Initialise a Railfence cipher given a specific key (number of rails).
     ///
-    /// Will return `Err` if the `key == 0`.
+    /// # Panics
+    /// * The `key` is 0.
+    ///
     fn new(key: usize) -> Result<Railfence, &'static str> {
         if key == 0 {
-            return Err("Invalid key. Railfence key cannot be zero.");
+            panic!("The key is 0.");
         }
 
         Ok(Railfence { rails: key })
@@ -73,17 +75,12 @@ impl Cipher for Railfence {
             table[rail][col] = (true, element);
         }
 
-        // Read the ciphertext row by row
-        let mut ciphertext = String::new();
-        for row in table {
-            for (is_msg_element, element) in row {
-                if is_msg_element {
-                    ciphertext.push(element);
-                }
-            }
-        }
-
-        Ok(ciphertext)
+        Ok(table
+            .iter()
+            .flatten()
+            .filter(|(is_element, _)| *is_element)
+            .map(|(_, element)| element)
+            .collect::<String>())
     }
 
     /// Decrypt a message using a Railfence cipher.
@@ -245,6 +242,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn incorrect_key_test() {
         assert!(Railfence::new(0).is_err());
     }

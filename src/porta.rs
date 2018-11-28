@@ -63,13 +63,16 @@ impl Cipher for Porta {
 
     /// Initialize a Porta cipher given a specific key.
     ///
-    /// Will return `Err` if the key is empty or contains non-alphabetic symbols.
+    /// # Panics
+    /// * The `key` is empty.
+    /// * The `key` contains a non-alphabetic symbol.
+    ///
     fn new(key: String) -> Result<Porta, &'static str> {
         if key.is_empty() {
-            return Err("Invalid key: must have at least one character.");
+            panic!("The key is empty.");
         }
         if !alphabet::STANDARD.is_valid(&key) {
-            return Err("Invalid key: must contain only alphabetic characters.");
+            panic!("The key contains a non-alphabetic symbol.");
         }
 
         Ok(Porta { key })
@@ -154,11 +157,13 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn key_with_symbols() {
         assert!(Porta::new("!em@n".into()).is_err());
     }
 
     #[test]
+    #[should_panic]
     fn key_with_whitespace() {
         assert!(Porta::new("wow this key is a real lemon".into()).is_err());
     }

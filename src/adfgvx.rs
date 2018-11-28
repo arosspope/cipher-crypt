@@ -283,7 +283,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn invalid_key_phrase() {
-        ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None));
+        ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None)).is_err();
     }
 
 }

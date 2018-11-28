@@ -32,8 +32,7 @@ impl Cipher for Hill {
 
     /// Initialise a Hill cipher given a key matrix.
     ///
-    /// Will return `Err` if one of the following conditions is detected:
-    ///
+    /// # Panics
     /// * The `key` matrix is not a square
     /// * The `key` matrix is non-invertible
     /// * The inverse determinant of the `key` matrix cannot be calculated such that
@@ -56,7 +55,7 @@ impl Cipher for Hill {
     /// ```
     fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
         if key.cols() != key.rows() {
-            return Err("Key must be a square matrix.");
+            panic!("The key is not a square matrix.");
         }
 
         //We want to restrict the caller to supplying matrices of type isize
@@ -67,11 +66,11 @@ impl Cipher for Hill {
             .expect("Could not convert Matrix of type `isize` to `f64`.");
 
         if m.clone().inverse().is_err() || Hill::calc_inverse_key(m.clone()).is_err() {
-            return Err("The inverse of this matrix cannot be calculated for decryption.");
+            panic!("The inverse of this matrix cannot be calculated for decryption.");
         }
 
         if gcd(m.clone().det() as isize, 26) != 1 {
-            return Err("The inverse determinant of the key cannot be calculated.");
+            panic!("The inverse determinant of the key cannot be calculated.");
         }
 
         Ok(Hill { key })
@@ -212,28 +211,24 @@ impl Hill {
             return Err("The square of the chunk size must equal the length of the phrase.");
         }
 
-        let mut matrix: Vec<isize> = Vec::new();
-        for c in phrase.chars() {
-            match alphabet::STANDARD.find_position(c) {
-                Some(pos) => matrix.push(pos as isize),
-                None => return Err("Phrase cannot contain non-alphabetic symbols."),
-            }
+        if !alphabet::STANDARD.is_valid(phrase) {
+            return Err("Phrase cannot contain non-alphabetic symbols.");
         }
 
-        let key = Matrix::new(chunk_size, chunk_size, matrix);
-        Hill::new(key)
+        let matrix: Vec<isize> = phrase
+            .chars()
+            .map(|c| alphabet::STANDARD.find_position(c).unwrap() as isize)
+            .collect();
+
+        Hill::new(Matrix::new(chunk_size, chunk_size, matrix))
     }
 
     /// Core logic of the hill cipher. Transposing messages with matrices
     ///
     fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
         //Only allow chars in the alphabet (no whitespace or symbols)
-        for c in message.chars() {
-            if alphabet::STANDARD.find_position(c).is_none() {
-                return Err(
-                    "Invalid message. Please strip any whitespace or non-alphabetic symbols.",
-                );
-            }
+        if !alphabet::STANDARD.is_valid(message) {
+            return Err("Message cannot contain non-alphabetic symbols.");
         }
 
         let mut transformed_message = String::new();
@@ -270,21 +265,20 @@ impl Hill {
     fn transform_chunk(key: &Matrix<f64>, chunk: &str) -> Result<String, &'static str> {
         let mut transformed = String::new();
 
+        if !alphabet::STANDARD.is_valid(chunk) {
+            panic!("Chunk contains a non-alphabetic symbol.");
+        }
+
         if key.rows() != chunk.len() {
             return Err("Cannot perform transformation on unequal vector lengths");
         }
 
         //Find the integer representation of the characters
         //e.g. ['A', 'T', 'T'] -> [0, 19, 19]
-        let mut index_representation: Vec<f64> = Vec::new();
-        for c in chunk.chars() {
-            index_representation.push(
-                alphabet::STANDARD
-                    .find_position(c)
-                    .expect("Attempted transformation of non-alphabetic symbol")
-                    as f64,
-            );
-        }
+        let index_representation: Vec<f64> = chunk
+            .chars()
+            .map(|c| alphabet::STANDARD.find_position(c).unwrap() as f64)
+            .collect();
 
         //Perform the transformation `k * [0, 19, 19] mod 26`
         let mut product = key * Matrix::new(index_representation.len(), 1, index_representation);
@@ -309,15 +303,14 @@ impl Hill {
         let det = key.clone().det();
 
         //Find the inverse determinant such that: d*d^-1 = 1 mod 26
-        let det_inv = alphabet::STANDARD
-            .multiplicative_inverse(det as isize)
-            .expect("Inverse for determinant could not be found.");
+        if let Some(det_inv) = alphabet::STANDARD.multiplicative_inverse(det as isize) {
+            return Ok(key.inverse().unwrap().apply(&|x| {
+                let y = (x * det as f64).round() as isize;
+                (alphabet::STANDARD.modulo(y) as f64 * det_inv as f64) % 26.0
+            }));
+        }
 
-        //Calculate the inverse key matrix
-        Ok(key.inverse().unwrap().apply(&|x| {
-            let y = (x * det as f64).round() as isize;
-            (alphabet::STANDARD.modulo(y) as f64 * det_inv as f64) % 26.0
-        }))
+        Err("Inverse for determinant could not be found.")
     }
 }
 
@@ -373,12 +366,14 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn non_square_matrix() {
         //A 3 x 2 matrix
         assert!(Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17])).is_err());
     }
 
     #[test]
+    #[should_panic]
     fn non_invertable_matrix() {
         assert!(Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8])).is_err());
     }

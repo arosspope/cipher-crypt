@@ -88,7 +88,6 @@ impl Cipher for Autokey {
                             let si = alphabet::STANDARD.modulo(ci as isize - ki as isize);
                             decrypted_character =
                                 alphabet::STANDARD.get_letter(si, ct.is_uppercase());
-                            println!("dec = {}, keysteam = {}", decrypted_character, kc);
                         } else {
                             panic!("Keystream contains a non-alphabetic symbol.");
                         }

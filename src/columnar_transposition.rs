@@ -38,7 +38,7 @@ impl Cipher for ColumnarTransposition {
     fn new(key: (String, Option<char>)) -> Result<ColumnarTransposition, &'static str> {
         if let Some(null_char) = key.1 {
             if key.0.contains(null_char) {
-                return Err("The `null_char` cannot be be in the keyword.");
+                panic!("The `keystream` contains a `null_char`.");
             }
         }
 
@@ -157,19 +157,17 @@ impl Cipher for ColumnarTransposition {
         // offset size. If keyword_length is 6 and cipher_text is 31 there are 5 columns that are
         // offset.
         let offset = key.len() - (ciphertext.chars().count() % key.len());
-        // Now we need to know which columns are offset
-        // Create a set of columns that are offset
-        // Then: if column !in offset_cols { // do something }
-        let mut offset_cols = String::from("");
 
-        // Only do this if we are not using nulls
-        if self.null_char.is_none() && offset != key.len() {
-            for c in key.clone() {
-                offset_cols.push(c.0);
-            }
-            offset_cols = offset_cols.chars().rev().collect::<String>();
-            offset_cols.truncate(offset);
-        }
+        // Now we need to know which columns are offset
+        let offset_cols = if self.null_char.is_none() && offset != key.len() {
+            key.iter()
+                .map(|e| e.0)
+                .rev()
+                .take(offset)
+                .collect::<String>()
+        } else {
+            String::from("")
+        };
 
         //Sort the key so that it's in its encryption order
         key.sort_by(|a, b| {
@@ -325,6 +323,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn padding_in_key() {
         ColumnarTransposition::new((String::from("zebras"), Some('z'))).is_err();
     }

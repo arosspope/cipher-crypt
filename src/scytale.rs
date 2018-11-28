@@ -26,13 +26,15 @@ impl Cipher for Scytale {
 
     /// Initialize a Scytale cipher with a specific cylinder height.
     ///
-    /// Will return `Err` if the `key == 0`.
+    /// # Panics
+    /// * The `key` is 0.
+    ///
     fn new(key: usize) -> Result<Scytale, &'static str> {
         if key == 0 {
-            Err("Invalid key, height cannot be zero.")
-        } else {
-            Ok(Scytale { height: key })
+            panic!("Invalid key, height cannot be zero.");
         }
+
+        Ok(Scytale { height: key })
     }
 
     /// Encrypt a message using a Scytale cipher.
@@ -70,13 +72,13 @@ impl Cipher for Scytale {
         }
 
         // Construct the ciphertext out of each row
-        let mut ciphertext = String::new();
-        for row in table.iter() {
-            ciphertext.push_str(row.into_iter().collect::<String>().as_str());
-        }
-
         // Trim off any trailing whitespace added
-        Ok(ciphertext.trim_right().to_string())
+        Ok(table
+            .iter()
+            .flatten()
+            .collect::<String>()
+            .trim_right()
+            .to_string())
     }
 
     /// Decrypt a message using a Scytale cipher.
@@ -146,6 +148,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn invalid_height() {
         assert!(Scytale::new(0).is_err());
     }

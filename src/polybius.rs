@@ -87,26 +87,15 @@ impl Cipher for Polybius {
     ///    p.encrypt("Attack 🗡️ the east wall").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let mut ciphertext = String::new();
-
-        for c in message.chars() {
-            let mut entry = None;
-
-            //Attempt to find what the character will map to in the polybius square
-            for (key, val) in &self.square {
-                if val == &c {
-                    entry = Some(key);
+        Ok(message
+            .chars()
+            .map(|c| {
+                if let Some((key, _)) = self.square.iter().find(|e| e.1 == &c) {
+                    key.clone()
+                } else {
+                    c.to_string()
                 }
-            }
-
-            match entry {
-                Some(s) => ciphertext.push_str(s),
-                //For unknown characters, just push to the ciphertext 'as-is'
-                None => ciphertext.push(c),
-            }
-        }
-
-        Ok(ciphertext)
+            }).collect())
     }
 
     /// Decrypt a message using a Polybius square cipher.
@@ -225,7 +214,7 @@ mod tests {
             "F@IL".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        ));
+        )).is_err();
     }
 
     #[test]
@@ -235,7 +224,7 @@ mod tests {
             "oranges".to_string(),
             ['A', '!', 'C', 'D', 'E', 'F'],
             ['A', 'B', '@', 'D', 'E', 'F'],
-        ));
+        )).is_err();
     }
 
     #[test]
@@ -245,6 +234,6 @@ mod tests {
             "oranges".to_string(),
             ['A', 'A', 'C', 'D', 'E', 'F'],
             ['A', 'C', 'C', 'D', 'E', 'F'],
-        ));
+        )).is_err();
     }
 }

@@ -57,9 +57,9 @@ const MORSE_ALPHABET: [(&str, &str); 49] = [
 /// Attempts to decode a morsecode sequence into a character of the known alphabet.
 ///
 /// Will return None if the Morse code isn't present in the alphabet
-pub fn decode_sequence(seq: &str) -> Option<&'static str> {
+pub fn decode_sequence(seq: &str) -> Option<String> {
     match MORSE_ALPHABET.iter().find(|&e| e.1 == seq) {
-        Some(entry) => Some(entry.0),
+        Some(entry) => Some(entry.0.to_string()),
         None => None,
     }
 }
@@ -67,12 +67,12 @@ pub fn decode_sequence(seq: &str) -> Option<&'static str> {
 /// Attempts to convert a character into a morse code sequence
 ///
 /// Will return None if the character isn't present in the known alphabet
-pub fn encode_character(c: char) -> Option<&'static str> {
+pub fn encode_character(c: char) -> Option<String> {
     match MORSE_ALPHABET
         .iter()
         .find(|&e| e.0 == c.to_uppercase().to_string())
     {
-        Some(entry) => Some(entry.1),
+        Some(entry) => Some(entry.1.to_string()),
         None => None,
     }
 }

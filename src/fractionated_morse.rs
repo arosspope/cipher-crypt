@@ -6,7 +6,6 @@
 //! In addition to this, it allows many non-alphabetic symbols to be encoded.
 //!
 //!
-use common::alphabet::Alphabet;
 use common::cipher::Cipher;
 use common::{alphabet, keygen, morse};
 
@@ -30,10 +29,11 @@ impl Cipher for FractionatedMorse {
     /// Initialise a Fractionated Morse cipher given a specific key.
     ///
     /// # Panics
-    /// * If a non-alphabetic symbol is part of the key.
+    /// * The `key` is empty.
+    /// * The `key` contains a non-alphabetic symbol.
     fn new(key: String) -> Result<FractionatedMorse, &'static str> {
-        if key.is_empty() || !alphabet::STANDARD.is_valid(&key) {
-            return Err("Invalid key. Keys cannot contain non-alphabetic symbols.");
+        if key.is_empty() {
+            panic!("Key is empty.");
         }
 
         let keyed_alphabet = keygen::keyed_alphabet(&key, &alphabet::STANDARD, true);
@@ -132,18 +132,17 @@ impl FractionatedMorse {
     /// if an unsupported symbol is present. The support characters are `a-z`, `A-Z`, `0-9` and
     /// the special characters `@ ( ) . , : ' " ! ? - ; =`.
     fn encode_to_morse(message: &str) -> Result<String, &'static str> {
-        let mut morse = String::new();
-
-        // Attempt to convert each letter in message to the corresponding morse sequence.
-        for c in message.chars() {
-            match morse::encode_character(c) {
-                Some(sequence) => {
-                    morse.push_str(sequence);
-                    morse.push('|');
-                }
-                None => return Err("Unsupported character detected."),
-            }
+        if message
+            .chars()
+            .any(|c| morse::encode_character(c).is_none())
+        {
+            return Err("Unsupported character detected in message.");
         }
+
+        let mut morse: String = message
+            .chars()
+            .map(|c| format!("{}{}", morse::encode_character(c).unwrap(), '|'))
+            .collect();
 
         morse.push('|'); // Finish the Morse message with a double separator `||`.
         Ok(morse)
@@ -174,18 +173,19 @@ impl FractionatedMorse {
     ///
     /// return `Err` if a non-alphabetic symbol is present in the message.
     fn decrypt_morse(key: &str, ciphertext: &str) -> Result<String, &'static str> {
-        let mut sequence = String::new();
-
-        // We are using an uppercase keyed alphabet, so the message must be also
-        for c in ciphertext.to_uppercase().chars() {
-            match key.chars().position(|k| k == c) {
-                //Find position of char in the keyed alphabet
-                Some(pos) => sequence.push_str(TRIGRAPH_ALPHABET[pos]),
-                None => return Err("Ciphertext cannot contain non-alphabetic symbols."),
-            }
+        if ciphertext
+            .to_uppercase()
+            .chars()
+            .any(|c| key.chars().position(|k| k == c).is_none())
+        {
+            return Err("Ciphertext cannot contain non-alphabetic symbols.");
         }
 
-        Ok(sequence)
+        Ok(ciphertext
+            .to_uppercase()
+            .chars()
+            .map(|c| TRIGRAPH_ALPHABET[key.chars().position(|k| k == c).unwrap()])
+            .collect::<String>())
     }
 
     /// Takes a sequence of trigraphs, which is then interpreted as morse code so that it may be
@@ -210,8 +210,8 @@ impl FractionatedMorse {
 
             // Find the Morse character in the alphabet and decode it.
             match morse::decode_sequence(morse_seq) {
-                Some(c) => plaintext.push_str(c),
-                None => return Err("Unknown morsecode sequence in trigraphs"),
+                Some(c) => plaintext.push_str(&c),
+                None => return Err("Unknown morsecode sequence in trigraphs."),
             }
         }
 
@@ -267,6 +267,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn encrypt_no_key() {
         assert!(FractionatedMorse::new(String::from("")).is_err());
     }
@@ -286,6 +287,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn bad_key() {
         assert!(FractionatedMorse::new(String::from("bad key")).is_err());
     }
