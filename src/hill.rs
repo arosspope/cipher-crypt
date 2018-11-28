@@ -297,9 +297,7 @@ impl Hill {
                 .nth(i)
                 .expect("Expected to find char at index.");
 
-            transformed.push(
-                alphabet::STANDARD.get_letter(*pos as usize, orig.is_uppercase())
-            );
+            transformed.push(alphabet::STANDARD.get_letter(*pos as usize, orig.is_uppercase()));
         }
 
         Ok(transformed)

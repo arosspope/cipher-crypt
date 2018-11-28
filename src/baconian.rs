@@ -193,60 +193,61 @@ impl Cipher for Baconian {
     ///
     /// assert_eq!(cipher_text, b.encrypt(message).unwrap());
     /// ```
-    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let mut non_alphas = 0; // A counter for non_alphas
+        let num_non_alphas = self
+            .decoy_text
+            .chars()
+            .filter(|c| !c.is_alphabetic())
+            .count();
 
-        for c in self.decoy_text.chars() {
-            if !c.is_alphabetic() {
-                non_alphas += 1;
-            }
-        }
         // Check whether the message fits in the decoy
         // Note: that non-alphabetical characters will be skipped.
-        if (message.len() * CODE_LEN) > self.decoy_text.len() - non_alphas {
+        if (message.len() * CODE_LEN) > self.decoy_text.len() - num_non_alphas {
             return Err("Message too long for supplied decoy text.");
         }
 
-        // Complex: decoy_slice needs to = secret.len + num_non_alphabetical_chars
-        let mut decoy_slice = self.decoy_text.clone();
-        let mut secret = String::new();
-        // Iterate through the message encoding each char
-        // Ignore non-alphabetical chars
-        for c in message.chars() {
-            // get code and add to secret
-            let key = c.to_string();
-            secret += &get_code(self.use_distinct_alphabet, &key);
-        }
+        // Iterate through the message encoding each char (ignoring non-alphabetical chars)
+        let secret: String = message
+            .chars()
+            .map(|c| get_code(self.use_distinct_alphabet, &c.to_string()))
+            .collect();
 
-        let mut alphas = 0;
-        non_alphas = 0;
+        let mut num_alphas = 0;
+        let mut num_non_alphas = 0;
         for c in self.decoy_text.chars() {
-            if c.is_alphabetic() {
-                alphas += 1;
-            } else {
-                non_alphas += 1;
-            }
-            if alphas == secret.len() {
+            if num_alphas == secret.len() {
                 break;
             }
+            if c.is_alphabetic() {
+                num_alphas += 1
+            } else {
+                num_non_alphas += 1
+            };
         }
-        decoy_slice.truncate(alphas + non_alphas);
+
+        let decoy_slice: String = self
+            .decoy_text
+            .chars()
+            .take(num_alphas + num_non_alphas)
+            .collect();
+
         // We now have an encoded message, `secret`, in which each character of of the
         // original plaintext is now represented by a 5-bit binary character,
         // "AAAAA", "ABABA" etc.
         // We now overlay the encoded text onto the decoy slice, and
         // where the binary 'B' is found the decoy slice char is swapped for an italic
         let mut decoy_msg = String::new();
+        let mut secret_iter = secret.chars();
         for c in decoy_slice.chars() {
             if c.is_alphabetic() {
-                match secret.remove(0) {
-                    'B' => {
+                if let Some(sc) = secret_iter.next() {
+                    if sc == 'B' {
                         // match the binary 'B' and swap for italic
                         let italic = *ITALIC_CODES.get(c.to_string().as_str()).unwrap();
                         decoy_msg.push(italic);
+                    } else {
+                        decoy_msg.push(c);
                     }
-                    _ => decoy_msg.push(c),
                 }
             } else {
                 decoy_msg.push(c);
@@ -271,37 +272,31 @@ impl Cipher for Baconian {
     /// ```
     ///
     fn decrypt(&self, message: &str) -> Result<String, &'static str> {
-        println!("Baconian decrypt");
-        let mut plaintext = String::new();
-        let mut ciphertext = String::new();
-        let mut code = String::new();
         // The message is decoy text
         // Iterate through swapping any alphabetical chars found in the ITALIC_CODES
         // set to be 'B', else 'A', skip anything else.
-        for c in message.chars() {
-            if c.is_alphabetic() {
-                let mut is_code = false;
-                for (_key, val) in ITALIC_CODES.iter() {
-                    if *val == c {
-                        is_code = true;
-                        break;
-                    }
-                }
-                if is_code {
-                    ciphertext.push('B');
+        let ciphertext: String = message
+            .chars()
+            .filter(|c| c.is_alphabetic())
+            .map(|c| {
+                if ITALIC_CODES.iter().any(|e| *e.1 == c) {
+                    'B'
                 } else {
-                    ciphertext.push('A');
+                    'A'
                 }
-            }
-        }
+            }).collect();
+
+        let mut plaintext = String::new();
+        let mut code = String::new();
         for c in ciphertext.chars() {
             code.push(c);
-            // If we have the right length code
             if code.len() == CODE_LEN {
+                // If we have the right length code
                 plaintext += &get_key(&code);
                 code.clear();
             }
         }
+
         Ok(plaintext)
     }
 }

@@ -14,33 +14,30 @@ use num::integer::gcd;
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct Affine {
-    a_b: (usize, usize),
+    a: usize,
+    b: usize,
 }
 
 impl Cipher for Affine {
     type Key = (usize, usize);
     type Algorithm = Affine;
 
-    /// Initialise an Affine cipher given the keys `a` and `b`.
+    /// Initialise an Affine cipher given the key (`a`, `b`).
     ///
-    /// Will return `Err` if one of the following conditions is detected:
-    ///
+    /// # Panics
     /// * `a` or `b` are not in the inclusive range `1 - 26`.
     /// * `a` has a factor in common with 26.
-    fn new(a_b: (usize, usize)) -> Result<Affine, &'static str> {
-        if a_b.0 < 1 || a_b.1 < 1 {
-            return Err("The keys a & b must be >= 1.");
+    fn new(key: (usize, usize)) -> Result<Affine, &'static str> {
+        let (a, b) = key;
+        if (a < 1 || b < 1) || (a > 26 || b > 26) {
+            panic!("The keys a & b must be within the range 1 <= n <= 26.");
         }
 
-        if a_b.0 > 26 || a_b.1 > 26 {
-            return Err("The keys a & b must be <= 26.");
+        if gcd(a, 26) > 1 {
+            panic!("The key 'a' cannot share a common factor with 26.");
         }
 
-        if gcd(a_b.0, 26) > 1 {
-            return Err("The key 'a' cannot share a common factor with 26.");
-        }
-
-        Ok(Affine { a_b })
+        Ok(Affine { a, b })
     }
 
     /// Encrypt a message using an Affine cipher.
@@ -59,10 +56,9 @@ impl Cipher for Affine {
         //         E(x) = (ax + b) mod 26
         // Where;  x    = position of letter in alphabet
         //         a, b = the numbers of the affine key
-
-        substitute::shift_substitution(message, |idx| {
-            alphabet::STANDARD.modulo(((self.a_b.0 * idx) + self.a_b.1) as isize)
-        })
+        Ok(substitute::shift_substitution(message, |idx| {
+            alphabet::STANDARD.modulo(((self.a * idx) + self.b) as isize)
+        }))
     }
 
     /// Decrypt a message using an Affine cipher.
@@ -83,12 +79,12 @@ impl Cipher for Affine {
         //         a^-1 = multiplicative inverse of the key number `a`
         //         b    = a number of the affine key
         let a_inv = alphabet::STANDARD
-            .multiplicative_inverse(self.a_b.0 as isize)
+            .multiplicative_inverse(self.a as isize)
             .expect("Multiplicative inverse for 'a' could not be calculated.");
 
-        substitute::shift_substitution(ciphertext, |idx| {
-            alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize))
-        })
+        Ok(substitute::shift_substitution(ciphertext, |idx| {
+            alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.b as isize))
+        }))
     }
 }
 
@@ -144,16 +140,19 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn a_shares_factor() {
         assert!(Affine::new((2, 15)).is_err());
     }
 
     #[test]
+    #[should_panic]
     fn keys_to_small() {
         assert!(Affine::new((0, 10)).is_err());
     }
 
     #[test]
+    #[should_panic]
     fn keys_to_big() {
         assert!(Affine::new((30, 51)).is_err());
     }

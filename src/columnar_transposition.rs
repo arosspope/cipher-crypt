@@ -74,7 +74,7 @@ impl Cipher for ColumnarTransposition {
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         if let Some(null_char) = self.null_char {
             if message.contains(null_char) {
-                return Err("Message contains padding characters.");
+                return Err("Message contains null characters.");
             }
         }
 
@@ -106,12 +106,10 @@ impl Cipher for ColumnarTransposition {
         });
 
         //Construct the cipher text
-        let mut ciphertext = String::new();
-        for column in key {
-            for chr in &column.1 {
-                ciphertext.push(*chr);
-            }
-        }
+        let ciphertext: String = key
+            .iter()
+            .map(|column| column.1.iter().collect::<String>())
+            .collect();
 
         Ok(ciphertext)
     }

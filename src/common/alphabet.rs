@@ -196,7 +196,8 @@ mod tests {
 
     #[test]
     fn valid_alphanumeric_char() {
-        let valid_iter = ALPHABET_LOWER.iter()
+        let valid_iter = ALPHABET_LOWER
+            .iter()
             .chain(ALPHABET_UPPER.iter())
             .chain(NUMERIC.iter());
         for c in valid_iter {
@@ -236,8 +237,11 @@ mod tests {
         }
 
         for (i, latter) in "klmnopqrstuvwxyz".chars().enumerate() {
-            assert_eq!(PLAYFAIR.get_letter(9+i, false), latter);
-            assert_eq!(PLAYFAIR.get_letter(9+i, true), latter.to_ascii_uppercase());
+            assert_eq!(PLAYFAIR.get_letter(9 + i, false), latter);
+            assert_eq!(
+                PLAYFAIR.get_letter(9 + i, true),
+                latter.to_ascii_uppercase()
+            );
         }
     }
 }

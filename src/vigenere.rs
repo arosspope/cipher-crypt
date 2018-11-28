@@ -6,8 +6,8 @@
 use common::alphabet;
 use common::alphabet::Alphabet;
 use common::cipher::Cipher;
+use common::keygen::cyclic_keystream;
 use common::substitute;
-use std::iter;
 
 /// A Vigenère cipher.
 ///
@@ -49,9 +49,11 @@ impl Cipher for Vigenere {
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(message, &mut self.keystream(message), |mi, ki| {
-            alphabet::STANDARD.modulo((mi + ki) as isize)
-        })
+        Ok(substitute::key_substitution(
+            message,
+            &cyclic_keystream(&self.key, message),
+            |mi, ki| alphabet::STANDARD.modulo((mi + ki) as isize),
+        ))
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -70,32 +72,11 @@ impl Cipher for Vigenere {
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(ciphertext, &mut self.keystream(ciphertext), |ci, ki| {
-            alphabet::STANDARD.modulo(ci as isize - ki as isize)
-        })
-    }
-}
-
-impl Vigenere {
-    /// Generates a keystream based on the base key and message length.
-    ///
-    /// Will simply return a copy of the base key if its length is already larger than the
-    /// message.
-    fn keystream(&self, message: &str) -> Vec<char> {
-        //The key will only be used to encrypt the portion of the message that is alphabetic
-        let scrubbed_msg = alphabet::STANDARD.scrub(message);
-
-        //The key is large enough for the message already
-        if self.key.len() >= scrubbed_msg.len() {
-            return self.key[0..scrubbed_msg.len()].chars().collect();
-        }
-
-        //Repeat the base key until it fits within the length of the scrubbed message
-        let keystream = iter::repeat(self.key.clone())
-            .take((scrubbed_msg.len() / self.key.len()) + 1)
-            .collect::<String>();
-
-        keystream[0..scrubbed_msg.len()].chars().collect()
+        Ok(substitute::key_substitution(
+            ciphertext,
+            &cyclic_keystream(&self.key, ciphertext),
+            |ci, ki| alphabet::STANDARD.modulo(ci as isize - ki as isize),
+        ))
     }
 }
 
@@ -136,25 +117,6 @@ mod tests {
         let decrypted = v.decrypt(&encrypted).unwrap();
 
         assert_eq!(decrypted, message);
-    }
-
-    #[test]
-    fn smaller_base_key() {
-        let message = "We are under seige!"; //19 character message
-        let v = Vigenere::new(String::from("lemon")).unwrap(); //key length of 5
-
-        assert_eq!(
-            vec!['l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n',],
-            v.keystream(message)
-        );
-    }
-
-    #[test]
-    fn larger_base_key() {
-        let message = "hi";
-        let v = Vigenere::new(String::from("lemon")).unwrap();
-
-        assert_eq!(vec!['l', 'e'], v.keystream(message));
     }
 
     #[test]

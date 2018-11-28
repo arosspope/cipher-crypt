@@ -1,7 +1,7 @@
 //! This module contains functions for the generation of keys.
 //!
 use super::alphabet;
-use super::alphabet::{Alphabet, ALPHANUMERIC, STANDARD};
+use super::alphabet::{Alphabet, ALPHANUMERIC, PLAYFAIR, STANDARD};
 use std::collections::HashMap;
 
 /// Generates a scrambled alphabet using a key phrase for a given alphabet type.
@@ -10,11 +10,7 @@ use std::collections::HashMap;
 ///
 /// # Panics
 /// Will panic if a non-alphabet symbol is part of the key.
-pub fn keyed_alphabet<T: Alphabet>(
-    key: &str,
-    alpha_type: &T,
-    to_uppercase: bool,
-) -> String {
+pub fn keyed_alphabet<T: Alphabet>(key: &str, alpha_type: &T, to_uppercase: bool) -> String {
     if !alpha_type.is_valid(key) {
         panic!("Invalid key. Key cannot contain non-alphabet symbols.");
     }
@@ -69,7 +65,10 @@ pub fn columnar_key(keystream: &str) -> Vec<(char, Vec<char>)> {
         panic!("The key cannot contain non-alphanumeric symbols.");
     }
 
-    keystream.chars().map(|c| (c, Vec::new())).collect::<Vec<(char, Vec<char>)>>()
+    keystream
+        .chars()
+        .map(|c| (c, Vec::new()))
+        .collect::<Vec<(char, Vec<char>)>>()
 }
 
 /// Generate a 6x6 polybius square hashmap from an alphanumeric key.
@@ -159,92 +158,121 @@ pub fn polybius_square(
     polybius_square
 }
 
-/// A 5x5 Playfair key table
-#[derive(Debug)]
-pub struct PlayfairTable {
-    /// Table rows
-    pub rows: [String; 5],
-    /// Table columns
-    pub cols: [String; 5],
+/// Create a new Playfair key table
+///
+/// The table is a 5x5 (I=J) matrix. Any repeated characters are removed
+/// and the key fills in the table from left to right starting on the
+/// first row. The remaining, unused characters in the alphabet are then
+/// appended to complete the table. Keys should not exceed 25 characters
+/// in length.
+///
+/// # Panics
+/// * The `keystream` must not be empty.
+/// * The `keystream` must not exceed the length of the playfair alphabet (25 characters).
+/// * The `keystream` must not contain non-alphabetic symbols or the letter 'J'.
+///
+/// # Examples
+///
+/// Given the key "PLAYFAIR EXAMPLE", the following table is generated:
+///
+/// P L A Y F
+/// I R E X M
+/// B C D G H
+/// K N O Q S
+/// T U V W Z
+///
+pub fn playfair_table(keystream: &str) -> ([String; 5], [String; 5]) {
+    if keystream.is_empty() {
+        panic!("The keystream cannot be empty.")
+    } else if keystream.len() > PLAYFAIR.length() {
+        panic!("The keystream length cannot exceed 25 characters.");
+    } else if !PLAYFAIR.is_valid(keystream) {
+        panic!("The keystream cannot contain non-alphabetic symbols or the letter 'J'.");
+    }
+
+    //Construct a unique key from the keystream and the remainder of the playfair aplhabet.
+    let mut unique: Vec<char> = Vec::new();
+    let upper = keystream.to_uppercase();
+    let keystream_iter = upper
+        .chars()
+        .chain((0..PLAYFAIR.length()).map(|i| alphabet::PLAYFAIR.get_letter(i, true)));
+
+    for c in keystream_iter {
+        if !unique.contains(&c) {
+            unique.push(c);
+        }
+    }
+
+    let mut rows: [String; 5] = Default::default();
+    for (i, r) in unique.chunks(5).enumerate() {
+        rows[i] = r.iter().collect();
+    }
+
+    let mut cols: [String; 5] = Default::default();
+    for i in 0..5 {
+        for r in unique.chunks(5) {
+            cols[i].push(r[i]);
+        }
+    }
+
+    (rows, cols)
 }
 
-impl PlayfairTable {
-    /// Create a new Playfair key table
-    ///
-    /// The table is a 5x5 (I=J) matrix. Any repeated characters are removed
-    /// and the key fills in the table from left to right starting on the
-    /// first row. The remaining, unused characters in the alphabet are then
-    /// appended to complete the table. Keys should not exceed 25 characters
-    /// in length.
-    ///
-    /// # Examples
-    ///
-    /// Given the key "PLAYFAIR EXAMPLE", the following table is generated:
-    ///
-    /// P L A Y F
-    /// I R E X M
-    /// B C D G H
-    /// K N O Q S
-    /// T U V W Z
-    ///
-    pub fn new<K: AsRef<str>>(key: K) -> Result<PlayfairTable, &'static str> {
-        // 25 Character Alphabet (I=J)
-        const PLAYFAIR_ALPHABET: &str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
+/// Generate a cyclic keystream.
+///
+/// For this, we simply repeat the key until we have enough symbols to
+/// encrypt all alphabetic symbols of the message.
+pub fn cyclic_keystream(key: &str, message: &str) -> String {
+    let scrubbed_msg = alphabet::STANDARD.scrub(message);
+    key.chars().cycle().take(scrubbed_msg.len()).collect()
+}
 
-        if key.as_ref().is_empty() {
-            return Err("Key must not be empty");
-        }
+/// Generate a concatonated keystream (key + message).
+///
+pub fn concatonated_keystream(key: &str, message: &str) -> String {
+    //The key will only be used to encrypt the portion of the message that is alphabetic
+    let scrubbed_msg = alphabet::STANDARD.scrub(message);
 
-        if key.as_ref().len() > PLAYFAIR_ALPHABET.len() {
-            return Err("Key length must not exceed 25 characters");
-        }
-
-        let mut key: String = key.as_ref().split_whitespace().collect();
-        if !alphabet::STANDARD.is_valid(key.as_str()) {
-            return Err("Key must only consist of alphabetic characters");
-        }
-
-        // Conform key to 25-character, uppercase alphabet
-        key = key.to_uppercase();
-        key = key.replace("J", "I");
-
-        // Remove repeated characters from key
-        let mut ukey = String::new();
-        for c in key.chars() {
-            if !ukey.contains(c) {
-                ukey.push(c);
-            }
-        }
-
-        let mut vtable: Vec<char> = ukey.chars().collect();
-        for c in PLAYFAIR_ALPHABET.chars() {
-            if !vtable.contains(&c) {
-                vtable.push(c);
-            }
-        }
-
-        vtable.shrink_to_fit();
-        assert_eq!(vtable.len(), PLAYFAIR_ALPHABET.len());
-
-        let mut rows: [String; 5] = Default::default();
-        for (k, r) in vtable.chunks(5).enumerate() {
-            rows[k] = r.iter().collect();
-        }
-
-        let mut cols: [String; 5] = Default::default();
-        for i in 0..5 {
-            for r in vtable.chunks(5) {
-                cols[i].push(r[i]);
-            }
-        }
-
-        Ok(PlayfairTable { rows, cols })
+    //The key is large enough for the message already
+    if key.len() >= scrubbed_msg.len() {
+        return key.chars().take(scrubbed_msg.len()).collect();
     }
+
+    //The keystream is simply a concatonation of the base key + the scrubbed message
+    key.chars()
+        .chain(scrubbed_msg.chars().take(scrubbed_msg.len() - key.len()))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cyclic_smaller_base_key() {
+        assert_eq!(
+            "lemonlemonlemon",
+            cyclic_keystream("lemon", "We are under seige!")
+        );
+    }
+
+    #[test]
+    fn cyclic_larger_base_key() {
+        assert_eq!("le", cyclic_keystream("lemon", "hi"));
+    }
+
+    #[test]
+    fn concatonated_larger_base_key() {
+        assert_eq!("forti", concatonated_keystream("fortification", "Hello"));
+    }
+
+    #[test]
+    fn concatonated_smaller_base_key() {
+        assert_eq!(
+            "lemonWeareunder",
+            concatonated_keystream("lemon", "We are under seige")
+        );
+    }
 
     //Polybius tests
     #[test]
@@ -268,7 +296,7 @@ mod tests {
         polybius_square(
             "abcdefghijklnnopqrstuvwxyz0123456789",
             &['a', 'b', 'c', 'd', 'e', 'f'],
-            &['a', 'b', 'c', 'd', 'e', 'f']
+            &['a', 'b', 'c', 'd', 'e', 'f'],
         );
     }
 
@@ -278,7 +306,7 @@ mod tests {
         polybius_square(
             "adefghiklnnopqrstuvwxyz",
             &['a', 'b', 'c', 'd', 'e', 'f'],
-            &['a', 'b', 'c', 'd', 'e', 'f']
+            &['a', 'b', 'c', 'd', 'e', 'f'],
         );
     }
 
@@ -288,7 +316,7 @@ mod tests {
         polybius_square(
             "abcd@#!ghiklnnopqrstuvwxyz0123456789",
             &['a', 'b', 'c', 'd', 'e', 'f'],
-            &['a', 'b', 'c', 'd', 'e', 'f']
+            &['a', 'b', 'c', 'd', 'e', 'f'],
         );
     }
 
@@ -298,7 +326,7 @@ mod tests {
         polybius_square(
             "abcdefghijklmnopqrstuvwxyz0123456789",
             &['a', 'a', 'c', 'd', 'e', 'f'],
-            &['a', 'b', 'c', 'd', 'e', 'f']
+            &['a', 'b', 'c', 'd', 'e', 'f'],
         );
     }
 
@@ -308,7 +336,7 @@ mod tests {
         polybius_square(
             "abcdefghijklmnopqrstuvwxyz0123456789",
             &['a', 'b', 'c', 'd', 'e', 'f'],
-            &['a', 'b', 'c', 'c', 'e', 'f']
+            &['a', 'b', 'c', 'c', 'e', 'f'],
         );
     }
 
@@ -351,8 +379,7 @@ mod tests {
 
     #[test]
     fn generate_alphabet_long_key() {
-        let keyed_alphabet =
-            keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", &STANDARD, true);
+        let keyed_alphabet = keyed_alphabet("nnhhyqzabguuxwdrvvctspefmjoklii", &STANDARD, true);
         assert_eq!(keyed_alphabet, "NHYQZABGUXWDRVCTSPEFMJOKLI");
     }
 
@@ -385,37 +412,58 @@ mod tests {
 
     // PlayfairTable Tests
     #[test]
-    fn playfairtable_new_accepts_alpha_key() {
-        assert!(PlayfairTable::new("Foo").is_ok());
+    fn playfair_accepts_simple_key() {
+        let (rows, cols) = playfair_table("playfairexample");
+        assert_eq!(["PLAYF", "IREXM", "BCDGH", "KNOQS", "TUVWZ"], rows);
+        assert_eq!(["PIBKT", "LRCNU", "AEDOV", "YXGQW", "FMHSZ"], cols);
     }
 
     #[test]
-    fn playfairtable_new_accepts_spaced_key() {
-        assert!(PlayfairTable::new("Foo Bar").is_ok());
+    fn playfair_accepts_alphabet() {
+        let (rows, cols) = playfair_table("ABCDEFGHIKLMNOPQRSTUVWXYZ");
+        assert_eq!(["ABCDE", "FGHIK", "LMNOP", "QRSTU", "VWXYZ"], rows);
+        assert_eq!(["AFLQV", "BGMRW", "CHNSX", "DIOTY", "EKPUZ"], cols);
     }
 
     #[test]
-    fn playfairtable_new_accepts_alphanumeric_key() {
-        assert!(PlayfairTable::new("Bad123").is_err());
+    #[should_panic]
+    fn playfair_rejects_whitespace() {
+        playfair_table("Foo Bar");
     }
 
     #[test]
-    fn playfairtable_new_rejects_symbolic_key() {
-        assert!(PlayfairTable::new("Bad?").is_err());
+    #[should_panic]
+    fn playfair_rejects_alphanumeric_key() {
+        playfair_table("Bad123");
     }
 
     #[test]
-    fn playfairtable_new_rejects_unicode_key() {
-        assert!(PlayfairTable::new("Bad☢").is_err());
+    #[should_panic]
+    fn playfair_rejects_ascii_key() {
+        playfair_table("Bad?");
     }
 
     #[test]
-    fn playfairtable_new_rejects_empty_key() {
-        assert!(PlayfairTable::new("").is_err());
+    #[should_panic]
+    fn playfair_rejects_unicode_key() {
+        playfair_table("Bad☢");
     }
 
     #[test]
-    fn playfairtable_new_rejects_long_key() {
-        assert!(PlayfairTable::new("ABCDEFGHIJKLMNOPQRSTUVWXYZA").is_err());
+    #[should_panic]
+    fn playfair_rejects_empty_key() {
+        playfair_table("");
+    }
+
+    #[test]
+    #[should_panic]
+    fn playfair_rejects_j() {
+        playfair_table("HelloWorldThisWilljFail");
+    }
+
+    #[test]
+    #[should_panic]
+    fn playfair_rejects_long_key() {
+        playfair_table("ABCDEFGHIJKLMNOPQRSTUVWXYZA");
     }
 }

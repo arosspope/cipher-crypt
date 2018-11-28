@@ -224,7 +224,7 @@ mod tests {
         Polybius::new((
             "F@IL".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
-            ['A', 'B', 'C', 'D', 'E', 'F']
+            ['A', 'B', 'C', 'D', 'E', 'F'],
         ));
     }
 
@@ -234,7 +234,7 @@ mod tests {
         Polybius::new((
             "oranges".to_string(),
             ['A', '!', 'C', 'D', 'E', 'F'],
-            ['A', 'B', '@', 'D', 'E', 'F']
+            ['A', 'B', '@', 'D', 'E', 'F'],
         ));
     }
 
@@ -244,7 +244,7 @@ mod tests {
         Polybius::new((
             "oranges".to_string(),
             ['A', 'A', 'C', 'D', 'E', 'F'],
-            ['A', 'C', 'C', 'D', 'E', 'F']
+            ['A', 'C', 'C', 'D', 'E', 'F'],
         ));
     }
 }

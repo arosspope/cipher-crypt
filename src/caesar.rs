@@ -21,13 +21,14 @@ impl Cipher for Caesar {
 
     /// Initialise a Caesar cipher given a specific shift value.
     ///
-    /// Will return `Err` if the shift value is outside the range `1-26`.
+    /// # Panics
+    /// * `shift` is not in the inclusive range `1 - 26`.
     fn new(shift: usize) -> Result<Caesar, &'static str> {
-        if shift >= 1 && shift <= 26 {
-            return Ok(Caesar { shift });
+        if shift < 1 || shift > 26 {
+            panic!("The shift factor must be within the range 1 <= n <= 26.");
         }
 
-        Err("Invalid shift factor. Must be in the range 1-26")
+        Ok(Caesar { shift })
     }
 
     /// Encrypt a message using a Caesar cipher.
@@ -47,9 +48,9 @@ impl Cipher for Caesar {
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(message, |idx| {
+        Ok(substitute::shift_substitution(message, |idx| {
             alphabet::STANDARD.modulo((idx + self.shift) as isize)
-        })
+        }))
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -69,9 +70,9 @@ impl Cipher for Caesar {
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(ciphertext, |idx| {
+        Ok(substitute::shift_substitution(ciphertext, |idx| {
             alphabet::STANDARD.modulo(idx as isize - self.shift as isize)
-        })
+        }))
     }
 }
 
@@ -115,11 +116,13 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn key_to_small() {
         assert!(Caesar::new(0).is_err());
     }
 
     #[test]
+    #[should_panic]
     fn key_to_big() {
         assert!(Caesar::new(27).is_err());
     }

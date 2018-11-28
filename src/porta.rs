@@ -30,6 +30,7 @@
 //!
 use common::alphabet::{self, Alphabet};
 use common::cipher::Cipher;
+use common::keygen::cyclic_keystream;
 use common::substitute;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -86,9 +87,11 @@ impl Cipher for Porta {
     /// assert_eq!(v.encrypt("We ride at dawn!").unwrap(), "Dt mpwx pb xtdl!");
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        substitute::key_substitution(message, &mut self.keystream(message), |mi, ki| {
-            SUBSTITUTION_TABLE[ki / 2][mi]
-        })
+        Ok(substitute::key_substitution(
+            message,
+            &cyclic_keystream(&self.key, message),
+            |mi, ki| SUBSTITUTION_TABLE[ki / 2][mi],
+        ))
     }
 
     /// Decrypt a message using a Porta cipher.
@@ -104,17 +107,6 @@ impl Cipher for Porta {
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         self.encrypt(ciphertext)
-    }
-}
-
-impl Porta {
-    /// Generate a keystream.
-    ///
-    /// For this, we simply repeat the key until we have enough symbols to
-    /// encrypt all alphabetic symbols of the message.
-    fn keystream(&self, message: &str) -> Vec<char> {
-        let scrubbed_msg = alphabet::STANDARD.scrub(message);
-        self.key.chars().cycle().take(scrubbed_msg.len()).collect()
     }
 }
 

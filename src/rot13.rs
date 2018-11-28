@@ -19,10 +19,7 @@ use common::{alphabet, substitute};
 /// assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
 /// ```
 pub fn apply(message: &str) -> String {
-    // The closure below is guaranteed to produce a number less than 26, therefore the
-    // substitution will not return an error and we can unwrap safely.
     substitute::shift_substitution(message, |i| alphabet::STANDARD.modulo((i + 13) as isize))
-        .unwrap()
 }
 
 #[cfg(test)]
