@@ -7,22 +7,36 @@
 use common::alphabet::Alphabet;
 use common::{alphabet, substitute};
 
-/// Encrypt or decrypt a message using the ROT13 substitute cipher.
+/// Encrypt a message using the Rot13 substitute cipher.
 ///
 /// # Examples
 /// Basic usage:
 ///
 /// ```
-/// use cipher_crypt::ROT13;
+/// use cipher_crypt::Rot13;
 ///
 /// let m = "I am my own inverse";
-/// assert_eq!(m, ROT13::apply(&ROT13::apply(m)));
+/// assert_eq!(m, &Rot13::decrypt(&Rot13::encrypt(m)));
 /// ```
-pub fn apply(message: &str) -> String {
-    // The closure below is guaranteed to produce a number less than 26, therefore the
-    // substitution will not return an error and we can unwrap safely.
+///
+pub fn encrypt(message: &str) -> String {
     substitute::shift_substitution(message, |i| alphabet::STANDARD.modulo((i + 13) as isize))
-        .unwrap()
+}
+
+/// Decrypt a message using the Rot13 substitute cipher.
+///
+/// # Examples
+/// Basic usage:
+///
+/// ```
+/// use cipher_crypt::Rot13;
+///
+/// let m = "I am my own inverse";
+/// assert_eq!(m, &Rot13::decrypt(&Rot13::encrypt(m)));
+/// ```
+///
+pub fn decrypt(message: &str) -> String {
+    substitute::shift_substitution(message, |i| alphabet::STANDARD.modulo((i + 13) as isize))
 }
 
 #[cfg(test)]
@@ -32,8 +46,8 @@ mod tests {
     #[test]
     fn with_utf8() {
         let message = "Peace, Freedom and Liberty! 🗡️";
-        let encrypted = apply(message);
-        let decrypted = apply(&encrypted);
+        let encrypted = encrypt(message);
+        let decrypted = decrypt(&encrypted);
 
         assert_eq!(decrypted, message);
     }
@@ -42,8 +56,8 @@ mod tests {
     fn alphabet_encrypt() {
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-        let encrypted = apply(message);
-        let decrypted = apply(&encrypted);
+        let encrypted = encrypt(message);
+        let decrypted = decrypt(&encrypted);
 
         assert_eq!(decrypted, message);
     }

@@ -33,6 +33,13 @@ impl Cipher for Polybius {
     /// * `row_ids` are unique identifiers used for each row of the polybius square. Valid
     /// characters can be alphabetic only (`a-z`).
     ///
+    /// # Panics
+    /// * If a non-alphanumeric symbol is part of the `key`.
+    /// * The `key` must have a length of 36.
+    /// * The `key` must contain each character of the alphanumeric alphabet `a-z`, `0-9`.
+    /// * The `column` and `row_ids` must contain alphabetic characters only.
+    /// * The `column` or `row_ids` contain repeated characters.
+    ///
     /// # Example
     /// Lets say the phrase was `or0an3ge` the column_ids were `['A','Z','C','D','E','F']`
     /// and the row_ids were `['A','B','G','D','E','F']`. Then the polybius square would look like
@@ -53,16 +60,17 @@ impl Cipher for Polybius {
     /// use cipher_crypt::{Cipher, Polybius};
     ///
     /// let p = Polybius::new((String::from("or0an3ge"), ['A','Z','C','D','E','F'],
-    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///     ['A','B','G','D','E','F']));;
     ///
     /// assert_eq!("EEAC AAazadaebabzdc adaebe EF ADdadagebzdc!",
     ///    p.encrypt("10 Oranges and 2 Apples!").unwrap());
     /// ```
-    fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
-        let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false)?;
-        let square = keygen::polybius_square(&alphabet_key, key.1, key.2)?;
+    ///
+    fn new(key: (String, [char; 6], [char; 6])) -> Polybius {
+        let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
+        let square = keygen::polybius_square(&alphabet_key, &key.1, &key.2);
 
-        Ok(Polybius { square })
+        Polybius { square }
     }
 
     /// Encrypt a message using a Polybius square cipher.
@@ -74,32 +82,22 @@ impl Cipher for Polybius {
     /// use cipher_crypt::{Cipher, Polybius};
     ///
     /// let p = Polybius::new((String::from("p0lyb1us"), ['A','Z','C','D','E','F'],
-    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///     ['A','B','G','D','E','F']));;
     ///
     /// assert_eq!("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac",
     ///    p.encrypt("Attack 🗡️ the east wall").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let mut ciphertext = String::new();
-
-        for c in message.chars() {
-            let mut entry = None;
-
-            //Attempt to find what the character will map to in the polybius square
-            for (key, val) in &self.square {
-                if val == &c {
-                    entry = Some(key);
+        Ok(message
+            .chars()
+            .map(|c| {
+                if let Some((key, _)) = self.square.iter().find(|e| e.1 == &c) {
+                    key.clone()
+                } else {
+                    c.to_string()
                 }
-            }
-
-            match entry {
-                Some(s) => ciphertext.push_str(s),
-                //For unknown characters, just push to the ciphertext 'as-is'
-                None => ciphertext.push(c),
-            }
-        }
-
-        Ok(ciphertext)
+            }).collect())
     }
 
     /// Decrypt a message using a Polybius square cipher.
@@ -111,11 +109,12 @@ impl Cipher for Polybius {
     /// use cipher_crypt::{Cipher, Polybius};
     ///
     /// let p = Polybius::new((String::from("p0lyb1us"), ['A','Z','C','D','E','F'],
-    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///     ['A','B','G','D','E','F']));;
     ///
     /// assert_eq!("Attack 🗡️ the east wall",
     ///    p.decrypt("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         //We read the ciphertext two bytes at a time and transpose the original message using the
         //polybius square
@@ -161,7 +160,7 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         assert_eq!(
             "BBAC AAabadaeafbadf adaebe CA ADdcdcdabadf!",
@@ -175,7 +174,7 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         assert_eq!(
             "10 Oranges and 2 Apples!",
@@ -190,7 +189,7 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         //The sequnce 'AZ' is unknown to the polybius square
         assert!(
@@ -206,41 +205,38 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         assert_eq!(m, p.decrypt(&p.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
+    #[should_panic]
     fn invalid_key_phrase() {
-        assert!(
-            Polybius::new((
-                "F@IL".to_string(),
-                ['A', 'B', 'C', 'D', 'E', 'F'],
-                ['A', 'B', 'C', 'D', 'E', 'F']
-            )).is_err()
-        );
+        Polybius::new((
+            "F@IL".to_string(),
+            ['A', 'B', 'C', 'D', 'E', 'F'],
+            ['A', 'B', 'C', 'D', 'E', 'F'],
+        ));
     }
 
     #[test]
+    #[should_panic]
     fn invalid_ids() {
-        assert!(
-            Polybius::new((
-                "oranges".to_string(),
-                ['A', '!', 'C', 'D', 'E', 'F'],
-                ['A', 'B', '@', 'D', 'E', 'F']
-            )).is_err()
-        );
+        Polybius::new((
+            "oranges".to_string(),
+            ['A', '!', 'C', 'D', 'E', 'F'],
+            ['A', 'B', '@', 'D', 'E', 'F'],
+        ));
     }
 
     #[test]
+    #[should_panic]
     fn repeated_ids() {
-        assert!(
-            Polybius::new((
-                "oranges".to_string(),
-                ['A', 'A', 'C', 'D', 'E', 'F'],
-                ['A', 'C', 'C', 'D', 'E', 'F']
-            )).is_err()
-        );
+        Polybius::new((
+            "oranges".to_string(),
+            ['A', 'A', 'C', 'D', 'E', 'F'],
+            ['A', 'C', 'C', 'D', 'E', 'F'],
+        ));
     }
 }

@@ -32,8 +32,7 @@ impl Cipher for Hill {
 
     /// Initialise a Hill cipher given a key matrix.
     ///
-    /// Will return `Err` if one of the following conditions is detected:
-    ///
+    /// # Panics
     /// * The `key` matrix is not a square
     /// * The `key` matrix is non-invertible
     /// * The inverse determinant of the `key` matrix cannot be calculated such that
@@ -51,12 +50,13 @@ impl Cipher for Hill {
     /// fn main() {
     ///     //Initialise a Hill cipher from a 3 x 3 matrix
     ///     let m = Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]);
-    ///     let h = Hill::new(m).unwrap();
+    ///     let h = Hill::new(m);
     /// }
     /// ```
-    fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
+    ///
+    fn new(key: Matrix<isize>) -> Hill {
         if key.cols() != key.rows() {
-            return Err("Key must be a square matrix.");
+            panic!("The key is not a square matrix.");
         }
 
         //We want to restrict the caller to supplying matrices of type isize
@@ -67,14 +67,14 @@ impl Cipher for Hill {
             .expect("Could not convert Matrix of type `isize` to `f64`.");
 
         if m.clone().inverse().is_err() || Hill::calc_inverse_key(m.clone()).is_err() {
-            return Err("The inverse of this matrix cannot be calculated for decryption.");
+            panic!("The inverse of this matrix cannot be calculated for decryption.");
         }
 
         if gcd(m.clone().det() as isize, 26) != 1 {
-            return Err("The inverse determinant of the key cannot be calculated.");
+            panic!("The inverse determinant of the key cannot be calculated.");
         }
 
-        Ok(Hill { key })
+        Hill { key }
     }
 
     /// Encrypt a message using a Hill cipher.
@@ -102,11 +102,12 @@ impl Cipher for Hill {
     /// use cipher_crypt::{Cipher, Hill};
     ///
     /// fn main() {
-    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
     ///     //Padding characters are added during the encryption process
     ///     assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
     /// }
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         //A small insight into the theory behind encrypting with the hill cipher will be explained
         //thusly.
@@ -153,7 +154,7 @@ impl Cipher for Hill {
     ///
     /// fn main() {
     ///     let m = "ATTACKEAST";
-    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));;
     ///
     ///     let c = h.encrypt(m).unwrap();
     ///     let padding = c.len() - m.len();
@@ -162,6 +163,7 @@ impl Cipher for Hill {
     ///     assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// }
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         /*
         The decryption process is very similar to the encryption process as explained in
@@ -188,8 +190,8 @@ impl Hill {
     /// matrix key of the cipher. The variable `chunk_size` defines how many chars (or chunks)
     /// of a message will be transposed during encryption/decryption.
     ///
-    /// Will return `Err` if one of the following conditions is detected:
     ///
+    /// # Panics
     /// * The `chunk_size` is less than 2
     /// * The square of `chunk_size` is not equal to the phrase length
     /// * The phrase contains non-alphabetic symbols
@@ -200,40 +202,37 @@ impl Hill {
     /// ```
     /// use cipher_crypt::{Cipher, Hill};
     ///
-    /// let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+    /// let h = Hill::from_phrase("CEFJCBDRH", 3);
     /// h.encrypt("thing");
     /// ```
-    pub fn from_phrase(phrase: &str, chunk_size: usize) -> Result<Hill, &'static str> {
+    ///
+    pub fn from_phrase(phrase: &str, chunk_size: usize) -> Hill {
         if chunk_size < 2 {
-            return Err("The chunk size must be greater than 1.");
+            panic!("The chunk size must be greater than 1.");
         }
 
         if chunk_size * chunk_size != phrase.len() {
-            return Err("The square of the chunk size must equal the length of the phrase.");
+            panic!("The square of the chunk size must equal the length of the phrase.");
         }
 
-        let mut matrix: Vec<isize> = Vec::new();
-        for c in phrase.chars() {
-            match alphabet::STANDARD.find_position(c) {
-                Some(pos) => matrix.push(pos as isize),
-                None => return Err("Phrase cannot contain non-alphabetic symbols."),
-            }
+        if !alphabet::STANDARD.is_valid(phrase) {
+            panic!("Phrase cannot contain non-alphabetic symbols.");
         }
 
-        let key = Matrix::new(chunk_size, chunk_size, matrix);
-        Hill::new(key)
+        let matrix: Vec<isize> = phrase
+            .chars()
+            .map(|c| alphabet::STANDARD.find_position(c).unwrap() as isize)
+            .collect();
+
+        Hill::new(Matrix::new(chunk_size, chunk_size, matrix))
     }
 
     /// Core logic of the hill cipher. Transposing messages with matrices
     ///
     fn transform_message(key: &Matrix<f64>, message: &str) -> Result<String, &'static str> {
         //Only allow chars in the alphabet (no whitespace or symbols)
-        for c in message.chars() {
-            if alphabet::STANDARD.find_position(c).is_none() {
-                return Err(
-                    "Invalid message. Please strip any whitespace or non-alphabetic symbols.",
-                );
-            }
+        if !alphabet::STANDARD.is_valid(message) {
+            return Err("Message cannot contain non-alphabetic symbols.");
         }
 
         let mut transformed_message = String::new();
@@ -270,21 +269,20 @@ impl Hill {
     fn transform_chunk(key: &Matrix<f64>, chunk: &str) -> Result<String, &'static str> {
         let mut transformed = String::new();
 
+        if !alphabet::STANDARD.is_valid(chunk) {
+            panic!("Chunk contains a non-alphabetic symbol.");
+        }
+
         if key.rows() != chunk.len() {
             return Err("Cannot perform transformation on unequal vector lengths");
         }
 
         //Find the integer representation of the characters
         //e.g. ['A', 'T', 'T'] -> [0, 19, 19]
-        let mut index_representation: Vec<f64> = Vec::new();
-        for c in chunk.chars() {
-            index_representation.push(
-                alphabet::STANDARD
-                    .find_position(c)
-                    .expect("Attempted transformation of non-alphabetic symbol")
-                    as f64,
-            );
-        }
+        let index_representation: Vec<f64> = chunk
+            .chars()
+            .map(|c| alphabet::STANDARD.find_position(c).unwrap() as f64)
+            .collect();
 
         //Perform the transformation `k * [0, 19, 19] mod 26`
         let mut product = key * Matrix::new(index_representation.len(), 1, index_representation);
@@ -297,11 +295,7 @@ impl Hill {
                 .nth(i)
                 .expect("Expected to find char at index.");
 
-            transformed.push(
-                alphabet::STANDARD
-                    .get_letter(*pos as usize, orig.is_uppercase())
-                    .expect("Calculate index is invalid."),
-            );
+            transformed.push(alphabet::STANDARD.get_letter(*pos as usize, orig.is_uppercase()));
         }
 
         Ok(transformed)
@@ -313,15 +307,14 @@ impl Hill {
         let det = key.clone().det();
 
         //Find the inverse determinant such that: d*d^-1 = 1 mod 26
-        let det_inv = alphabet::STANDARD
-            .multiplicative_inverse(det as isize)
-            .expect("Inverse for determinant could not be found.");
+        if let Some(det_inv) = alphabet::STANDARD.multiplicative_inverse(det as isize) {
+            return Ok(key.inverse().unwrap().apply(&|x| {
+                let y = (x * det as f64).round() as isize;
+                (alphabet::STANDARD.modulo(y) as f64 * det_inv as f64) % 26.0
+            }));
+        }
 
-        //Calculate the inverse key matrix
-        Ok(key.inverse().unwrap().apply(&|x| {
-            let y = (x * det as f64).round() as isize;
-            (alphabet::STANDARD.modulo(y) as f64 * det_inv as f64) % 26.0
-        }))
+        Err("Inverse for determinant could not be found.")
     }
 }
 
@@ -331,17 +324,18 @@ mod tests {
 
     #[test]
     fn keygen_from_phrase() {
-        assert!(Hill::from_phrase("CEFJCBDRH", 3).is_ok());
+        Hill::from_phrase("CEFJCBDRH", 3);
     }
 
     #[test]
+    #[should_panic]
     fn invalid_phrase() {
-        assert!(Hill::from_phrase("killer", 2).is_err());
+        Hill::from_phrase("killer", 2);
     }
 
     #[test]
     fn encrypt_no_padding_req() {
-        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
 
         let m = "ATTACKatDAWN";
         assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
@@ -349,19 +343,19 @@ mod tests {
 
     #[test]
     fn encrypt_with_symbols() {
-        let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+        let h = Hill::from_phrase("CEFJCBDRH", 3);
         assert!(h.encrypt("This won!t w@rk").is_err());
     }
 
     #[test]
     fn decrypt_with_symbols() {
-        let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+        let h = Hill::from_phrase("CEFJCBDRH", 3);
         assert!(h.decrypt("This won!t w@rk").is_err());
     }
 
     #[test]
     fn encrypt_padding_req() {
-        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
         let m = "ATTACKATDAWNz";
 
         let e = h.encrypt(m).unwrap();
@@ -373,17 +367,19 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).is_ok());
+        Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
     }
 
     #[test]
+    #[should_panic]
     fn non_square_matrix() {
         //A 3 x 2 matrix
-        assert!(Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17])).is_err());
+        Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17]));
     }
 
     #[test]
+    #[should_panic]
     fn non_invertable_matrix() {
-        assert!(Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8])).is_err());
+        Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8]));
     }
 }

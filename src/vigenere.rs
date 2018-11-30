@@ -6,8 +6,8 @@
 use common::alphabet;
 use common::alphabet::Alphabet;
 use common::cipher::Cipher;
+use common::keygen::cyclic_keystream;
 use common::substitute;
-use std::iter;
 
 /// A Vigenère cipher.
 ///
@@ -22,15 +22,19 @@ impl Cipher for Vigenere {
 
     /// Initialise a Vigenère cipher given a specific key.
     ///
-    /// Will return `Err` if the key contains non-alphabetic symbols.
-    fn new(key: String) -> Result<Vigenere, &'static str> {
+    /// # Panics
+    /// * The `key` is empty.
+    /// * The `key` contains a non-alphabetic symbol.
+    ///
+    fn new(key: String) -> Vigenere {
         if key.is_empty() {
-            return Err("Invalid key. It must have at least one character.");
-        } else if !alphabet::STANDARD.is_valid(&key) {
-            return Err("Invalid key. Vigenère keys cannot contain non-alphabetic symbols.");
+            panic!("The key is empty.");
+        }
+        if !alphabet::STANDARD.is_valid(&key) {
+            panic!("The key contains a non-alphabetic symbol.");
         }
 
-        Ok(Vigenere { key })
+        Vigenere { key }
     }
 
     /// Encrypt a message using a Vigenère cipher.
@@ -41,17 +45,20 @@ impl Cipher for Vigenere {
     /// ```
     /// use cipher_crypt::{Cipher, Vigenere};
     ///
-    /// let v = Vigenere::new(String::from("giovan")).unwrap();
+    /// let v = Vigenere::new(String::from("giovan"));
     /// assert_eq!("O vsqee mmh vnl izsyig!", v.encrypt("I never get any credit!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
         // Where;  Mi = position within the alphabet of ith char in message
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(message, &mut self.keystream(message), |mi, ki| {
-            alphabet::STANDARD.modulo((mi + ki) as isize)
-        })
+        Ok(substitute::key_substitution(
+            message,
+            &cyclic_keystream(&self.key, message),
+            |mi, ki| alphabet::STANDARD.modulo((mi + ki) as isize),
+        ))
     }
 
     /// Decrypt a message using a Vigenère cipher.
@@ -62,40 +69,20 @@ impl Cipher for Vigenere {
     /// ```
     /// use cipher_crypt::{Cipher, Vigenere};
     ///
-    /// let v = Vigenere::new(String::from("giovan")).unwrap();
+    /// let v = Vigenere::new(String::from("giovan"));
     /// assert_eq!("I never get any credit!", v.decrypt("O vsqee mmh vnl izsyig!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
         // Where;  Ci = position within the alphabet of ith char in cipher text
         //         Ki = position within the alphabet of ith char in key
-        substitute::key_substitution(ciphertext, &mut self.keystream(ciphertext), |ci, ki| {
-            alphabet::STANDARD.modulo(ci as isize - ki as isize)
-        })
-    }
-}
-
-impl Vigenere {
-    /// Generates a keystream based on the base key and message length.
-    ///
-    /// Will simply return a copy of the base key if its length is already larger than the
-    /// message.
-    fn keystream(&self, message: &str) -> Vec<char> {
-        //The key will only be used to encrypt the portion of the message that is alphabetic
-        let scrubbed_msg = alphabet::STANDARD.scrub(message);
-
-        //The key is large enough for the message already
-        if self.key.len() >= scrubbed_msg.len() {
-            return self.key[0..scrubbed_msg.len()].chars().collect();
-        }
-
-        //Repeat the base key until it fits within the length of the scrubbed message
-        let keystream = iter::repeat(self.key.clone())
-            .take((scrubbed_msg.len() / self.key.len()) + 1)
-            .collect::<String>();
-
-        keystream[0..scrubbed_msg.len()].chars().collect()
+        Ok(substitute::key_substitution(
+            ciphertext,
+            &cyclic_keystream(&self.key, ciphertext),
+            |ci, ki| alphabet::STANDARD.modulo(ci as isize - ki as isize),
+        ))
     }
 }
 
@@ -106,21 +93,21 @@ mod tests {
     #[test]
     fn encrypt_test() {
         let message = "attackatdawn";
-        let v = Vigenere::new(String::from("lemon")).unwrap();
+        let v = Vigenere::new(String::from("lemon"));
         assert_eq!("lxfopvefrnhr", v.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_test() {
         let ciphertext = "lxfopvefrnhr";
-        let v = Vigenere::new(String::from("lemon")).unwrap();
+        let v = Vigenere::new(String::from("lemon"));
         assert_eq!("attackatdawn", v.decrypt(ciphertext).unwrap());
     }
 
     #[test]
     fn mixed_case() {
         let message = "Attack at Dawn!";
-        let v = Vigenere::new(String::from("giovan")).unwrap();
+        let v = Vigenere::new(String::from("giovan"));
 
         let ciphertext = v.encrypt(message).unwrap();
         let plain_text = v.decrypt(&ciphertext).unwrap();
@@ -130,7 +117,7 @@ mod tests {
 
     #[test]
     fn with_utf8() {
-        let v = Vigenere::new(String::from("utfeightisfun")).unwrap();
+        let v = Vigenere::new(String::from("utfeightisfun"));
         let message = "Peace 🗡️ Freedom and Liberty!";
         let encrypted = v.encrypt(message).unwrap();
         let decrypted = v.decrypt(&encrypted).unwrap();
@@ -139,36 +126,19 @@ mod tests {
     }
 
     #[test]
-    fn smaller_base_key() {
-        let message = "We are under seige!"; //19 character message
-        let v = Vigenere::new(String::from("lemon")).unwrap(); //key length of 5
-
-        assert_eq!(
-            vec!['l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'm', 'o', 'n',],
-            v.keystream(message)
-        );
-    }
-
-    #[test]
-    fn larger_base_key() {
-        let message = "hi";
-        let v = Vigenere::new(String::from("lemon")).unwrap();
-
-        assert_eq!(vec!['l', 'e'], v.keystream(message));
-    }
-
-    #[test]
     fn valid_key() {
-        assert!(Vigenere::new(String::from("LeMon")).is_ok());
+        Vigenere::new(String::from("LeMon"));
     }
 
     #[test]
+    #[should_panic]
     fn key_with_symbols() {
-        assert!(Vigenere::new(String::from("!em@n")).is_err());
+        Vigenere::new(String::from("!em@n"));
     }
 
     #[test]
+    #[should_panic]
     fn key_with_whitespace() {
-        assert!(Vigenere::new(String::from("wow this key is a real lemon")).is_err());
+        Vigenere::new(String::from("wow this key is a real lemon"));
     }
 }

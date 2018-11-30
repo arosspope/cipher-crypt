@@ -21,13 +21,15 @@ impl Cipher for Caesar {
 
     /// Initialise a Caesar cipher given a specific shift value.
     ///
-    /// Will return `Err` if the shift value is outside the range `1-26`.
-    fn new(shift: usize) -> Result<Caesar, &'static str> {
-        if shift >= 1 && shift <= 26 {
-            return Ok(Caesar { shift });
+    /// # Panics
+    /// * `shift` is not in the inclusive range `1 - 26`.
+    ///
+    fn new(shift: usize) -> Caesar {
+        if shift < 1 || shift > 26 {
+            panic!("The shift factor must be within the range 1 <= n <= 26.");
         }
 
-        Err("Invalid shift factor. Must be in the range 1-26")
+        Caesar { shift }
     }
 
     /// Encrypt a message using a Caesar cipher.
@@ -38,18 +40,19 @@ impl Cipher for Caesar {
     /// ```
     /// use cipher_crypt::{Cipher, Caesar};
     ///
-    /// let c = Caesar::new(3).unwrap();
+    /// let c = Caesar::new(3);
     /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (x + n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(message, |idx| {
+        Ok(substitute::shift_substitution(message, |idx| {
             alphabet::STANDARD.modulo((idx + self.shift) as isize)
-        })
+        }))
     }
 
     /// Decrypt a message using a Caesar cipher.
@@ -60,18 +63,19 @@ impl Cipher for Caesar {
     /// ```
     /// use cipher_crypt::{Cipher, Caesar};
     ///
-    /// let c = Caesar::new(3).unwrap();
+    /// let c = Caesar::new(3);
     /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
         // Where;  x = position of letter in alphabet
         //         n = shift factor (or key)
 
-        substitute::shift_substitution(ciphertext, |idx| {
+        Ok(substitute::shift_substitution(ciphertext, |idx| {
             alphabet::STANDARD.modulo(idx as isize - self.shift as isize)
-        })
+        }))
     }
 }
 
@@ -81,19 +85,19 @@ mod tests {
 
     #[test]
     fn encrypt_message() {
-        let c = Caesar::new(2).unwrap();
+        let c = Caesar::new(2);
         assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!").unwrap());
     }
 
     #[test]
     fn decrypt_message() {
-        let c = Caesar::new(2).unwrap();
+        let c = Caesar::new(2);
         assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!").unwrap());
     }
 
     #[test]
     fn with_utf8() {
-        let c = Caesar::new(3).unwrap();
+        let c = Caesar::new(3);
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = c.encrypt(message).unwrap();
         let decrypted = c.decrypt(&encrypted).unwrap();
@@ -107,7 +111,7 @@ mod tests {
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         for i in 1..27 {
-            let c = Caesar::new(i).unwrap();
+            let c = Caesar::new(i);
             let encrypted = c.encrypt(message).unwrap();
             let decrypted = c.decrypt(&encrypted).unwrap();
             assert_eq!(decrypted, message);
@@ -115,12 +119,14 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn key_to_small() {
-        assert!(Caesar::new(0).is_err());
+        Caesar::new(0);
     }
 
     #[test]
+    #[should_panic]
     fn key_to_big() {
-        assert!(Caesar::new(27).is_err());
+        Caesar::new(27);
     }
 }

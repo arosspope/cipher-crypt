@@ -26,13 +26,15 @@ impl Cipher for Scytale {
 
     /// Initialize a Scytale cipher with a specific cylinder height.
     ///
-    /// Will return `Err` if the `key == 0`.
-    fn new(key: usize) -> Result<Scytale, &'static str> {
+    /// # Panics
+    /// * The `key` is 0.
+    ///
+    fn new(key: usize) -> Scytale {
         if key == 0 {
-            Err("Invalid key, height cannot be zero.")
-        } else {
-            Ok(Scytale { height: key })
+            panic!("Invalid key, height cannot be zero.");
         }
+
+        Scytale { height: key }
     }
 
     /// Encrypt a message using a Scytale cipher.
@@ -48,9 +50,10 @@ impl Cipher for Scytale {
     /// ```
     /// use cipher_crypt::{Cipher, Scytale};
     ///
-    /// let s = Scytale::new(6).unwrap();
+    /// let s = Scytale::new(6);
     /// assert_eq!("Pegr lefoporaryr !", s.encrypt("Prepare for glory!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // In both these cases the message is not altered
         if self.height >= message.chars().count() || self.height == 1 {
@@ -70,13 +73,13 @@ impl Cipher for Scytale {
         }
 
         // Construct the ciphertext out of each row
-        let mut ciphertext = String::new();
-        for row in table.iter() {
-            ciphertext.push_str(row.into_iter().collect::<String>().as_str());
-        }
-
         // Trim off any trailing whitespace added
-        Ok(ciphertext.trim_right().to_string())
+        Ok(table
+            .iter()
+            .flatten()
+            .collect::<String>()
+            .trim_right()
+            .to_string())
     }
 
     /// Decrypt a message using a Scytale cipher.
@@ -87,9 +90,10 @@ impl Cipher for Scytale {
     /// ```
     /// use cipher_crypt::{Cipher, Scytale};
     ///
-    /// let ct = Scytale::new(6).unwrap();
+    /// let ct = Scytale::new(6);
     /// assert_eq!("Prepare for glory!", ct.decrypt("Pegr lefoporaryr !").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // In both these cases the ciphertext has not been altered
         if self.height >= ciphertext.chars().count() || self.height == 1 {
@@ -128,31 +132,32 @@ mod tests {
 
     #[test]
     fn simple_encrypt() {
-        let s = Scytale::new(6).unwrap();
+        let s = Scytale::new(6);
         assert_eq!("aatttdaacwkn", s.encrypt("attackatdawn").unwrap());
     }
 
     #[test]
     fn simple_decrypt() {
-        let s = Scytale::new(6).unwrap();
+        let s = Scytale::new(6);
         assert_eq!("attackatdawn", s.decrypt("aatttdaacwkn").unwrap());
     }
 
     #[test]
     fn padding_required() {
-        let s = Scytale::new(5).unwrap();
+        let s = Scytale::new(5);
         let m = "attackatdawn";
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
+    #[should_panic]
     fn invalid_height() {
-        assert!(Scytale::new(0).is_err());
+        Scytale::new(0);
     }
 
     #[test]
     fn with_utf8() {
-        let s = Scytale::new(5).unwrap();
+        let s = Scytale::new(5);
         let m = "Attack 🗡️ at once.";
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
@@ -160,7 +165,7 @@ mod tests {
     #[test]
     fn with_spaces() {
         //Spaces at the end of a message are not preserved
-        let s = Scytale::new(5).unwrap();
+        let s = Scytale::new(5);
         let m = "Attack At Dawn comrades!  ";
         assert_eq!(
             "Attack At Dawn comrades!",
@@ -170,14 +175,14 @@ mod tests {
 
     #[test]
     fn longer_height() {
-        let s = Scytale::new(20).unwrap();
+        let s = Scytale::new(20);
         let m = "attackatdawn";
         assert_eq!(m, s.decrypt(&s.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
     fn longer_msg() {
-        let s = Scytale::new(7).unwrap();
+        let s = Scytale::new(7);
         let m = concat!(
             "We attack at dawn, not later when it is light, ",
             "or at some strange time of the clock. Only at dawn. ",

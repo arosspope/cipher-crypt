@@ -30,9 +30,10 @@
 //!
 use common::alphabet::{self, Alphabet};
 use common::cipher::Cipher;
+use common::keygen::cyclic_keystream;
 use common::substitute;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 const SUBSTITUTION_TABLE: [[usize; 26]; 13] = [
     [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12],
     [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 13, 12,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
@@ -62,16 +63,19 @@ impl Cipher for Porta {
 
     /// Initialize a Porta cipher given a specific key.
     ///
-    /// Will return `Err` if the key is empty or contains non-alphabetic symbols.
-    fn new(key: String) -> Result<Porta, &'static str> {
+    /// # Panics
+    /// * The `key` is empty.
+    /// * The `key` contains a non-alphabetic symbol.
+    ///
+    fn new(key: String) -> Porta {
         if key.is_empty() {
-            return Err("Invalid key: must have at least one character.");
+            panic!("The key is empty.");
         }
         if !alphabet::STANDARD.is_valid(&key) {
-            return Err("Invalid key: must contain only alphabetic characters.");
+            panic!("The key contains a non-alphabetic symbol.");
         }
 
-        Ok(Porta { key })
+        Porta { key }
     }
 
     /// Encrypt a message using a Porta cipher.
@@ -82,13 +86,16 @@ impl Cipher for Porta {
     /// ```
     /// use cipher_crypt::{Cipher, Porta};
     ///
-    /// let v = Porta::new("melon".into()).unwrap();
+    /// let v = Porta::new("melon".into());
     /// assert_eq!(v.encrypt("We ride at dawn!").unwrap(), "Dt mpwx pb xtdl!");
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        substitute::key_substitution(message, &mut self.keystream(message), |mi, ki| {
-            SUBSTITUTION_TABLE[ki / 2][mi]
-        })
+        Ok(substitute::key_substitution(
+            message,
+            &cyclic_keystream(&self.key, message),
+            |mi, ki| SUBSTITUTION_TABLE[ki / 2][mi],
+        ))
     }
 
     /// Decrypt a message using a Porta cipher.
@@ -99,22 +106,12 @@ impl Cipher for Porta {
     /// ```
     /// use cipher_crypt::{Cipher, Porta};
     ///
-    /// let v = Porta::new(String::from("melon")).unwrap();
+    /// let v = Porta::new(String::from("melon"));
     /// assert_eq!(v.decrypt("Dt mpwx pb xtdl!").unwrap(), "We ride at dawn!");
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         self.encrypt(ciphertext)
-    }
-}
-
-impl Porta {
-    /// Generate a keystream.
-    ///
-    /// For this, we simply repeat the key until we have enough symbols to
-    /// encrypt all alphabetic symbols of the message.
-    fn keystream(&self, message: &str) -> Vec<char> {
-        let scrubbed_msg = alphabet::STANDARD.scrub(message);
-        self.key.chars().cycle().take(scrubbed_msg.len()).collect()
     }
 }
 
@@ -125,21 +122,21 @@ mod tests {
     #[test]
     fn encrypt() {
         let message = "attackatdawn";
-        let porta = Porta::new("lemon".into()).unwrap();
+        let porta = Porta::new("lemon".into());
         assert_eq!(porta.encrypt(message).unwrap(), "seauvppaxtel");
     }
 
     #[test]
     fn decrypt() {
         let ciphertext = "seauvppaxtel";
-        let porta = Porta::new("lemon".into()).unwrap();
+        let porta = Porta::new("lemon".into());
         assert_eq!(porta.decrypt(ciphertext).unwrap(), "attackatdawn");
     }
 
     #[test]
     fn mixed_case() {
         let message = "Attack at Dawn!";
-        let porta = Porta::new("lemon".into()).unwrap();
+        let porta = Porta::new("lemon".into());
         let ciphertext = porta.encrypt(message).unwrap();
         let decrypted = porta.decrypt(&ciphertext).unwrap();
 
@@ -149,7 +146,7 @@ mod tests {
     #[test]
     fn with_utf8() {
         let message = "Peace 🗡️ Freedom and Liberty!";
-        let porta = Porta::new("utfeightisfun".into()).unwrap();
+        let porta = Porta::new("utfeightisfun".into());
         let ciphertext = porta.encrypt(message).unwrap();
         let decrypted = porta.decrypt(&ciphertext).unwrap();
 
@@ -158,16 +155,18 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Porta::new("LeMon".into()).is_ok());
+        Porta::new("LeMon".into());
     }
 
     #[test]
+    #[should_panic]
     fn key_with_symbols() {
-        assert!(Porta::new("!em@n".into()).is_err());
+        Porta::new("!em@n".into());
     }
 
     #[test]
+    #[should_panic]
     fn key_with_whitespace() {
-        assert!(Porta::new("wow this key is a real lemon".into()).is_err());
+        Porta::new("wow this key is a real lemon".into());
     }
 }

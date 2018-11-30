@@ -14,33 +14,31 @@ use num::integer::gcd;
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
 pub struct Affine {
-    a_b: (usize, usize),
+    a: usize,
+    b: usize,
 }
 
 impl Cipher for Affine {
     type Key = (usize, usize);
     type Algorithm = Affine;
 
-    /// Initialise an Affine cipher given the keys `a` and `b`.
+    /// Initialise an Affine cipher given the key (`a`, `b`).
     ///
-    /// Will return `Err` if one of the following conditions is detected:
-    ///
+    /// # Panics
     /// * `a` or `b` are not in the inclusive range `1 - 26`.
     /// * `a` has a factor in common with 26.
-    fn new(a_b: (usize, usize)) -> Result<Affine, &'static str> {
-        if a_b.0 < 1 || a_b.1 < 1 {
-            return Err("The keys a & b must be >= 1.");
+    ///
+    fn new(key: (usize, usize)) -> Affine {
+        let (a, b) = key;
+        if (a < 1 || b < 1) || (a > 26 || b > 26) {
+            panic!("The keys a & b must be within the range 1 <= n <= 26.");
         }
 
-        if a_b.0 > 26 || a_b.1 > 26 {
-            return Err("The keys a & b must be <= 26.");
+        if gcd(a, 26) > 1 {
+            panic!("The key 'a' cannot share a common factor with 26.");
         }
 
-        if gcd(a_b.0, 26) > 1 {
-            return Err("The key 'a' cannot share a common factor with 26.");
-        }
-
-        Ok(Affine { a_b })
+        Affine { a, b }
     }
 
     /// Encrypt a message using an Affine cipher.
@@ -51,18 +49,18 @@ impl Cipher for Affine {
     /// ```
     /// use cipher_crypt::{Cipher, Affine};
     ///
-    /// let a = Affine::new((3, 7)).unwrap();
+    /// let a = Affine::new((3, 7));
     /// assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (ax + b) mod 26
         // Where;  x    = position of letter in alphabet
         //         a, b = the numbers of the affine key
-
-        substitute::shift_substitution(message, |idx| {
-            alphabet::STANDARD.modulo(((self.a_b.0 * idx) + self.a_b.1) as isize)
-        })
+        Ok(substitute::shift_substitution(message, |idx| {
+            alphabet::STANDARD.modulo(((self.a * idx) + self.b) as isize)
+        }))
     }
 
     /// Decrypt a message using an Affine cipher.
@@ -73,9 +71,10 @@ impl Cipher for Affine {
     /// ```
     /// use cipher_crypt::{Cipher, Affine};
     ///
-    /// let a = Affine::new((3, 7)).unwrap();
+    /// let a = Affine::new((3, 7));
     /// assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (a^-1*(x - b)) mod 26
@@ -83,12 +82,12 @@ impl Cipher for Affine {
         //         a^-1 = multiplicative inverse of the key number `a`
         //         b    = a number of the affine key
         let a_inv = alphabet::STANDARD
-            .multiplicative_inverse(self.a_b.0 as isize)
+            .multiplicative_inverse(self.a as isize)
             .expect("Multiplicative inverse for 'a' could not be calculated.");
 
-        substitute::shift_substitution(ciphertext, |idx| {
-            alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.a_b.1 as isize))
-        })
+        Ok(substitute::shift_substitution(ciphertext, |idx| {
+            alphabet::STANDARD.modulo(a_inv as isize * (idx as isize - self.b as isize))
+        }))
     }
 }
 
@@ -98,19 +97,19 @@ mod tests {
 
     #[test]
     fn encrypt_message() {
-        let a = Affine::new((3, 7)).unwrap();
+        let a = Affine::new((3, 7));
         assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
     }
 
     #[test]
     fn decrypt_message() {
-        let a = Affine::new((3, 7)).unwrap();
+        let a = Affine::new((3, 7));
         assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
     }
 
     #[test]
     fn with_utf8() {
-        let a = Affine::new((15, 10)).unwrap();
+        let a = Affine::new((15, 10));
         let message = "Peace ✌️ Freedom and Liberty!";
 
         assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
@@ -127,7 +126,7 @@ mod tests {
             }
 
             for b in 1..27 {
-                let a = Affine::new((a, b)).unwrap();
+                let a = Affine::new((a, b));
                 assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
             }
         }
@@ -135,26 +134,29 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Affine::new((15, 17)).is_ok());
+        Affine::new((15, 17));
     }
 
     #[test]
     fn b_shares_factor() {
-        assert!(Affine::new((15, 2)).is_ok());
+        Affine::new((15, 2));
     }
 
     #[test]
+    #[should_panic]
     fn a_shares_factor() {
-        assert!(Affine::new((2, 15)).is_err());
+        Affine::new((2, 15));
     }
 
     #[test]
+    #[should_panic]
     fn keys_to_small() {
-        assert!(Affine::new((0, 10)).is_err());
+        Affine::new((0, 10));
     }
 
     #[test]
+    #[should_panic]
     fn keys_to_big() {
-        assert!(Affine::new((30, 51)).is_err());
+        Affine::new((30, 51));
     }
 }

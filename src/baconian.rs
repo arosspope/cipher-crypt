@@ -23,7 +23,7 @@ const CODE_LEN: usize = 5;
 ///  * note: that str is preferred over char as it cannot be guaranteed that
 ///     there will be a single codepoint for a given character.
 lazy_static! {
-    static ref CODE_MAP: HashMap<&'static str, &'static str> = hashmap!{
+    static ref CODE_MAP: HashMap<&'static str, &'static str> = hashmap! {
         "A" => "AAAAA",
         "B" => "AAAAB",
         "C" => "AAABA",
@@ -156,10 +156,7 @@ impl Cipher for Baconian {
 
     /// Initialise a Baconian cipher
     ///
-    /// The `key` tuple maps to the following:
-    ///     `(bool, Option<str>) =
-    ///         (use_distinct_alphabet, decoy_text)`.
-    ///
+    /// The `key` tuple maps to the following: `(bool, Option<str>) = (use_distinct_alphabet, decoy_text)`.
     /// Where ...
     ///
     /// * The encoding will be use_distinct_alphabet for all alphabetical characters, or classical
@@ -167,11 +164,11 @@ impl Cipher for Baconian {
     /// * An optional decoy message that will will be used to hide the message -
     ///     default is boilerplate "Lorem ipsum" text.
     ///
-    fn new(key: (bool, Option<String>)) -> Result<Baconian, &'static str> {
-        Ok(Baconian {
+    fn new(key: (bool, Option<String>)) -> Baconian {
+        Baconian {
             use_distinct_alphabet: key.0,
             decoy_text: key.1.unwrap_or_else(|| lipsum(160)),
-        })
+        }
     }
 
     /// Encrypt a message using the Baconian cipher
@@ -187,7 +184,7 @@ impl Cipher for Baconian {
     /// ```
     /// use cipher_crypt::{Cipher, Baconian};
     ///
-    /// let b = Baconian::new((false, None)).unwrap();
+    /// let b = Baconian::new((false, None));;
     /// let message = "Hello";
     /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘤𝘰n";
     ///
@@ -195,58 +192,60 @@ impl Cipher for Baconian {
     /// ```
     ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
-        let mut non_alphas = 0; // A counter for non_alphas
+        let num_non_alphas = self
+            .decoy_text
+            .chars()
+            .filter(|c| !c.is_alphabetic())
+            .count();
 
-        for c in self.decoy_text.chars() {
-            if !c.is_alphabetic() {
-                non_alphas += 1;
-            }
-        }
         // Check whether the message fits in the decoy
         // Note: that non-alphabetical characters will be skipped.
-        if (message.len() * CODE_LEN) > self.decoy_text.len() - non_alphas {
+        if (message.len() * CODE_LEN) > self.decoy_text.len() - num_non_alphas {
             return Err("Message too long for supplied decoy text.");
         }
 
-        // Complex: decoy_slice needs to = secret.len + num_non_alphabetical_chars
-        let mut decoy_slice = self.decoy_text.clone();
-        let mut secret = String::new();
-        // Iterate through the message encoding each char
-        // Ignore non-alphabetical chars
-        for c in message.chars() {
-            // get code and add to secret
-            let key = c.to_string();
-            secret += &get_code(self.use_distinct_alphabet, &key);
-        }
+        // Iterate through the message encoding each char (ignoring non-alphabetical chars)
+        let secret: String = message
+            .chars()
+            .map(|c| get_code(self.use_distinct_alphabet, &c.to_string()))
+            .collect();
 
-        let mut alphas = 0;
-        non_alphas = 0;
+        let mut num_alphas = 0;
+        let mut num_non_alphas = 0;
         for c in self.decoy_text.chars() {
-            if c.is_alphabetic() {
-                alphas += 1;
-            } else {
-                non_alphas += 1;
-            }
-            if alphas == secret.len() {
+            if num_alphas == secret.len() {
                 break;
             }
+            if c.is_alphabetic() {
+                num_alphas += 1
+            } else {
+                num_non_alphas += 1
+            };
         }
-        decoy_slice.truncate(alphas + non_alphas);
+
+        let decoy_slice: String = self
+            .decoy_text
+            .chars()
+            .take(num_alphas + num_non_alphas)
+            .collect();
+
         // We now have an encoded message, `secret`, in which each character of of the
         // original plaintext is now represented by a 5-bit binary character,
         // "AAAAA", "ABABA" etc.
         // We now overlay the encoded text onto the decoy slice, and
         // where the binary 'B' is found the decoy slice char is swapped for an italic
         let mut decoy_msg = String::new();
+        let mut secret_iter = secret.chars();
         for c in decoy_slice.chars() {
             if c.is_alphabetic() {
-                match secret.remove(0) {
-                    'B' => {
+                if let Some(sc) = secret_iter.next() {
+                    if sc == 'B' {
                         // match the binary 'B' and swap for italic
                         let italic = *ITALIC_CODES.get(c.to_string().as_str()).unwrap();
                         decoy_msg.push(italic);
+                    } else {
+                        decoy_msg.push(c);
                     }
-                    _ => decoy_msg.push(c),
                 }
             } else {
                 decoy_msg.push(c);
@@ -264,44 +263,38 @@ impl Cipher for Baconian {
     /// ```
     /// use cipher_crypt::{Cipher, Baconian};
     ///
-    /// let b = Baconian::new((false, None)).unwrap();
+    /// let b = Baconian::new((false, None));;
     /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
     ///
     /// assert_eq!("HELLO", b.decrypt(cipher_text).unwrap());
     /// ```
     ///
     fn decrypt(&self, message: &str) -> Result<String, &'static str> {
-        println!("Baconian decrypt");
-        let mut plaintext = String::new();
-        let mut ciphertext = String::new();
-        let mut code = String::new();
         // The message is decoy text
         // Iterate through swapping any alphabetical chars found in the ITALIC_CODES
         // set to be 'B', else 'A', skip anything else.
-        for c in message.chars() {
-            if c.is_alphabetic() {
-                let mut is_code = false;
-                for (_key, val) in ITALIC_CODES.iter() {
-                    if *val == c {
-                        is_code = true;
-                        break;
-                    }
-                }
-                if is_code {
-                    ciphertext.push('B');
+        let ciphertext: String = message
+            .chars()
+            .filter(|c| c.is_alphabetic())
+            .map(|c| {
+                if ITALIC_CODES.iter().any(|e| *e.1 == c) {
+                    'B'
                 } else {
-                    ciphertext.push('A');
+                    'A'
                 }
-            }
-        }
+            }).collect();
+
+        let mut plaintext = String::new();
+        let mut code = String::new();
         for c in ciphertext.chars() {
             code.push(c);
-            // If we have the right length code
             if code.len() == CODE_LEN {
+                // If we have the right length code
                 plaintext += &get_key(&code);
                 code.clear();
             }
         }
+
         Ok(plaintext)
     }
 }
@@ -312,7 +305,7 @@ mod tests {
 
     #[test]
     fn encrypt_simple() {
-        let b = Baconian::new((false, None)).unwrap();
+        let b = Baconian::new((false, None));
         let message = "Hello";
         let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘤𝘰n";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
@@ -320,8 +313,8 @@ mod tests {
     // Need to test that the traditional and use_distinct_alphabet codes give different results
     #[test]
     fn encrypt_trad_v_dist() {
-        let b_trad = Baconian::new((false, None)).unwrap();
-        let b_dist = Baconian::new((true, None)).unwrap();
+        let b_trad = Baconian::new((false, None));
+        let b_dist = Baconian::new((true, None));
         let message = "I JADE YOU VERVENT UNICORN";
 
         assert_ne!(
@@ -345,7 +338,7 @@ mod tests {
              And where's a city from all vice so free, \
              But may be term'd the worst of all the three?",
         );
-        let b = Baconian::new((false, Some(decoy_text))).unwrap();
+        let b = Baconian::new((false, Some(decoy_text)));
         let message = "Peace, Freedom 🗡️ and Liberty!";
         let cipher_text =
             "T𝘩𝘦 𝘸𝘰rl𝘥\'s a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
@@ -357,7 +350,7 @@ mod tests {
     #[test]
     #[should_panic(expected = r#"Message too long for supplied decoy text."#)]
     fn encrypt_decoy_too_short() {
-        let b = Baconian::new((false, None)).unwrap();
+        let b = Baconian::new((false, None));
         let message = "This is a long message that will be too long to encode using \
                        the default decoy text. In order to have a long message encoded you need a \
                        decoy text that is at least five times as long, plus the non-alphabeticals.";
@@ -385,7 +378,7 @@ mod tests {
             "T𝘩𝘦 𝘸𝘰rl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
             In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
             𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
-        let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        let b = Baconian::new((true, Some(decoy_text)));
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
 
@@ -395,7 +388,7 @@ mod tests {
             String::from("Let's c𝘰mp𝘳𝘰𝘮is𝘦. 𝐻old off th𝘦 at𝘵a𝘤k");
         let message = "ATTACK";
         let decoy_text = String::from("Let's compromise. Hold off the attack");
-        let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        let b = Baconian::new((true, Some(decoy_text)));
         assert_eq!(message, b.decrypt(&cipher_text).unwrap());
     }
 
@@ -422,7 +415,7 @@ mod tests {
              And where's a city from all vice so free, \
              But may be term'd the worst of all the three?",
         );
-        let b = Baconian::new((false, Some(decoy_text))).unwrap();
+        let b = Baconian::new((false, Some(decoy_text)));
         assert_eq!(message, b.decrypt(&cipher_text).unwrap());
     }
 }
