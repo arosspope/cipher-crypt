@@ -26,7 +26,7 @@ impl Cipher for Vigenere {
     /// * The `key` is empty.
     /// * The `key` contains a non-alphabetic symbol.
     ///
-    fn new(key: String) -> Vigenere{
+    fn new(key: String) -> Vigenere {
         if key.is_empty() {
             panic!("The key is empty.");
         }

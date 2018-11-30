@@ -39,7 +39,6 @@ pub fn decrypt(message: &str) -> String {
     substitute::shift_substitution(message, |i| alphabet::STANDARD.modulo((i + 13) as isize))
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
