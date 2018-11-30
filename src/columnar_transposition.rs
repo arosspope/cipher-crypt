@@ -35,18 +35,18 @@ impl Cipher for ColumnarTransposition {
     /// * The `keystream` contains duplicate characters.
     /// * The `null_char` is a character within the `keystream`
     ///
-    fn new(key: (String, Option<char>)) -> Result<ColumnarTransposition, &'static str> {
+    fn new(key: (String, Option<char>)) -> ColumnarTransposition {
         if let Some(null_char) = key.1 {
             if key.0.contains(null_char) {
                 panic!("The `keystream` contains a `null_char`.");
             }
         }
 
-        Ok(ColumnarTransposition {
+        ColumnarTransposition {
             derived_key: keygen::columnar_key(&key.0),
             keystream: key.0,
             null_char: key.1,
-        })
+        }
     }
 
     /// Encrypt a message with a Columnar Transposition cipher.
@@ -66,7 +66,7 @@ impl Cipher for ColumnarTransposition {
     /// let key_word = String::from("zebras");
     /// let null_char = None;
     ///
-    /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+    /// let ct = ColumnarTransposition::new((key_word, null_char));;
     ///
     /// assert_eq!("respce!uemeers-taSs g", ct.encrypt("Super-secret message!").unwrap());
     /// ```
@@ -125,7 +125,7 @@ impl Cipher for ColumnarTransposition {
     /// let key_word = String::from("zebras");
     /// let null_char = None;
     ///
-    /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+    /// let ct = ColumnarTransposition::new((key_word, null_char));;
     /// assert_eq!("Super-secret message!", ct.decrypt("respce!uemeers-taSs g").unwrap());
     /// ```
     /// Using whitespace as null (special case):
@@ -138,7 +138,7 @@ impl Cipher for ColumnarTransposition {
     /// let null_char = None;
     /// let message = "we are discovered  "; // Only trailing spaces will be stripped
     ///
-    /// let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+    /// let ct = ColumnarTransposition::new((key_word, null_char));;
     ///
     /// assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),"we are discovered");
     /// ```
@@ -226,7 +226,7 @@ mod tests {
 
         let key_word = String::from("zebras");
         let null_char = Some('\u{0}');
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
 
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
@@ -237,7 +237,7 @@ mod tests {
 
         let key_word = String::from("zebras");
         let null_char = None;
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
 
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
@@ -248,7 +248,7 @@ mod tests {
 
         let key_word = String::from("zebras");
         let null_char = Some('\u{0}');
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
         let encrypted = ct.encrypt(message).unwrap();
         assert_eq!(ct.decrypt(&encrypted).unwrap(), message);
     }
@@ -259,7 +259,7 @@ mod tests {
 
         let key_word = String::from("zebras");
         let null_char = None;
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
         let encrypted = ct.encrypt(message).unwrap();
         assert_eq!(ct.decrypt(&encrypted).unwrap(), message);
     }
@@ -270,7 +270,7 @@ mod tests {
 
         let key_word = String::from("z");
         let null_char = Some('\u{0}');
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
@@ -280,7 +280,7 @@ mod tests {
 
         let key_word = String::from("z");
         let null_char = None;
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
         assert_eq!(ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(), message);
     }
 
@@ -290,7 +290,7 @@ mod tests {
 
         let key_word = String::from("z");
         let null_char = None;
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
 
         assert_eq!(
             ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
@@ -302,7 +302,7 @@ mod tests {
     fn plaintext_containing_padding() {
         let key_word = String::from("zebras");
         let null_char = Some(' ');
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
 
         let plain_text = "This will fail because of spaces.";
         assert!(ct.encrypt(plain_text).is_err());
@@ -314,7 +314,7 @@ mod tests {
 
         let key_word = String::from("z");
         let null_char = None;
-        let ct = ColumnarTransposition::new((key_word, null_char)).unwrap();
+        let ct = ColumnarTransposition::new((key_word, null_char));
 
         assert_eq!(
             ct.decrypt(&ct.encrypt(message).unwrap()).unwrap(),
@@ -325,6 +325,6 @@ mod tests {
     #[test]
     #[should_panic]
     fn padding_in_key() {
-        ColumnarTransposition::new((String::from("zebras"), Some('z'))).is_err();
+        ColumnarTransposition::new((String::from("zebras"), Some('z')));
     }
 }

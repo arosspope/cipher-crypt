@@ -38,7 +38,7 @@ impl Cipher for Affine {
             panic!("The key 'a' cannot share a common factor with 26.");
         }
 
-        Ok(Affine { a, b })
+        Affine { a, b }
     }
 
     /// Encrypt a message using an Affine cipher.
@@ -132,29 +132,29 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Affine::new((15, 17)));
+        Affine::new((15, 17));
     }
 
     #[test]
     fn b_shares_factor() {
-        assert!(Affine::new((15, 2)));
+        Affine::new((15, 2));
     }
 
     #[test]
     #[should_panic]
     fn a_shares_factor() {
-        assert!(Affine::new((2, 15)));
+        Affine::new((2, 15));
     }
 
     #[test]
     #[should_panic]
     fn keys_to_small() {
-        assert!(Affine::new((0, 10)));
+        Affine::new((0, 10));
     }
 
     #[test]
     #[should_panic]
     fn keys_to_big() {
-        assert!(Affine::new((30, 51)));
+        Affine::new((30, 51));
     }
 }

@@ -31,13 +31,14 @@ impl Cipher for FractionatedMorse {
     /// # Panics
     /// * The `key` is empty.
     /// * The `key` contains a non-alphabetic symbol.
-    fn new(key: String) -> Result<FractionatedMorse, &'static str> {
+    ///
+    fn new(key: String) -> FractionatedMorse {
         if key.is_empty() {
             panic!("Key is empty.");
         }
 
         let keyed_alphabet = keygen::keyed_alphabet(&key, &alphabet::STANDARD, true);
-        Ok(FractionatedMorse { keyed_alphabet })
+        FractionatedMorse { keyed_alphabet }
     }
 
     /// Encrypt a message using a Fractionated Morse cipher.
@@ -53,7 +54,7 @@ impl Cipher for FractionatedMorse {
     /// ```
     /// use cipher_crypt::{Cipher, FractionatedMorse};
     ///
-    /// let fm = FractionatedMorse::new(String::from("key")).unwrap();
+    /// let fm = FractionatedMorse::new(String::from("key"));;
     /// assert_eq!("CPSUJISWHSSPFANR", fm.encrypt("AttackAtDawn!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
@@ -98,7 +99,7 @@ impl Cipher for FractionatedMorse {
     /// ```
     /// use cipher_crypt::{Cipher, FractionatedMorse};
     ///
-    /// let fm = FractionatedMorse::new(String::from("key")).unwrap();
+    /// let fm = FractionatedMorse::new(String::from("key"));;
     /// assert_eq!("ATTACKATDAWN!", fm.decrypt("cpsujiswhsspfanr").unwrap());
     /// ```
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
@@ -234,75 +235,75 @@ mod tests {
     #[test]
     fn encrypt_test() {
         let message = "attackatdawn";
-        let f = FractionatedMorse::new(String::from("key")).unwrap();
+        let f = FractionatedMorse::new(String::from("key"));
         assert_eq!("CPSUJISWHSSPG", f.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_test() {
         let message = "cpsujiswhsspg";
-        let f = FractionatedMorse::new(String::from("key")).unwrap();
+        let f = FractionatedMorse::new(String::from("key"));
         assert_eq!("ATTACKATDAWN", f.decrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_mixed_case() {
         let message = "AttackAtDawn";
-        let f = FractionatedMorse::new(String::from("OranGE")).unwrap();
+        let f = FractionatedMorse::new(String::from("OranGE"));
         assert_eq!("EPTVIHTXFTTPD", f.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_mixed_case() {
         let message = "EPtvihtXFttPD";
-        let f = FractionatedMorse::new(String::from("OranGE")).unwrap();
+        let f = FractionatedMorse::new(String::from("OranGE"));
         assert_eq!("ATTACKATDAWN", f.decrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_punctuation() {
         let m = "Testingpunctuation!Willitwork?";
-        let f = FractionatedMorse::new(String::from("Punctuation")).unwrap();
+        let f = FractionatedMorse::new(String::from("Punctuation"));
         assert_eq!(m.to_uppercase(), f.decrypt(&f.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
     #[should_panic]
     fn encrypt_no_key() {
-        assert!(FractionatedMorse::new(String::from("")).is_err());
+        FractionatedMorse::new(String::from(""));
     }
 
     #[test]
     fn encrypt_long_key() {
         let message = "defendtheeastwall";
-        let f = FractionatedMorse::new(String::from("nnhhyqzabguuxwdrvvctspefmjoklii")).unwrap();
+        let f = FractionatedMorse::new(String::from("nnhhyqzabguuxwdrvvctspefmjoklii"));
         assert_eq!("XMHBJJGEYBFEGFTTXFYE", f.encrypt(message).unwrap());
     }
 
     #[test]
     fn exhaustive_encrypt_decrypt() {
         let m = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,:\'\"!?@-;()=";
-        let f = FractionatedMorse::new(String::from("exhaustive")).unwrap();
+        let f = FractionatedMorse::new(String::from("exhaustive"));
         assert_eq!(m.to_uppercase(), f.decrypt(&f.encrypt(m).unwrap()).unwrap());
     }
 
     #[test]
     #[should_panic]
     fn bad_key() {
-        assert!(FractionatedMorse::new(String::from("bad key")).is_err());
+        FractionatedMorse::new(String::from("bad key"));
     }
 
     #[test]
     fn encrypt_bad_message() {
         let message = "Spaces are not supported.";
-        let f = FractionatedMorse::new(String::from("test")).unwrap();
+        let f = FractionatedMorse::new(String::from("test"));
         assert!(f.encrypt(message).is_err());
     }
 
     #[test]
     fn decrypt_bad_message() {
         let message = "badmessagefordecryption";
-        let f = FractionatedMorse::new(String::from("test")).unwrap();
+        let f = FractionatedMorse::new(String::from("test"));
         assert!(f.decrypt(message).is_err());
     }
 }

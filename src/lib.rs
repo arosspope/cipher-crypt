@@ -5,14 +5,14 @@
 //! ```rust
 //! extern crate cipher_crypt;
 //!
-//! use cipher_crypt::{Cipher, Caesar, ROT13};
+//! use cipher_crypt::{Cipher, Caesar, Rot13};
 //!
 //! fn main(){
 //!   let m1 = "I am my own inverse";
-//!   assert_eq!(m1, ROT13::apply(&ROT13::apply(m1)));
+//!   assert_eq!(m1, &Rot13::decrypt(&Rot13::encrypt(m1)));
 //!
 //!   let m2 = "Attack at dawn 🗡️";
-//!   let c = Caesar::new(3).unwrap();
+//!   let c = Caesar::new(3);
 //!   assert_eq!(m2, c.decrypt(&c.encrypt(m2).unwrap()).unwrap());
 //! }
 //! ```
@@ -61,6 +61,6 @@ pub use playfair::Playfair;
 pub use polybius::Polybius;
 pub use porta::Porta;
 pub use railfence::Railfence;
-pub use rot13 as ROT13;
+pub use rot13 as Rot13;
 pub use scytale::Scytale;
 pub use vigenere::Vigenere;

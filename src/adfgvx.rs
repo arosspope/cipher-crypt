@@ -41,10 +41,10 @@ impl Cipher for ADFGVX {
         // Generate the keyed alphabet key for the polybius square
         let p_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
 
-        Ok(ADFGVX {
+        ADFGVX {
             polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS)),
             columnar_cipher: ColumnarTransposition::new((key.1, key.2)),
-        })
+        }
     }
 
     /// Encrypt a message using a ADFGVX cipher.

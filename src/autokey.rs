@@ -44,7 +44,7 @@ impl Cipher for Autokey {
     /// ```
     /// use cipher_crypt::{Cipher, Autokey};
     ///
-    /// let a = Autokey::new(String::from("fort")).unwrap();
+    /// let a = Autokey::new(String::from("fort"));
     /// assert_eq!("Fhktcd 🗡 mhg otzx aade", a.encrypt("Attack 🗡 the east wall").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
@@ -67,7 +67,7 @@ impl Cipher for Autokey {
     /// ```
     /// use cipher_crypt::{Cipher, Autokey};
     ///
-    /// let a = Autokey::new(String::from("fort")).unwrap();
+    /// let a = Autokey::new(String::from("fort"));;
     /// assert_eq!("Attack 🗡 the east wall", a.decrypt("Fhktcd 🗡 mhg otzx aade").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {

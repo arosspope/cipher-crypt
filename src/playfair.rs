@@ -43,15 +43,16 @@ impl Cipher for Playfair {
     /// * The `keystream` must not be empty.
     /// * The `keystream` must not exceed the length of the playfair alphabet (25 characters).
     /// * The `keystream` must not contain non-alphabetic symbols or the letter 'J'.
-    fn new(key: (String, Option<char>)) -> Result<Playfair, &'static str> {
+    ///
+    fn new(key: (String, Option<char>)) -> Playfair {
         let null_char = key.1.unwrap_or_else(|| 'X').to_ascii_uppercase();
         let (rows, cols) = playfair_table(&key.0);
 
-        Ok(Playfair {
+        Playfair {
             rows,
             cols,
             null_char,
-        })
+        }
     }
 
     /// Encrypt a message with the Playfair cipher.
@@ -73,12 +74,13 @@ impl Cipher for Playfair {
     /// ```
     /// use cipher_crypt::{Cipher, Playfair};
     ///
-    /// let c = Playfair::new(("playfairexample".to_string(), None)).unwrap();
+    /// let c = Playfair::new(("playfairexample".to_string(), None));;
     /// assert_eq!(
     ///     c.encrypt("Hidethegoldinthetreestump").unwrap(),
     ///     "BMODZBXDNABEKUDMUIXMKZZRYI"
     /// );
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         if !alphabet::PLAYFAIR.is_valid(&message) {
             return Err("Message must only consist of alphabetic characters.");
@@ -113,13 +115,14 @@ impl Cipher for Playfair {
     /// ```
     /// use cipher_crypt::{Cipher, Playfair};
     ///
-    /// let c = Playfair::new(("playfairexample".to_string(), None)).unwrap();
+    /// let c = Playfair::new(("playfairexample".to_string(), None));;
     /// assert_eq!(
     ///     c.decrypt("BMODZBXDNABEKUDMUIXMKZZRYI").unwrap(),
     ///     "HIDETHEGOLDINTHETREXSTUMPX"
     /// );
     ///
     /// ```
+    ///
     fn decrypt(&self, message: &str) -> Result<String, &'static str> {
         if !alphabet::PLAYFAIR.is_valid(&message) {
             return Err("Message must only consist of alphabetic characters.");
@@ -142,6 +145,7 @@ impl Playfair {
     ///
     /// The operations for encrypt and decrypt are identical
     /// except for the direction of the substitution choice.
+    ///
     fn apply_rules<F>(&self, bigrams: Vec<Bigram>, shift: F) -> Result<String, &'static str>
     where
         F: Fn(Vec<char>, usize, usize) -> Bigram,
@@ -174,6 +178,7 @@ impl Playfair {
     /// after the first letter. Encrypt the new pair and continue.
     ///
     /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
+    ///
     fn bigram(&self, message: &str) -> Vec<Bigram> {
         if message.contains(char::is_whitespace) {
             panic!("Message contains whitespace.");
@@ -225,6 +230,7 @@ impl Playfair {
     /// bottom side of the column).
     ///
     /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
+    ///
     fn apply_slice<F>(&self, b: Bigram, slices: &[String; 5], shift: &F) -> Option<Bigram>
     where
         F: Fn(Vec<char>, usize, usize) -> Bigram,
@@ -250,6 +256,7 @@ impl Playfair {
     /// lies on the same row as the first letter of the plaintext pair.
     ///
     /// [Reference](https://en.wikipedia.org/wiki/Playfair_cipher#Description)
+    ///
     fn apply_rectangle(&self, b: Bigram) -> Bigram {
         let row_indices = find_corners(b, &self.cols);
         let col_indices = find_corners(b, &self.rows);
@@ -280,7 +287,7 @@ mod tests {
 
     #[test]
     fn bigram_handles_repeats() {
-        let pf = Playfair::new(("test".to_string(), Some('X'))).unwrap();
+        let pf = Playfair::new(("test".to_string(), Some('X')));
         let message = "FIZZBAR";
         assert_eq!(
             vec![('F', 'I'), ('Z', 'X'), ('B', 'A'), ('R', 'X'),],
@@ -290,7 +297,7 @@ mod tests {
 
     #[test]
     fn bigram_handles_odd_length() {
-        let pf = Playfair::new(("test".to_string(), Some('Z'))).unwrap();
+        let pf = Playfair::new(("test".to_string(), Some('Z')));
         let message = "WORLD";
         assert_eq!(
             vec![('W', 'O'), ('R', 'L'), ('D', 'Z'),],
@@ -300,25 +307,25 @@ mod tests {
 
     #[test]
     fn invalid_encrypt_message_whitespace() {
-        let pf = Playfair::new(("playfairexample".to_string(), None)).unwrap();
+        let pf = Playfair::new(("playfairexample".to_string(), None));
         assert!(pf.encrypt("This contains whitespace").is_err());
     }
 
     #[test]
     fn invalid_encrypt_message_null_char() {
-        let pf = Playfair::new(("playfairexample".to_string(), Some('Z'))).unwrap();
+        let pf = Playfair::new(("playfairexample".to_string(), Some('Z')));
         assert!(pf.encrypt("Thiscontainsthenullcharz").is_err());
     }
 
     #[test]
     fn invalid_decrypt_message_symbols() {
-        let pf = Playfair::new(("playfairexample".to_string(), None)).unwrap();
+        let pf = Playfair::new(("playfairexample".to_string(), None));
         assert!(pf.decrypt("This!contains!whitespace").is_err());
     }
 
     #[test]
     fn simple_encrypt() {
-        let pf = Playfair::new(("playfairexample".to_string(), None)).unwrap();
+        let pf = Playfair::new(("playfairexample".to_string(), None));
         assert_eq!(
             "BMODZBXDNABEKUDMUIXMKZZRYI",
             pf.encrypt("Hidethegoldinthetreestump").unwrap(),
@@ -327,7 +334,7 @@ mod tests {
 
     #[test]
     fn simple_decrypt() {
-        let pf = Playfair::new(("playfairexample".to_string(), None)).unwrap();
+        let pf = Playfair::new(("playfairexample".to_string(), None));
         assert_eq!(
             "HIDETHEGOLDINTHETREXSTUMPX",
             pf.decrypt("BMODZBXDNABEKUDMUIXMKZZRYI").unwrap(),
@@ -336,7 +343,7 @@ mod tests {
 
     #[test]
     fn negative_wrap_around() {
-        let pf = Playfair::new(("apt".to_string(), None)).unwrap();
+        let pf = Playfair::new(("apt".to_string(), None));
         let msg = "HELLOWORLD";
         assert_eq!("HELXOWORLD", pf.decrypt(&pf.encrypt(msg).unwrap()).unwrap());
     }

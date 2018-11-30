@@ -184,7 +184,7 @@ impl Cipher for Baconian {
     /// ```
     /// use cipher_crypt::{Cipher, Baconian};
     ///
-    /// let b = Baconian::new((false, None)).unwrap();
+    /// let b = Baconian::new((false, None));;
     /// let message = "Hello";
     /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘤𝘰n";
     ///
@@ -262,7 +262,7 @@ impl Cipher for Baconian {
     /// ```
     /// use cipher_crypt::{Cipher, Baconian};
     ///
-    /// let b = Baconian::new((false, None)).unwrap();
+    /// let b = Baconian::new((false, None));;
     /// let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘯𝘦 t";
     ///
     /// assert_eq!("HELLO", b.decrypt(cipher_text).unwrap());

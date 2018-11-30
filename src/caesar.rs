@@ -29,7 +29,7 @@ impl Cipher for Caesar {
             panic!("The shift factor must be within the range 1 <= n <= 26.");
         }
 
-        Ok(Caesar { shift })
+        Caesar { shift }
     }
 
     /// Encrypt a message using a Caesar cipher.
@@ -40,7 +40,7 @@ impl Cipher for Caesar {
     /// ```
     /// use cipher_crypt::{Cipher, Caesar};
     ///
-    /// let c = Caesar::new(3).unwrap();
+    /// let c = Caesar::new(3);
     /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
     /// ```
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
@@ -62,7 +62,7 @@ impl Cipher for Caesar {
     /// ```
     /// use cipher_crypt::{Cipher, Caesar};
     ///
-    /// let c = Caesar::new(3).unwrap();
+    /// let c = Caesar::new(3);
     /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {

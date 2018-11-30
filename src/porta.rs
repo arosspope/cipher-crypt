@@ -67,7 +67,7 @@ impl Cipher for Porta {
     /// * The `key` is empty.
     /// * The `key` contains a non-alphabetic symbol.
     ///
-    fn new(key: String) -> Result<Porta, &'static str> {
+    fn new(key: String) -> Porta {
         if key.is_empty() {
             panic!("The key is empty.");
         }
@@ -75,7 +75,7 @@ impl Cipher for Porta {
             panic!("The key contains a non-alphabetic symbol.");
         }
 
-        Ok(Porta { key })
+        Porta { key }
     }
 
     /// Encrypt a message using a Porta cipher.
@@ -86,9 +86,10 @@ impl Cipher for Porta {
     /// ```
     /// use cipher_crypt::{Cipher, Porta};
     ///
-    /// let v = Porta::new("melon".into()).unwrap();
+    /// let v = Porta::new("melon".into());
     /// assert_eq!(v.encrypt("We ride at dawn!").unwrap(), "Dt mpwx pb xtdl!");
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         Ok(substitute::key_substitution(
             message,
@@ -105,9 +106,10 @@ impl Cipher for Porta {
     /// ```
     /// use cipher_crypt::{Cipher, Porta};
     ///
-    /// let v = Porta::new(String::from("melon")).unwrap();
+    /// let v = Porta::new(String::from("melon"));
     /// assert_eq!(v.decrypt("Dt mpwx pb xtdl!").unwrap(), "We ride at dawn!");
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         self.encrypt(ciphertext)
     }
@@ -120,21 +122,21 @@ mod tests {
     #[test]
     fn encrypt() {
         let message = "attackatdawn";
-        let porta = Porta::new("lemon".into()).unwrap();
+        let porta = Porta::new("lemon".into());
         assert_eq!(porta.encrypt(message).unwrap(), "seauvppaxtel");
     }
 
     #[test]
     fn decrypt() {
         let ciphertext = "seauvppaxtel";
-        let porta = Porta::new("lemon".into()).unwrap();
+        let porta = Porta::new("lemon".into());
         assert_eq!(porta.decrypt(ciphertext).unwrap(), "attackatdawn");
     }
 
     #[test]
     fn mixed_case() {
         let message = "Attack at Dawn!";
-        let porta = Porta::new("lemon".into()).unwrap();
+        let porta = Porta::new("lemon".into());
         let ciphertext = porta.encrypt(message).unwrap();
         let decrypted = porta.decrypt(&ciphertext).unwrap();
 
@@ -144,7 +146,7 @@ mod tests {
     #[test]
     fn with_utf8() {
         let message = "Peace 🗡️ Freedom and Liberty!";
-        let porta = Porta::new("utfeightisfun".into()).unwrap();
+        let porta = Porta::new("utfeightisfun".into());
         let ciphertext = porta.encrypt(message).unwrap();
         let decrypted = porta.decrypt(&ciphertext).unwrap();
 
@@ -153,18 +155,18 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Porta::new("LeMon".into()).is_ok());
+        Porta::new("LeMon".into());
     }
 
     #[test]
     #[should_panic]
     fn key_with_symbols() {
-        assert!(Porta::new("!em@n".into()).is_err());
+        Porta::new("!em@n".into());
     }
 
     #[test]
     #[should_panic]
     fn key_with_whitespace() {
-        assert!(Porta::new("wow this key is a real lemon".into()).is_err());
+        Porta::new("wow this key is a real lemon".into());
     }
 }

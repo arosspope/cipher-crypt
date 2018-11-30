@@ -22,12 +22,12 @@ impl Cipher for Railfence {
     /// # Panics
     /// * The `key` is 0.
     ///
-    fn new(key: usize) -> Result<Railfence, &'static str> {
+    fn new(key: usize) -> Railfence {
         if key == 0 {
             panic!("The key is 0.");
         }
 
-        Ok(Railfence { rails: key })
+        Railfence { rails: key }
     }
 
     /// Encrypt a message using a Railfence cipher.
@@ -38,9 +38,10 @@ impl Cipher for Railfence {
     /// ```
     /// use cipher_crypt::{Cipher, Railfence};
     ///
-    /// let r = Railfence::new(3).unwrap();
+    /// let r = Railfence::new(3);
     /// assert_eq!("Src s!ue-ertmsaepseeg", r.encrypt("Super-secret message!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption process:
         //   First a table is created with a height given by the key and a length
@@ -91,9 +92,10 @@ impl Cipher for Railfence {
     /// ```
     /// use cipher_crypt::{Cipher, Railfence};
     ///
-    /// let r = Railfence::new(3).unwrap();
+    /// let r = Railfence::new(3);
     /// assert_eq!("Super-secret message!", r.decrypt("Src s!ue-ertmsaepseeg").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption process:
         //   First a table is created with a height given by the key and a length
@@ -188,68 +190,68 @@ mod tests {
     #[test]
     fn encrypt_test() {
         let message = "attackatdawn";
-        let r = Railfence::new(6).unwrap();
+        let r = Railfence::new(6);
         assert_eq!("awtantdatcak", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_mixed_case() {
         let message = "Hello, World!";
-        let r = Railfence::new(3).unwrap();
+        let r = Railfence::new(3);
         assert_eq!("Hoo!el,Wrdl l", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_short_key() {
         let message = "attackatdawn";
-        let r = Railfence::new(1).unwrap();
+        let r = Railfence::new(1);
         assert_eq!("attackatdawn", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn encrypt_long_key() {
         let message = "attackatdawn";
-        let r = Railfence::new(20).unwrap();
+        let r = Railfence::new(20);
         assert_eq!("attackatdawn", r.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_test() {
         let message = "awtantdatcak";
-        let r = Railfence::new(6).unwrap();
+        let r = Railfence::new(6);
         assert_eq!("attackatdawn", r.decrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_short_key() {
         let message = "attackatdawn";
-        let r = Railfence::new(1).unwrap();
+        let r = Railfence::new(1);
         assert_eq!("attackatdawn", r.decrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_mixed_case() {
         let message = "Hoo!el,Wrdl l";
-        let r = Railfence::new(3).unwrap();
+        let r = Railfence::new(3);
         assert_eq!("Hello, World!", r.decrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_long_key() {
         let message = "attackatdawn";
-        let r = Railfence::new(20).unwrap();
+        let r = Railfence::new(20);
         assert_eq!("attackatdawn", r.decrypt(message).unwrap());
     }
 
     #[test]
     #[should_panic]
     fn incorrect_key_test() {
-        assert!(Railfence::new(0).is_err());
+        Railfence::new(0);
     }
 
     #[test]
     fn unicode_test() {
-        let r = Railfence::new(3).unwrap();
+        let r = Railfence::new(3);
         let message = "ÂƮƮäƈķ ɑƬ Ðawŋ ✓";
         assert_eq!("ÂƈƬwƮäķɑ aŋ✓Ʈ Ð ", r.encrypt(message).unwrap());
     }
