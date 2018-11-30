@@ -156,10 +156,7 @@ impl Cipher for Baconian {
 
     /// Initialise a Baconian cipher
     ///
-    /// The `key` tuple maps to the following:
-    ///     `(bool, Option<str>) =
-    ///         (use_distinct_alphabet, decoy_text)`.
-    ///
+    /// The `key` tuple maps to the following: `(bool, Option<str>) = (use_distinct_alphabet, decoy_text)`.
     /// Where ...
     ///
     /// * The encoding will be use_distinct_alphabet for all alphabetical characters, or classical
@@ -167,11 +164,11 @@ impl Cipher for Baconian {
     /// * An optional decoy message that will will be used to hide the message -
     ///     default is boilerplate "Lorem ipsum" text.
     ///
-    fn new(key: (bool, Option<String>)) -> Result<Baconian, &'static str> {
-        Ok(Baconian {
+    fn new(key: (bool, Option<String>)) -> Baconian {
+        Baconian {
             use_distinct_alphabet: key.0,
             decoy_text: key.1.unwrap_or_else(|| lipsum(160)),
-        })
+        }
     }
 
     /// Encrypt a message using the Baconian cipher
@@ -307,7 +304,7 @@ mod tests {
 
     #[test]
     fn encrypt_simple() {
-        let b = Baconian::new((false, None)).unwrap();
+        let b = Baconian::new((false, None));
         let message = "Hello";
         let cipher_text = "Lo𝘳𝘦𝘮 ip𝘴um d𝘰l𝘰𝘳 s𝘪t 𝘢𝘮e𝘵, 𝘤𝘰n";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
@@ -315,8 +312,8 @@ mod tests {
     // Need to test that the traditional and use_distinct_alphabet codes give different results
     #[test]
     fn encrypt_trad_v_dist() {
-        let b_trad = Baconian::new((false, None)).unwrap();
-        let b_dist = Baconian::new((true, None)).unwrap();
+        let b_trad = Baconian::new((false, None));
+        let b_dist = Baconian::new((true, None));
         let message = "I JADE YOU VERVENT UNICORN";
 
         assert_ne!(
@@ -340,7 +337,7 @@ mod tests {
              And where's a city from all vice so free, \
              But may be term'd the worst of all the three?",
         );
-        let b = Baconian::new((false, Some(decoy_text))).unwrap();
+        let b = Baconian::new((false, Some(decoy_text)));
         let message = "Peace, Freedom 🗡️ and Liberty!";
         let cipher_text =
             "T𝘩𝘦 𝘸𝘰rl𝘥\'s a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
@@ -352,7 +349,7 @@ mod tests {
     #[test]
     #[should_panic(expected = r#"Message too long for supplied decoy text."#)]
     fn encrypt_decoy_too_short() {
-        let b = Baconian::new((false, None)).unwrap();
+        let b = Baconian::new((false, None));
         let message = "This is a long message that will be too long to encode using \
                        the default decoy text. In order to have a long message encoded you need a \
                        decoy text that is at least five times as long, plus the non-alphabeticals.";
@@ -380,7 +377,7 @@ mod tests {
             "T𝘩𝘦 𝘸𝘰rl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
             In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
             𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
-        let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        let b = Baconian::new((true, Some(decoy_text)));
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
 
@@ -390,7 +387,7 @@ mod tests {
             String::from("Let's c𝘰mp𝘳𝘰𝘮is𝘦. 𝐻old off th𝘦 at𝘵a𝘤k");
         let message = "ATTACK";
         let decoy_text = String::from("Let's compromise. Hold off the attack");
-        let b = Baconian::new((true, Some(decoy_text))).unwrap();
+        let b = Baconian::new((true, Some(decoy_text)));
         assert_eq!(message, b.decrypt(&cipher_text).unwrap());
     }
 
@@ -417,7 +414,7 @@ mod tests {
              And where's a city from all vice so free, \
              But may be term'd the worst of all the three?",
         );
-        let b = Baconian::new((false, Some(decoy_text))).unwrap();
+        let b = Baconian::new((false, Some(decoy_text)));
         assert_eq!(message, b.decrypt(&cipher_text).unwrap());
     }
 }

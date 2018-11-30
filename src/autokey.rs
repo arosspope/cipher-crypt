@@ -23,16 +23,17 @@ impl Cipher for Autokey {
     /// Initialise an Autokey cipher given a specific key.
     ///
     /// # Panics
-    /// * The key contains non-alphabetic symbols.
-    /// * The key is empty.
-    fn new(key: String) -> Result<Autokey, &'static str> {
+    /// * The `key` contains non-alphabetic symbols.
+    /// * The `key` is empty.
+    ///
+    fn new(key: String) -> Autokey {
         if key.is_empty() {
             panic!("The key must contain at least one character.");
         } else if !alphabet::STANDARD.is_valid(&key) {
             panic!("The key cannot contain non-alphabetic symbols.");
         }
 
-        Ok(Autokey { key })
+        Autokey { key }
     }
 
     /// Encrypt a message using an Autokey cipher.
@@ -114,7 +115,7 @@ mod tests {
     #[test]
     fn with_utf8() {
         let m = "Attack 🗡️ the east wall";
-        let a = Autokey::new(String::from("fort")).unwrap();
+        let a = Autokey::new(String::from("fort"));
 
         assert_eq!(m, a.decrypt(&a.encrypt(m).unwrap()).unwrap());
     }
@@ -122,7 +123,7 @@ mod tests {
     #[test]
     fn simple_encrypt_decrypt_test() {
         let message = "defend the east wall of the castle";
-        let v = Autokey::new(String::from("fortification")).unwrap();
+        let v = Autokey::new(String::from("fortification"));
 
         let c_text = v.encrypt(message).unwrap();
         let p_text = v.decrypt(&c_text).unwrap();
@@ -133,24 +134,24 @@ mod tests {
     #[test]
     fn decrypt_test() {
         let ciphertext = "lxfopktmdcgn";
-        let v = Autokey::new(String::from("lemon")).unwrap();
+        let v = Autokey::new(String::from("lemon"));
         assert_eq!("attackatdawn", v.decrypt(ciphertext).unwrap());
     }
 
     #[test]
     fn valid_key() {
-        assert!(Autokey::new(String::from("LeMon")).is_ok());
+        Autokey::new(String::from("LeMon"));
     }
 
     #[test]
     #[should_panic]
     fn key_with_symbols() {
-        assert!(Autokey::new(String::from("!em@n")).is_err());
+        Autokey::new(String::from("!em@n"));
     }
 
     #[test]
     #[should_panic]
     fn key_with_whitespace() {
-        assert!(Autokey::new(String::from("wow this key is a real lemon")).is_err());
+        Autokey::new(String::from("wow this key is a real lemon"));
     }
 }

@@ -4,7 +4,7 @@ pub trait Cipher {
 
     /// Initialise a cipher given a specific `key`.
     ///
-    fn new(key: Self::Key) -> Result<Self::Algorithm, &'static str>;
+    fn new(key: Self::Key) -> Self::Algorithm;
 
     /// Encrypt a `message` using a cipher's algorithm.
     ///
