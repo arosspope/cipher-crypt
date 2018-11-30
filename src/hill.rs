@@ -107,6 +107,7 @@ impl Cipher for Hill {
     ///     assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
     /// }
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         //A small insight into the theory behind encrypting with the hill cipher will be explained
         //thusly.
@@ -162,6 +163,7 @@ impl Cipher for Hill {
     ///     assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// }
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         /*
         The decryption process is very similar to the encryption process as explained in
@@ -203,6 +205,7 @@ impl Hill {
     /// let h = Hill::from_phrase("CEFJCBDRH", 3);
     /// h.encrypt("thing");
     /// ```
+    ///
     pub fn from_phrase(phrase: &str, chunk_size: usize) -> Hill {
         if chunk_size < 2 {
             panic!("The chunk size must be greater than 1.");

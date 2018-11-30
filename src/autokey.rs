@@ -47,6 +47,7 @@ impl Cipher for Autokey {
     /// let a = Autokey::new(String::from("fort"));
     /// assert_eq!("Fhktcd 🗡 mhg otzx aade", a.encrypt("Attack 🗡 the east wall").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
@@ -70,6 +71,7 @@ impl Cipher for Autokey {
     /// let a = Autokey::new(String::from("fort"));;
     /// assert_eq!("Attack 🗡 the east wall", a.decrypt("Fhktcd 🗡 mhg otzx aade").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         //As each character of the ciphertext is decrypted, the un-encrypted char is appended
         //to the base key 'keystream', so that it may be used to decrypt the latter part

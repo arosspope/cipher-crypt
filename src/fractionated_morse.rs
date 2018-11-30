@@ -57,6 +57,7 @@ impl Cipher for FractionatedMorse {
     /// let fm = FractionatedMorse::new(String::from("key"));;
     /// assert_eq!("CPSUJISWHSSPFANR", fm.encrypt("AttackAtDawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption process
         //   (1) The message is encoded in Morse using `|` as a character separator and finishing
@@ -102,6 +103,7 @@ impl Cipher for FractionatedMorse {
     /// let fm = FractionatedMorse::new(String::from("key"));;
     /// assert_eq!("ATTACKATDAWN!", fm.decrypt("cpsujiswhsspfanr").unwrap());
     /// ```
+    ///
     fn decrypt(&self, cipher_text: &str) -> Result<String, &'static str> {
         // Decryption process:
         //   (1) The keyed alphabet is obtained from the key.

@@ -190,6 +190,7 @@ impl Cipher for Baconian {
     ///
     /// assert_eq!(cipher_text, b.encrypt(message).unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         let num_non_alphas = self
             .decoy_text

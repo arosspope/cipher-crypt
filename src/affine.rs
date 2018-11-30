@@ -52,6 +52,7 @@ impl Cipher for Affine {
     /// let a = Affine::new((3, 7));
     /// assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (ax + b) mod 26
@@ -73,6 +74,7 @@ impl Cipher for Affine {
     /// let a = Affine::new((3, 7));
     /// assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (a^-1*(x - b)) mod 26

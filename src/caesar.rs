@@ -43,6 +43,7 @@ impl Cipher for Caesar {
     /// let c = Caesar::new(3);
     /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (x + n) mod 26
@@ -65,6 +66,7 @@ impl Cipher for Caesar {
     /// let c = Caesar::new(3);
     /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
