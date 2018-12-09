@@ -282,7 +282,8 @@ impl Cipher for Baconian {
                 } else {
                     'A'
                 }
-            }).collect();
+            })
+            .collect();
 
         let mut plaintext = String::new();
         let mut code = String::new();

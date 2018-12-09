@@ -97,7 +97,8 @@ impl Cipher for Polybius {
                 } else {
                     c.to_string()
                 }
-            }).collect())
+            })
+            .collect())
     }
 
     /// Decrypt a message using a Polybius square cipher.
@@ -192,10 +193,9 @@ mod tests {
         ));
 
         //The sequnce 'AZ' is unknown to the polybius square
-        assert!(
-            p.decrypt("BBAC AZabadaeazbadf adaebe CA ADdcdcdabadf!")
-                .is_err()
-        );
+        assert!(p
+            .decrypt("BBAC AZabadaeazbadf adaebe CA ADdcdcdabadf!")
+            .is_err());
     }
 
     #[test]
