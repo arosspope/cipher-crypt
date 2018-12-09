@@ -12,7 +12,7 @@
 //! This implementation uses the *latter* design, replacing all
 //! encountered 'J' characters with 'I'.
 //!
-use common::{alphabet, alphabet::Alphabet, cipher::Cipher, keygen::playfair_table};
+use crate::common::{alphabet, alphabet::Alphabet, cipher::Cipher, keygen::playfair_table};
 
 type Bigram = (char, char);
 
@@ -152,7 +152,7 @@ impl Playfair {
     {
         let mut text = String::new();
         for bigram in bigrams {
-            let mut chars: Bigram;
+            let chars: Bigram;
             if let Some(b) = self.apply_slice(bigram, &self.rows, &shift) {
                 // Rule 2 (Row)
                 chars = b;

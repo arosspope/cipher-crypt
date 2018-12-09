@@ -2,9 +2,9 @@
 //! Ancient Greek historian and scholar Polybius, for fractionating plaintext characters so that
 //! they can be represented by a smaller set of symbols.
 //!
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::{alphabet, keygen};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, keygen};
 use std::collections::HashMap;
 
 /// A Polybius square cipher.

@@ -13,9 +13,9 @@
 //! avoid dealing with matrices altogether by creating an instance of `Hill` via the function
 //! `Hill::from_phrase(...)`.
 //!
-use common::alphabet;
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
+use crate::common::alphabet;
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
 use num::integer::gcd;
 use rulinalg::matrix::{BaseMatrix, BaseMatrixMut, Matrix};
 

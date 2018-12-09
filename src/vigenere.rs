@@ -3,11 +3,11 @@
 //!
 //! For example, given the message `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //! encoding key would be `CRYPTC RY PTCR`.
-use common::alphabet;
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::keygen::cyclic_keystream;
-use common::substitute;
+use crate::common::alphabet;
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::keygen::cyclic_keystream;
+use crate::common::substitute;
 
 /// A Vigenère cipher.
 ///
