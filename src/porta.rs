@@ -28,10 +28,10 @@
 //! symbol is determined by selecting the table row according to `k` and the
 //! column according to `m`.
 //!
-use common::alphabet::{self, Alphabet};
-use common::cipher::Cipher;
-use common::keygen::cyclic_keystream;
-use common::substitute;
+use crate::common::alphabet::{self, Alphabet};
+use crate::common::cipher::Cipher;
+use crate::common::keygen::cyclic_keystream;
+use crate::common::substitute;
 
 #[rustfmt::skip]
 const SUBSTITUTION_TABLE: [[usize; 26]; 13] = [

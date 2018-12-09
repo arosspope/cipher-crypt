@@ -5,9 +5,9 @@
 //! weakness comes from the fact that if the cryptanalyst can discover the plaintext of two
 //! ciphertext characters, then the key can be obtained by solving a simultaneous equation
 //!
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::{alphabet, substitute};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, substitute};
 use num::integer::gcd;
 
 /// An Affine cipher.

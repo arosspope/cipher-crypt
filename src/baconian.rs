@@ -11,7 +11,7 @@
 //! If no concealing text is given and the boilerplate of "Lorem ipsum..." is used,
 //! a plaintext message of up to ~50 characters may be hidden.
 //!
-use common::cipher::Cipher;
+use crate::common::cipher::Cipher;
 use lipsum::lipsum;
 use std::collections::HashMap;
 use std::string::String;
@@ -282,7 +282,8 @@ impl Cipher for Baconian {
                 } else {
                     'A'
                 }
-            }).collect();
+            })
+            .collect();
 
         let mut plaintext = String::new();
         let mut code = String::new();

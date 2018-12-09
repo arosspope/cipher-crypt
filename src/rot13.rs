@@ -4,8 +4,8 @@
 //! ROT13 is its own inverse. That is, `ROT13(ROT13(message)) = message`. Due to its simplicity,
 //! this module does not implement the `Cipher` trait.
 //!
-use common::alphabet::Alphabet;
-use common::{alphabet, substitute};
+use crate::common::alphabet::Alphabet;
+use crate::common::{alphabet, substitute};
 
 /// Encrypt a message using the Rot13 substitute cipher.
 ///

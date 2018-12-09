@@ -4,10 +4,10 @@
 //! For example, say the message was `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //! keystream would be `CRYPTA TT ACKA`. It was invented by Blaise de Vigenère in 1586, and is
 //! generally more secure than the Vigenere cipher.
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::keygen::concatonated_keystream;
-use common::{alphabet, substitute};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::keygen::concatonated_keystream;
+use crate::common::{alphabet, substitute};
 
 /// An Autokey cipher.
 ///
@@ -84,7 +84,7 @@ impl Cipher for Autokey {
             let ctpos = alphabet::STANDARD.find_position(ct);
             match ctpos {
                 Some(ci) => {
-                    let mut decrypted_character: char;
+                    let decrypted_character: char;
                     if let Some(kc) = keystream.get(stream_idx) {
                         if let Some(ki) = alphabet::STANDARD.find_position(*kc) {
                             //Calculate the index and retrieve the letter to substitute

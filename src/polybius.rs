@@ -2,9 +2,9 @@
 //! Ancient Greek historian and scholar Polybius, for fractionating plaintext characters so that
 //! they can be represented by a smaller set of symbols.
 //!
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::{alphabet, keygen};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, keygen};
 use std::collections::HashMap;
 
 /// A Polybius square cipher.
@@ -97,7 +97,8 @@ impl Cipher for Polybius {
                 } else {
                     c.to_string()
                 }
-            }).collect())
+            })
+            .collect())
     }
 
     /// Decrypt a message using a Polybius square cipher.
@@ -192,10 +193,9 @@ mod tests {
         ));
 
         //The sequnce 'AZ' is unknown to the polybius square
-        assert!(
-            p.decrypt("BBAC AZabadaeazbadf adaebe CA ADdcdcdabadf!")
-                .is_err()
-        );
+        assert!(p
+            .decrypt("BBAC AZabadaeazbadf adaebe CA ADdcdcdabadf!")
+            .is_err());
     }
 
     #[test]

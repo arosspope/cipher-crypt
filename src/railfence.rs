@@ -7,7 +7,7 @@
 /// A Railfence cipher.
 ///
 /// This struct is created by the `new()` method. See its documentation for more.
-use common::cipher::Cipher;
+use crate::common::cipher::Cipher;
 
 pub struct Railfence {
     rails: usize,

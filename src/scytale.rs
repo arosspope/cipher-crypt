@@ -11,7 +11,7 @@
 //! Scytale encryption is only keyed by the number of letters that fit on each roll
 //! around the scytale. Therefore, it can be trivially cracked.
 //!
-use common::cipher::Cipher;
+use crate::common::cipher::Cipher;
 
 /// A Scytale cipher.
 ///
