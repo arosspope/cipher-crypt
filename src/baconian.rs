@@ -340,10 +340,9 @@ mod tests {
         );
         let b = Baconian::new((false, Some(decoy_text)));
         let message = "Peace, Freedom 🗡️ and Liberty!";
-        let cipher_text =
-            "T𝘩𝘦 𝘸𝘰rl𝘥\'s a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
-            In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
-            𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
+        let cipher_text = "T𝘩𝘦 𝘸𝘰rl𝘥\'s a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
+                           In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
+                           𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
     // use_distinct_alphabet lexicon
@@ -374,18 +373,16 @@ mod tests {
              And where's a city from all vice so free, \
              But may be term'd the worst of all the three?",
         );
-        let cipher_text =
-            "T𝘩𝘦 𝘸𝘰rl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
-            In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
-            𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
+        let cipher_text = "T𝘩𝘦 𝘸𝘰rl𝘥's a bubble; an𝘥 the 𝘭ife o𝘧 m𝘢𝘯 les𝘴 th𝘢n a sp𝘢n. \
+                           In hi𝘴 𝘤o𝘯𝘤𝘦pt𝘪𝘰n wretche𝘥; 𝘧r𝘰m th𝘦 𝘸o𝘮b 𝘴𝘰 t𝘰 the tomb: \
+                           𝐶ur𝘴t f𝘳om t𝘩𝘦 cr𝘢𝘥𝘭𝘦, and";
         let b = Baconian::new((true, Some(decoy_text)));
         assert_eq!(cipher_text, b.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_a_classic() {
-        let cipher_text =
-            String::from("Let's c𝘰mp𝘳𝘰𝘮is𝘦. 𝐻old off th𝘦 at𝘵a𝘤k");
+        let cipher_text = String::from("Let's c𝘰mp𝘳𝘰𝘮is𝘦. 𝐻old off th𝘦 at𝘵a𝘤k");
         let message = "ATTACK";
         let decoy_text = String::from("Let's compromise. Hold off the attack");
         let b = Baconian::new((true, Some(decoy_text)));
@@ -394,12 +391,11 @@ mod tests {
 
     #[test]
     fn decrypt_traditional() {
-        let cipher_text =
-            String::from(
-                "T𝘩e wor𝘭d's a bubble; an𝘥 𝘵he 𝘭if𝘦 𝘰f man 𝘭𝘦𝘴s 𝘵h𝘢n 𝘢 𝘴p𝘢n. \
-                𝐼n h𝘪s c𝘰nce𝘱𝘵i𝘰n 𝘸re𝘵che𝘥; 𝘧r𝘰𝘮 th𝘦 𝘸𝘰m𝘣 s𝘰 t𝘰 𝘵h𝘦 t𝘰mb: \
-                Curs𝘵 fr𝘰𝘮 𝘵h𝘦 cra𝘥l𝘦, 𝘢n𝘥"
-            );
+        let cipher_text = String::from(
+            "T𝘩e wor𝘭d's a bubble; an𝘥 𝘵he 𝘭if𝘦 𝘰f man 𝘭𝘦𝘴s 𝘵h𝘢n 𝘢 𝘴p𝘢n. \
+             𝐼n h𝘪s c𝘰nce𝘱𝘵i𝘰n 𝘸re𝘵che𝘥; 𝘧r𝘰𝘮 th𝘦 𝘸𝘰m𝘣 s𝘰 t𝘰 𝘵h𝘦 t𝘰mb: \
+             Curs𝘵 fr𝘰𝘮 𝘵h𝘦 cra𝘥l𝘦, 𝘢n𝘥",
+        );
         // Note: the substitution for 'I'/'J' and 'U'/'V'
         let message = "IIADEYOVVERVENTVNICORN";
         let decoy_text = String::from(

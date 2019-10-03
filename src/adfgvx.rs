@@ -286,5 +286,4 @@ mod tests {
     fn invalid_key_phrase() {
         ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None));
     }
-
 }
