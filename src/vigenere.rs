@@ -3,6 +3,8 @@
 //!
 //! For example, given the message `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //! encoding key would be `CRYPTC RY PTCR`.
+//!
+//!
 use crate::common::alphabet;
 use crate::common::alphabet::Alphabet;
 use crate::common::cipher::Cipher;

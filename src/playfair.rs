@@ -74,7 +74,7 @@ impl Cipher for Playfair {
     /// ```
     /// use cipher_crypt::{Cipher, Playfair};
     ///
-    /// let c = Playfair::new(("playfairexample".to_string(), None));;
+    /// let c = Playfair::new(("playfairexample".to_string(), None));
     /// assert_eq!(
     ///     c.encrypt("Hidethegoldinthetreestump").unwrap(),
     ///     "BMODZBXDNABEKUDMUIXMKZZRYI"
@@ -115,7 +115,7 @@ impl Cipher for Playfair {
     /// ```
     /// use cipher_crypt::{Cipher, Playfair};
     ///
-    /// let c = Playfair::new(("playfairexample".to_string(), None));;
+    /// let c = Playfair::new(("playfairexample".to_string(), None));
     /// assert_eq!(
     ///     c.decrypt("BMODZBXDNABEKUDMUIXMKZZRYI").unwrap(),
     ///     "HIDETHEGOLDINTHETREXSTUMPX"
