@@ -3,11 +3,11 @@
 //! ADFGVX was an extension of an earlier cipher called ADFGX. It uses a polybius square and a
 //! columnar transposition cipher.
 //!
-use columnar_transposition::ColumnarTransposition;
-use common::cipher::Cipher;
-use common::{alphabet, keygen};
+use crate::columnar_transposition::ColumnarTransposition;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, keygen};
+use crate::Polybius;
 use std::string::String;
-use Polybius;
 
 const ADFGVX_CHARS: [char; 6] = ['A', 'D', 'F', 'G', 'V', 'X'];
 
@@ -36,14 +36,15 @@ impl Cipher for ADFGVX {
     ///
     /// # Panics
     /// * If a non-alphanumeric symbol is part of the key.
-    fn new(key: (String, String, Option<char>)) -> Result<ADFGVX, &'static str> {
+    ///
+    fn new(key: (String, String, Option<char>)) -> ADFGVX {
         // Generate the keyed alphabet key for the polybius square
         let p_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
 
-        Ok(ADFGVX {
-            polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS))?,
-            columnar_cipher: ColumnarTransposition::new((key.1, key.2))?,
-        })
+        ADFGVX {
+            polybius_cipher: Polybius::new((p_key, ADFGVX_CHARS, ADFGVX_CHARS)),
+            columnar_cipher: ColumnarTransposition::new((key.1, key.2)),
+        }
     }
 
     /// Encrypt a message using a ADFGVX cipher.
@@ -62,7 +63,7 @@ impl Cipher for ADFGVX {
     ///     polybius_key,
     ///     columnar_key,
     ///     null_char
-    /// )).unwrap();
+    /// ));
     ///
     /// let cipher_text = concat!(
     ///     "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAXVVxfdd",
@@ -99,7 +100,7 @@ impl Cipher for ADFGVX {
     ///     polybius_key,
     ///     columnar_key,
     ///     null_char
-    /// )).unwrap();
+    /// ));
     ///
     /// let cipher_text = concat!(
     ///     "gfxffgxgDFAXDAVGD gxvadaaxxXFDDFGGGFdfaxdav",
@@ -130,7 +131,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
             None,
-        )).unwrap();
+        ));
 
         let cipher_text = concat!(
             "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
@@ -149,7 +150,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
             Some(' '),
-        )).unwrap();
+        ));
 
         // Note: this works as per crate version 0.11.0 - and leaves a trailing
         //       ' ' in the ciphertext.
@@ -170,7 +171,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
             None,
-        )).unwrap();
+        ));
 
         let cipher_text = concat!(
             "gfxffgxgDFAXDAVGDgxvadaaxxXFDDFGGGFdfaxdavgdVDAGFAX",
@@ -188,7 +189,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
             Some(' '),
-        )).unwrap();
+        ));
 
         // Note: this works as per crate version 0.11.0 - and leaves a trailing
         //       ' ' in the ciphertext.
@@ -208,7 +209,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
             None,
-        )).unwrap();
+        ));
 
         let plain_text = concat!(
             "We attack at dawn, not later when it is light, ",
@@ -226,7 +227,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
             Some('\u{0}'),
-        )).unwrap();
+        ));
 
         let plain_text = concat!(
             "We attack at dawn, not later when it is light, ",
@@ -244,7 +245,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("VICTORY"),
             Some(' '),
-        )).unwrap();
+        ));
 
         let plain_text = "This will fail because of spaces.";
         assert!(a.encrypt(plain_text).is_err());
@@ -257,7 +258,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
             None,
-        )).unwrap();
+        ));
 
         assert_eq!(
             plain_text,
@@ -272,7 +273,7 @@ mod tests {
             String::from("ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8"),
             String::from("GERMAN"),
             Some('\u{0}'),
-        )).unwrap();
+        ));
 
         assert_eq!(
             plain_text,
@@ -283,7 +284,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn invalid_key_phrase() {
-        ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None)).is_err();
+        ADFGVX::new((String::from("F@il"), String::from("GERMAN"), None));
     }
 
 }

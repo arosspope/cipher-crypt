@@ -4,9 +4,9 @@
 //! As with all single-alphabet substitution ciphers, the Caesar cipher is easily broken
 //! and in modern practice offers essentially no communication security.
 //!
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::{alphabet, substitute};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, substitute};
 
 /// A Caesar cipher.
 ///
@@ -23,12 +23,13 @@ impl Cipher for Caesar {
     ///
     /// # Panics
     /// * `shift` is not in the inclusive range `1 - 26`.
-    fn new(shift: usize) -> Result<Caesar, &'static str> {
+    ///
+    fn new(shift: usize) -> Caesar {
         if shift < 1 || shift > 26 {
             panic!("The shift factor must be within the range 1 <= n <= 26.");
         }
 
-        Ok(Caesar { shift })
+        Caesar { shift }
     }
 
     /// Encrypt a message using a Caesar cipher.
@@ -39,9 +40,10 @@ impl Cipher for Caesar {
     /// ```
     /// use cipher_crypt::{Cipher, Caesar};
     ///
-    /// let c = Caesar::new(3).unwrap();
+    /// let c = Caesar::new(3);
     /// assert_eq!("Dwwdfn dw gdzq!", c.encrypt("Attack at dawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (x + n) mod 26
@@ -61,9 +63,10 @@ impl Cipher for Caesar {
     /// ```
     /// use cipher_crypt::{Cipher, Caesar};
     ///
-    /// let c = Caesar::new(3).unwrap();
+    /// let c = Caesar::new(3);
     /// assert_eq!("Attack at dawn!", c.decrypt("Dwwdfn dw gdzq!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (x - n) mod 26
@@ -82,19 +85,19 @@ mod tests {
 
     #[test]
     fn encrypt_message() {
-        let c = Caesar::new(2).unwrap();
+        let c = Caesar::new(2);
         assert_eq!("Cvvcem cv fcyp!", c.encrypt("Attack at dawn!").unwrap());
     }
 
     #[test]
     fn decrypt_message() {
-        let c = Caesar::new(2).unwrap();
+        let c = Caesar::new(2);
         assert_eq!("Attack at dawn!", c.decrypt("Cvvcem cv fcyp!").unwrap());
     }
 
     #[test]
     fn with_utf8() {
-        let c = Caesar::new(3).unwrap();
+        let c = Caesar::new(3);
         let message = "Peace, Freedom and Liberty! 🗡️";
         let encrypted = c.encrypt(message).unwrap();
         let decrypted = c.decrypt(&encrypted).unwrap();
@@ -108,7 +111,7 @@ mod tests {
         let message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         for i in 1..27 {
-            let c = Caesar::new(i).unwrap();
+            let c = Caesar::new(i);
             let encrypted = c.encrypt(message).unwrap();
             let decrypted = c.decrypt(&encrypted).unwrap();
             assert_eq!(decrypted, message);
@@ -118,12 +121,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn key_to_small() {
-        assert!(Caesar::new(0).is_err());
+        Caesar::new(0);
     }
 
     #[test]
     #[should_panic]
     fn key_to_big() {
-        assert!(Caesar::new(27).is_err());
+        Caesar::new(27);
     }
 }

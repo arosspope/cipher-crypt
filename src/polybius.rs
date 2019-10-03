@@ -2,9 +2,9 @@
 //! Ancient Greek historian and scholar Polybius, for fractionating plaintext characters so that
 //! they can be represented by a smaller set of symbols.
 //!
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::{alphabet, keygen};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, keygen};
 use std::collections::HashMap;
 
 /// A Polybius square cipher.
@@ -60,16 +60,17 @@ impl Cipher for Polybius {
     /// use cipher_crypt::{Cipher, Polybius};
     ///
     /// let p = Polybius::new((String::from("or0an3ge"), ['A','Z','C','D','E','F'],
-    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///     ['A','B','G','D','E','F']));;
     ///
     /// assert_eq!("EEAC AAazadaebabzdc adaebe EF ADdadagebzdc!",
     ///    p.encrypt("10 Oranges and 2 Apples!").unwrap());
     /// ```
-    fn new(key: (String, [char; 6], [char; 6])) -> Result<Polybius, &'static str> {
+    ///
+    fn new(key: (String, [char; 6], [char; 6])) -> Polybius {
         let alphabet_key = keygen::keyed_alphabet(&key.0, &alphabet::ALPHANUMERIC, false);
         let square = keygen::polybius_square(&alphabet_key, &key.1, &key.2);
 
-        Ok(Polybius { square })
+        Polybius { square }
     }
 
     /// Encrypt a message using a Polybius square cipher.
@@ -81,11 +82,12 @@ impl Cipher for Polybius {
     /// use cipher_crypt::{Cipher, Polybius};
     ///
     /// let p = Polybius::new((String::from("p0lyb1us"), ['A','Z','C','D','E','F'],
-    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///     ['A','B','G','D','E','F']));;
     ///
     /// assert_eq!("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac",
     ///    p.encrypt("Attack 🗡️ the east wall").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         Ok(message
             .chars()
@@ -95,7 +97,8 @@ impl Cipher for Polybius {
                 } else {
                     c.to_string()
                 }
-            }).collect())
+            })
+            .collect())
     }
 
     /// Decrypt a message using a Polybius square cipher.
@@ -107,11 +110,12 @@ impl Cipher for Polybius {
     /// use cipher_crypt::{Cipher, Polybius};
     ///
     /// let p = Polybius::new((String::from("p0lyb1us"), ['A','Z','C','D','E','F'],
-    ///     ['A','B','G','D','E','F'])).unwrap();
+    ///     ['A','B','G','D','E','F']));;
     ///
     /// assert_eq!("Attack 🗡️ the east wall",
     ///    p.decrypt("BCdfdfbcbdgf 🗡️ dfgcbf bfbcbzdf ezbcacac").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         //We read the ciphertext two bytes at a time and transpose the original message using the
         //polybius square
@@ -157,7 +161,7 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         assert_eq!(
             "BBAC AAabadaeafbadf adaebe CA ADdcdcdabadf!",
@@ -171,7 +175,7 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         assert_eq!(
             "10 Oranges and 2 Apples!",
@@ -186,13 +190,12 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         //The sequnce 'AZ' is unknown to the polybius square
-        assert!(
-            p.decrypt("BBAC AZabadaeazbadf adaebe CA ADdcdcdabadf!")
-                .is_err()
-        );
+        assert!(p
+            .decrypt("BBAC AZabadaeazbadf adaebe CA ADdcdcdabadf!")
+            .is_err());
     }
 
     #[test]
@@ -202,7 +205,7 @@ mod tests {
             "or0ange1bcdf2hijk3lmp4qs5tu6vw7x8y9z".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).unwrap();
+        ));
 
         assert_eq!(m, p.decrypt(&p.encrypt(m).unwrap()).unwrap());
     }
@@ -214,7 +217,7 @@ mod tests {
             "F@IL".to_string(),
             ['A', 'B', 'C', 'D', 'E', 'F'],
             ['A', 'B', 'C', 'D', 'E', 'F'],
-        )).is_err();
+        ));
     }
 
     #[test]
@@ -224,7 +227,7 @@ mod tests {
             "oranges".to_string(),
             ['A', '!', 'C', 'D', 'E', 'F'],
             ['A', 'B', '@', 'D', 'E', 'F'],
-        )).is_err();
+        ));
     }
 
     #[test]
@@ -234,6 +237,6 @@ mod tests {
             "oranges".to_string(),
             ['A', 'A', 'C', 'D', 'E', 'F'],
             ['A', 'C', 'C', 'D', 'E', 'F'],
-        )).is_err();
+        ));
     }
 }

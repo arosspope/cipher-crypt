@@ -5,14 +5,14 @@
 //! ```rust
 //! extern crate cipher_crypt;
 //!
-//! use cipher_crypt::{Cipher, Caesar, ROT13};
+//! use cipher_crypt::{Cipher, Caesar, Rot13};
 //!
 //! fn main(){
 //!   let m1 = "I am my own inverse";
-//!   assert_eq!(m1, ROT13::apply(&ROT13::apply(m1)));
+//!   assert_eq!(m1, &Rot13::decrypt(&Rot13::encrypt(m1)));
 //!
 //!   let m2 = "Attack at dawn 🗡️";
-//!   let c = Caesar::new(3).unwrap();
+//!   let c = Caesar::new(3);
 //!   assert_eq!(m2, c.decrypt(&c.encrypt(m2).unwrap()).unwrap());
 //! }
 //! ```
@@ -22,6 +22,7 @@
 //! There's a reason these archaic methods are no longer used - it's because they are extremely
 //! easy to crack! Intended for learning purposes only, these ciphers should not be used to
 //! encrypt data of any real value.
+//!
 extern crate num;
 extern crate rulinalg;
 
@@ -48,19 +49,19 @@ pub mod rot13;
 pub mod scytale;
 pub mod vigenere;
 
-pub use adfgvx::ADFGVX;
-pub use affine::Affine;
-pub use autokey::Autokey;
-pub use baconian::Baconian;
-pub use caesar::Caesar;
-pub use columnar_transposition::ColumnarTransposition;
-pub use common::cipher::Cipher;
-pub use fractionated_morse::FractionatedMorse;
-pub use hill::Hill;
-pub use playfair::Playfair;
-pub use polybius::Polybius;
-pub use porta::Porta;
-pub use railfence::Railfence;
-pub use rot13 as ROT13;
-pub use scytale::Scytale;
-pub use vigenere::Vigenere;
+pub use crate::adfgvx::ADFGVX;
+pub use crate::affine::Affine;
+pub use crate::autokey::Autokey;
+pub use crate::baconian::Baconian;
+pub use crate::caesar::Caesar;
+pub use crate::columnar_transposition::ColumnarTransposition;
+pub use crate::common::cipher::Cipher;
+pub use crate::fractionated_morse::FractionatedMorse;
+pub use crate::hill::Hill;
+pub use crate::playfair::Playfair;
+pub use crate::polybius::Polybius;
+pub use crate::porta::Porta;
+pub use crate::railfence::Railfence;
+pub use crate::rot13 as Rot13;
+pub use crate::scytale::Scytale;
+pub use crate::vigenere::Vigenere;

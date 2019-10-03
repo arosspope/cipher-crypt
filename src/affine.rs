@@ -5,9 +5,9 @@
 //! weakness comes from the fact that if the cryptanalyst can discover the plaintext of two
 //! ciphertext characters, then the key can be obtained by solving a simultaneous equation
 //!
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::{alphabet, substitute};
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::{alphabet, substitute};
 use num::integer::gcd;
 
 /// An Affine cipher.
@@ -27,7 +27,8 @@ impl Cipher for Affine {
     /// # Panics
     /// * `a` or `b` are not in the inclusive range `1 - 26`.
     /// * `a` has a factor in common with 26.
-    fn new(key: (usize, usize)) -> Result<Affine, &'static str> {
+    ///
+    fn new(key: (usize, usize)) -> Affine {
         let (a, b) = key;
         if (a < 1 || b < 1) || (a > 26 || b > 26) {
             panic!("The keys a & b must be within the range 1 <= n <= 26.");
@@ -37,7 +38,7 @@ impl Cipher for Affine {
             panic!("The key 'a' cannot share a common factor with 26.");
         }
 
-        Ok(Affine { a, b })
+        Affine { a, b }
     }
 
     /// Encrypt a message using an Affine cipher.
@@ -48,9 +49,10 @@ impl Cipher for Affine {
     /// ```
     /// use cipher_crypt::{Cipher, Affine};
     ///
-    /// let a = Affine::new((3, 7)).unwrap();
+    /// let a = Affine::new((3, 7));
     /// assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter:
         //         E(x) = (ax + b) mod 26
@@ -69,9 +71,10 @@ impl Cipher for Affine {
     /// ```
     /// use cipher_crypt::{Cipher, Affine};
     ///
-    /// let a = Affine::new((3, 7)).unwrap();
+    /// let a = Affine::new((3, 7));
     /// assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter:
         //         D(x) = (a^-1*(x - b)) mod 26
@@ -94,19 +97,19 @@ mod tests {
 
     #[test]
     fn encrypt_message() {
-        let a = Affine::new((3, 7)).unwrap();
+        let a = Affine::new((3, 7));
         assert_eq!("Hmmhnl hm qhvu!", a.encrypt("Attack at dawn!").unwrap());
     }
 
     #[test]
     fn decrypt_message() {
-        let a = Affine::new((3, 7)).unwrap();
+        let a = Affine::new((3, 7));
         assert_eq!("Attack at dawn!", a.decrypt("Hmmhnl hm qhvu!").unwrap());
     }
 
     #[test]
     fn with_utf8() {
-        let a = Affine::new((15, 10)).unwrap();
+        let a = Affine::new((15, 10));
         let message = "Peace ✌️ Freedom and Liberty!";
 
         assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
@@ -123,7 +126,7 @@ mod tests {
             }
 
             for b in 1..27 {
-                let a = Affine::new((a, b)).unwrap();
+                let a = Affine::new((a, b));
                 assert_eq!(message, a.decrypt(&a.encrypt(message).unwrap()).unwrap());
             }
         }
@@ -131,29 +134,29 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Affine::new((15, 17)).is_ok());
+        Affine::new((15, 17));
     }
 
     #[test]
     fn b_shares_factor() {
-        assert!(Affine::new((15, 2)).is_ok());
+        Affine::new((15, 2));
     }
 
     #[test]
     #[should_panic]
     fn a_shares_factor() {
-        assert!(Affine::new((2, 15)).is_err());
+        Affine::new((2, 15));
     }
 
     #[test]
     #[should_panic]
     fn keys_to_small() {
-        assert!(Affine::new((0, 10)).is_err());
+        Affine::new((0, 10));
     }
 
     #[test]
     #[should_panic]
     fn keys_to_big() {
-        assert!(Affine::new((30, 51)).is_err());
+        Affine::new((30, 51));
     }
 }

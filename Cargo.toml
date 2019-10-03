@@ -1,6 +1,6 @@
 [package]
 name = "cipher-crypt"
-version = "0.15.1"
+version = "0.17.0"
 authors = ["arosspope <andrew.pope456@gmail.com>"]
 license = "MIT/Apache-2.0"
 homepage = "https://github.com/arosspope/cipher-crypt.git"
@@ -10,6 +10,7 @@ keywords = ["cipher", "classical", "crypto", "caesar", "adfgvx"]
 categories = ["algorithms", "cryptography"]
 readme = "README.md"
 documentation = "https://docs.rs/cipher-crypt/"
+edition = '2018'
 
 [lib]
 name = "cipher_crypt"
@@ -17,6 +18,6 @@ name = "cipher_crypt"
 [dependencies]
 lazy_static = "^1"
 maplit = "^1.0.1"
-lipsum = "^0.4"
+lipsum = "^0.6"
 num = "^0.1"
 rulinalg = "^0.4"

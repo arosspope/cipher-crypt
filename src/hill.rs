@@ -13,9 +13,9 @@
 //! avoid dealing with matrices altogether by creating an instance of `Hill` via the function
 //! `Hill::from_phrase(...)`.
 //!
-use common::alphabet;
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
+use crate::common::alphabet;
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
 use num::integer::gcd;
 use rulinalg::matrix::{BaseMatrix, BaseMatrixMut, Matrix};
 
@@ -50,10 +50,11 @@ impl Cipher for Hill {
     /// fn main() {
     ///     //Initialise a Hill cipher from a 3 x 3 matrix
     ///     let m = Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]);
-    ///     let h = Hill::new(m).unwrap();
+    ///     let h = Hill::new(m);
     /// }
     /// ```
-    fn new(key: Matrix<isize>) -> Result<Hill, &'static str> {
+    ///
+    fn new(key: Matrix<isize>) -> Hill {
         if key.cols() != key.rows() {
             panic!("The key is not a square matrix.");
         }
@@ -73,7 +74,7 @@ impl Cipher for Hill {
             panic!("The inverse determinant of the key cannot be calculated.");
         }
 
-        Ok(Hill { key })
+        Hill { key }
     }
 
     /// Encrypt a message using a Hill cipher.
@@ -101,11 +102,12 @@ impl Cipher for Hill {
     /// use cipher_crypt::{Cipher, Hill};
     ///
     /// fn main() {
-    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
     ///     //Padding characters are added during the encryption process
     ///     assert_eq!("PFOGOAUCIMpf", h.encrypt("ATTACKEAST").unwrap());
     /// }
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         //A small insight into the theory behind encrypting with the hill cipher will be explained
         //thusly.
@@ -152,7 +154,7 @@ impl Cipher for Hill {
     ///
     /// fn main() {
     ///     let m = "ATTACKEAST";
-    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+    ///     let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));;
     ///
     ///     let c = h.encrypt(m).unwrap();
     ///     let padding = c.len() - m.len();
@@ -161,6 +163,7 @@ impl Cipher for Hill {
     ///     assert_eq!(m, p[0..(p.len() - padding)].to_string());
     /// }
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         /*
         The decryption process is very similar to the encryption process as explained in
@@ -187,8 +190,8 @@ impl Hill {
     /// matrix key of the cipher. The variable `chunk_size` defines how many chars (or chunks)
     /// of a message will be transposed during encryption/decryption.
     ///
-    /// Will return `Err` if one of the following conditions is detected:
     ///
+    /// # Panics
     /// * The `chunk_size` is less than 2
     /// * The square of `chunk_size` is not equal to the phrase length
     /// * The phrase contains non-alphabetic symbols
@@ -199,20 +202,21 @@ impl Hill {
     /// ```
     /// use cipher_crypt::{Cipher, Hill};
     ///
-    /// let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+    /// let h = Hill::from_phrase("CEFJCBDRH", 3);
     /// h.encrypt("thing");
     /// ```
-    pub fn from_phrase(phrase: &str, chunk_size: usize) -> Result<Hill, &'static str> {
+    ///
+    pub fn from_phrase(phrase: &str, chunk_size: usize) -> Hill {
         if chunk_size < 2 {
-            return Err("The chunk size must be greater than 1.");
+            panic!("The chunk size must be greater than 1.");
         }
 
         if chunk_size * chunk_size != phrase.len() {
-            return Err("The square of the chunk size must equal the length of the phrase.");
+            panic!("The square of the chunk size must equal the length of the phrase.");
         }
 
         if !alphabet::STANDARD.is_valid(phrase) {
-            return Err("Phrase cannot contain non-alphabetic symbols.");
+            panic!("Phrase cannot contain non-alphabetic symbols.");
         }
 
         let matrix: Vec<isize> = phrase
@@ -320,17 +324,18 @@ mod tests {
 
     #[test]
     fn keygen_from_phrase() {
-        assert!(Hill::from_phrase("CEFJCBDRH", 3).is_ok());
+        Hill::from_phrase("CEFJCBDRH", 3);
     }
 
     #[test]
+    #[should_panic]
     fn invalid_phrase() {
-        assert!(Hill::from_phrase("killer", 2).is_err());
+        Hill::from_phrase("killer", 2);
     }
 
     #[test]
     fn encrypt_no_padding_req() {
-        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
 
         let m = "ATTACKatDAWN";
         assert_eq!(m, h.decrypt(&h.encrypt(m).unwrap()).unwrap());
@@ -338,19 +343,19 @@ mod tests {
 
     #[test]
     fn encrypt_with_symbols() {
-        let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+        let h = Hill::from_phrase("CEFJCBDRH", 3);
         assert!(h.encrypt("This won!t w@rk").is_err());
     }
 
     #[test]
     fn decrypt_with_symbols() {
-        let h = Hill::from_phrase("CEFJCBDRH", 3).unwrap();
+        let h = Hill::from_phrase("CEFJCBDRH", 3);
         assert!(h.decrypt("This won!t w@rk").is_err());
     }
 
     #[test]
     fn encrypt_padding_req() {
-        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).unwrap();
+        let h = Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
         let m = "ATTACKATDAWNz";
 
         let e = h.encrypt(m).unwrap();
@@ -362,19 +367,19 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7])).is_ok());
+        Hill::new(Matrix::new(3, 3, vec![2, 4, 5, 9, 2, 1, 3, 17, 7]));
     }
 
     #[test]
     #[should_panic]
     fn non_square_matrix() {
         //A 3 x 2 matrix
-        assert!(Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17])).is_err());
+        Hill::new(Matrix::new(3, 2, vec![2, 4, 9, 2, 3, 17]));
     }
 
     #[test]
     #[should_panic]
     fn non_invertable_matrix() {
-        assert!(Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8])).is_err());
+        Hill::new(Matrix::new(3, 3, vec![2, 2, 3, 6, 6, 9, 1, 4, 8]));
     }
 }

@@ -13,12 +13,22 @@ adding the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-cipher-crypt = "^0.15"
+cipher-crypt = "^0.16"
 ```
 
 Using the crate as such:
 
-![rot13-demo](http://i.imgur.com/5pywJBn.gif)
+```rust
+extern crate cipher_crypt;
+
+use cipher_crypt::{Cipher, Caesar};
+
+fn main(){
+  let m2 = "Attack at dawn 🗡️";
+  let c = Caesar::new(3);
+  assert_eq!(m2, c.decrypt(&c.encrypt(m2).unwrap()).unwrap());
+}
+```
 
 ## Ciphers
 

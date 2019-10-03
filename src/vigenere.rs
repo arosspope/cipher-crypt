@@ -3,11 +3,13 @@
 //!
 //! For example, given the message `ATTACK AT DAWN` and the key was `CRYPT` then the calculated
 //! encoding key would be `CRYPTC RY PTCR`.
-use common::alphabet;
-use common::alphabet::Alphabet;
-use common::cipher::Cipher;
-use common::keygen::cyclic_keystream;
-use common::substitute;
+//!
+//!
+use crate::common::alphabet;
+use crate::common::alphabet::Alphabet;
+use crate::common::cipher::Cipher;
+use crate::common::keygen::cyclic_keystream;
+use crate::common::substitute;
 
 /// A Vigenère cipher.
 ///
@@ -26,7 +28,7 @@ impl Cipher for Vigenere {
     /// * The `key` is empty.
     /// * The `key` contains a non-alphabetic symbol.
     ///
-    fn new(key: String) -> Result<Vigenere, &'static str> {
+    fn new(key: String) -> Vigenere {
         if key.is_empty() {
             panic!("The key is empty.");
         }
@@ -34,7 +36,7 @@ impl Cipher for Vigenere {
             panic!("The key contains a non-alphabetic symbol.");
         }
 
-        Ok(Vigenere { key })
+        Vigenere { key }
     }
 
     /// Encrypt a message using a Vigenère cipher.
@@ -45,9 +47,10 @@ impl Cipher for Vigenere {
     /// ```
     /// use cipher_crypt::{Cipher, Vigenere};
     ///
-    /// let v = Vigenere::new(String::from("giovan")).unwrap();
+    /// let v = Vigenere::new(String::from("giovan"));
     /// assert_eq!("O vsqee mmh vnl izsyig!", v.encrypt("I never get any credit!").unwrap());
     /// ```
+    ///
     fn encrypt(&self, message: &str) -> Result<String, &'static str> {
         // Encryption of a letter in a message:
         //         Ci = Ek(Mi) = (Mi + Ki) mod 26
@@ -68,9 +71,10 @@ impl Cipher for Vigenere {
     /// ```
     /// use cipher_crypt::{Cipher, Vigenere};
     ///
-    /// let v = Vigenere::new(String::from("giovan")).unwrap();
+    /// let v = Vigenere::new(String::from("giovan"));
     /// assert_eq!("I never get any credit!", v.decrypt("O vsqee mmh vnl izsyig!").unwrap());
     /// ```
+    ///
     fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
         // Decryption of a letter in a message:
         //         Mi = Dk(Ci) = (Ci - Ki) mod 26
@@ -91,21 +95,21 @@ mod tests {
     #[test]
     fn encrypt_test() {
         let message = "attackatdawn";
-        let v = Vigenere::new(String::from("lemon")).unwrap();
+        let v = Vigenere::new(String::from("lemon"));
         assert_eq!("lxfopvefrnhr", v.encrypt(message).unwrap());
     }
 
     #[test]
     fn decrypt_test() {
         let ciphertext = "lxfopvefrnhr";
-        let v = Vigenere::new(String::from("lemon")).unwrap();
+        let v = Vigenere::new(String::from("lemon"));
         assert_eq!("attackatdawn", v.decrypt(ciphertext).unwrap());
     }
 
     #[test]
     fn mixed_case() {
         let message = "Attack at Dawn!";
-        let v = Vigenere::new(String::from("giovan")).unwrap();
+        let v = Vigenere::new(String::from("giovan"));
 
         let ciphertext = v.encrypt(message).unwrap();
         let plain_text = v.decrypt(&ciphertext).unwrap();
@@ -115,7 +119,7 @@ mod tests {
 
     #[test]
     fn with_utf8() {
-        let v = Vigenere::new(String::from("utfeightisfun")).unwrap();
+        let v = Vigenere::new(String::from("utfeightisfun"));
         let message = "Peace 🗡️ Freedom and Liberty!";
         let encrypted = v.encrypt(message).unwrap();
         let decrypted = v.decrypt(&encrypted).unwrap();
@@ -125,18 +129,18 @@ mod tests {
 
     #[test]
     fn valid_key() {
-        assert!(Vigenere::new(String::from("LeMon")).is_ok());
+        Vigenere::new(String::from("LeMon"));
     }
 
     #[test]
     #[should_panic]
     fn key_with_symbols() {
-        assert!(Vigenere::new(String::from("!em@n")).is_err());
+        Vigenere::new(String::from("!em@n"));
     }
 
     #[test]
     #[should_panic]
     fn key_with_whitespace() {
-        assert!(Vigenere::new(String::from("wow this key is a real lemon")).is_err());
+        Vigenere::new(String::from("wow this key is a real lemon"));
     }
 }
