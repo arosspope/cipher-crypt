@@ -82,7 +82,7 @@ impl Cipher for ColumnarTransposition {
 
         //Construct the column
         let mut i = 0;
-        let mut chars = message.trim_right().chars(); //Any trailing spaces will be stripped
+        let mut chars = message.trim_end().chars(); //Any trailing spaces will be stripped
         loop {
             if let Some(c) = chars.next() {
                 key[i].1.push(c);
@@ -212,7 +212,7 @@ impl Cipher for ColumnarTransposition {
             }
         }
 
-        Ok(plaintext.trim_right().to_string())
+        Ok(plaintext.trim_end().to_string())
     }
 }
 

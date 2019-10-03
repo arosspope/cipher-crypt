@@ -77,7 +77,7 @@ impl Cipher for Scytale {
             .iter()
             .flatten()
             .collect::<String>()
-            .trim_right()
+            .trim_end()
             .to_string())
     }
 
@@ -120,7 +120,7 @@ impl Cipher for Scytale {
         }
 
         //Make sure to strip any padding characters
-        Ok(plaintext.trim_right().to_string())
+        Ok(plaintext.trim_end().to_string())
     }
 }
 
