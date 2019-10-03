@@ -1,6 +1,6 @@
 [package]
 name = "cipher-crypt"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["arosspope <andrew.pope456@gmail.com>"]
 license = "MIT/Apache-2.0"
 homepage = "https://github.com/arosspope/cipher-crypt.git"

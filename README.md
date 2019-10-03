@@ -42,6 +42,7 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Columnar Transposition
 - [x] Fractionated Morse
 - [x] Hill
+- [x] Homophonic
 - [x] Playfair
 - [x] Polybius Square
 - [x] Porta
@@ -51,7 +52,6 @@ The crypt only contains a few ciphers, but with time (and your help) it will hav
 - [x] Vigenère
 - [ ] Bifid
 - [ ] Four-Square
-- [ ] Homophonic
 - [ ] Straddle Checkerboard
 - [ ] Trifid
 
