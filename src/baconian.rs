@@ -16,12 +16,12 @@ use lipsum::lipsum;
 use std::collections::HashMap;
 use std::string::String;
 
-/// The default code length
+// The default code length
 const CODE_LEN: usize = 5;
 
-/// Code mappings:
-///  * note: that str is preferred over char as it cannot be guaranteed that
-///     there will be a single codepoint for a given character.
+// Code mappings:
+//  * note: that str is preferred over char as it cannot be guaranteed that
+//     there will be a single codepoint for a given character.
 lazy_static! {
     static ref CODE_MAP: HashMap<&'static str, &'static str> = hashmap! {
         "A" => "AAAAA",
@@ -53,7 +53,7 @@ lazy_static! {
     };
 }
 
-/// A mapping of alphabet to italic UTF-8 italic codes
+// A mapping of alphabet to italic UTF-8 italic codes
 lazy_static! {
     static ref ITALIC_CODES: HashMap<&'static str, char> = hashmap!{
         // Using Mathematical Italic
