@@ -45,7 +45,7 @@ impl Cipher for Playfair {
     /// * The `keystream` must not contain non-alphabetic symbols or the letter 'J'.
     ///
     fn new(key: (String, Option<char>)) -> Playfair {
-        let null_char = key.1.unwrap_or_else(|| 'X').to_ascii_uppercase();
+        let null_char = key.1.unwrap_or('X').to_ascii_uppercase();
         let (rows, cols) = playfair_table(&key.0);
 
         Playfair {
