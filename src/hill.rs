@@ -70,7 +70,7 @@ impl Cipher for Hill {
             panic!("The inverse of this matrix cannot be calculated for decryption.");
         }
 
-        if gcd(m.clone().det() as isize, 26) != 1 {
+        if gcd(m.det() as isize, 26) != 1 {
             panic!("The inverse determinant of the key cannot be calculated.");
         }
 
